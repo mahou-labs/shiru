@@ -1,0 +1,42 @@
+{
+  "name": "api",
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev --port=3000",
+    "build": "vp build",
+    "preview": "pnpm run build && vp preview",
+    "deploy": "pnpm run build && wrangler deploy --env prod",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "db:studio": "drizzle-kit studio",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "lint": "vp lint",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@orpc/server": "^1.13.7",
+    "@polar-sh/better-auth": "catalog:",
+    "@polar-sh/sdk": "^0.46.4",
+    "@react-email/components": "^1.0.9",
+    "better-auth": "catalog:",
+    "drizzle-orm": "1.0.0-beta.15-859cf75",
+    "hono": "^4.12.7",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-email": "^5.2.5",
+    "resend": "^6.9.3",
+    "uuid": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/uuid": "^11.0.0",
+    "better-sqlite3": "^12.6.2",
+    "drizzle-kit": "1.0.0-beta.15-859cf75",
+    "wrangler": "catalog:"
+  }
+}

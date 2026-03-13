@@ -1,0 +1,140 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@source "../../../packages/ui/src/components/";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --animate-skeleton: skeleton 2s -1s infinite linear;
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning: var(--warning);
+  --color-success-foreground: var(--success-foreground);
+  --color-success: var(--success);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-sidebar: var(--sidebar);
+  --color-ring: var(--ring);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-input: var(--input);
+  --color-info-foreground: var(--info-foreground);
+  --color-info: var(--info);
+  --color-foreground: var(--foreground);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive: var(--destructive);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-background: var(--background);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+
+  @keyframes skeleton {
+    to {
+      background-position: -200% 0;
+    }
+  }
+}
+
+:root {
+  --accent: --alpha(var(--color-black) / 4%);
+  --accent-foreground: var(--color-zinc-900);
+  --background: #fafafa;
+  --border: --alpha(var(--color-black) / 10%);
+  --card: var(--color-white);
+  --card-foreground: var(--color-zinc-900);
+  --destructive: var(--color-red-500);
+  --destructive-foreground: var(--color-red-700);
+  --foreground: var(--color-zinc-900);
+  --info: var(--color-blue-500);
+  --info-foreground: var(--color-blue-700);
+  --input: --alpha(var(--color-black) / 10%);
+  --muted: --alpha(var(--color-black) / 4%);
+  --muted-foreground: var(--color-zinc-600);
+  --popover: var(--color-white);
+  --popover-foreground: var(--color-zinc-900);
+  --primary: var(--color-zinc-800);
+  --primary-foreground: var(--color-zinc-50);
+  --ring: var(--color-zinc-400);
+  --secondary: --alpha(var(--color-black) / 4%);
+  --secondary-foreground: var(--color-zinc-900);
+  /*--sidebar: #fafafa;*/
+  --success: var(--color-emerald-500);
+  --success-foreground: var(--color-emerald-700);
+  --warning: var(--color-amber-500);
+  --warning-foreground: var(--color-amber-700);
+}
+
+.dark {
+  --accent: --alpha(var(--color-white) / 8%);
+  --accent-foreground: var(--color-zinc-100);
+  --background: var(--color-zinc-950);
+  --border: --alpha(var(--color-white) / 7%);
+  --card: color-mix(in srgb, var(--color-zinc-900) 80%, var(--color-zinc-950));
+  --card-foreground: var(--color-zinc-100);
+  --destructive: var(--color-red-500);
+  --destructive-foreground: var(--color-red-400);
+  --foreground: var(--color-zinc-100);
+  --info: var(--color-blue-500);
+  --info-foreground: var(--color-blue-400);
+  --input: --alpha(var(--color-white) / 12%);
+  --muted: --alpha(var(--color-white) / 8%);
+  --muted-foreground: var(--color-zinc-400);
+  --popover: var(--color-zinc-900);
+  --popover-foreground: var(--color-zinc-100);
+  --primary: var(--color-zinc-100);
+  --primary-foreground: var(--color-zinc-900);
+  --ring: var(--color-zinc-500);
+  --secondary: --alpha(var(--color-white) / 8%);
+  --secondary-foreground: var(--color-zinc-100);
+  /*--sidebar: var(--color-zinc-950);*/
+  --success: var(--color-emerald-500);
+  --success-foreground: var(--color-emerald-400);
+  --warning: var(--color-amber-500);
+  --warning-foreground: var(--color-amber-400);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Custom scrollbar styles for native scrollbars */
+  * {
+    /* Firefox/Zen Browser */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--foreground) 20%, transparent) transparent;
+  }
+
+  /* Webkit browsers (Chrome, Edge, Safari) */
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--foreground) 20%, transparent);
+    border-radius: 9999px;
+    /* Add border to make the actual thumb thinner while keeping the hit area */
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--foreground) 30%, transparent);
+    background-clip: content-box;
+  }
+}

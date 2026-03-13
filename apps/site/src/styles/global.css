@@ -1,0 +1,75 @@
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap");
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Geist Pixel Square";
+  src: url("/fonts/GeistPixel-Square.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Pixel Grid";
+  src: url("/fonts/GeistPixel-Grid.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Pixel Circle";
+  src: url("/fonts/GeistPixel-Circle.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Pixel Triangle";
+  src: url("/fonts/GeistPixel-Triangle.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Pixel Line";
+  src: url("/fonts/GeistPixel-Line.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-pixel-square: "Geist Pixel Square", ui-monospace, monospace;
+  --font-pixel-grid: "Geist Pixel Grid", ui-monospace, monospace;
+  --font-pixel-circle: "Geist Pixel Circle", ui-monospace, monospace;
+  --font-pixel-triangle: "Geist Pixel Triangle", ui-monospace, monospace;
+  --font-pixel-line: "Geist Pixel Line", ui-monospace, monospace;
+}
+
+html {
+  font-family: var(--font-sans);
+  color: #fafafa;
+  background-color: #09090b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: #09090b;
+  min-height: 100vh;
+}
+
+::selection {
+  background-color: rgba(103, 232, 249, 0.3);
+  color: #ecfeff;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
