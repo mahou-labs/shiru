@@ -1,0 +1,157 @@
+name: Deploy Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: deploy-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+      site: ${{ steps.filter.outputs.site }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            docs:
+              - 'apps/docs/**'
+              - 'pnpm-lock.yaml'
+            site:
+              - 'apps/site/**'
+              - 'pnpm-lock.yaml'
+
+  deploy-docs-preview:
+    name: Deploy Docs Preview
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    outputs:
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+
+      - name: Build docs
+        run: pnpm run build
+        working-directory: apps/docs
+
+      - name: Deploy to Cloudflare Workers (Preview)
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/docs
+          command: versions upload
+
+  deploy-site-preview:
+    name: Deploy Site Preview
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
+    outputs:
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+
+      - name: Build site
+        run: pnpm run build
+        working-directory: apps/site
+        env:
+          PUBLIC_API_URL: ${{ vars.API_URL }}
+
+      - name: Deploy to Cloudflare Workers (Preview)
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/site
+          command: versions upload
+
+  comment-preview-urls:
+    name: Comment Preview URLs
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: [changes, deploy-docs-preview, deploy-site-preview]
+    if: always() && (needs.deploy-docs-preview.result == 'success' || needs.deploy-site-preview.result == 'success')
+    steps:
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: github-actions[bot]
+          body-includes: "## Preview Deployments"
+
+      - name: Build comment body
+        id: build-comment
+        run: |
+          BODY="## Preview Deployments"
+          BODY="$BODY"$'\n\n'"| App | URL |"
+          BODY="$BODY"$'\n'"| --- | --- |"
+
+          if [ "${{ needs.deploy-docs-preview.result }}" == "success" ]; then
+            BODY="$BODY"$'\n'"| Docs | ${{ needs.deploy-docs-preview.outputs.url }} |"
+          fi
+
+          if [ "${{ needs.deploy-site-preview.result }}" == "success" ]; then
+            BODY="$BODY"$'\n'"| Site | ${{ needs.deploy-site-preview.outputs.url }} |"
+          fi
+
+          BODY="$BODY"$'\n\n'"_Commit: \`${{ github.event.pull_request.head.sha }}\`_"
+
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.build-comment.outputs.body }}
+          edit-mode: replace

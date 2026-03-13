@@ -1,0 +1,24 @@
+{
+  "name": "docs",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port=3003",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "lint": "vp lint",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.38.1",
+    "astro": "catalog:",
+    "sharp": "^0.34.5",
+    "starlight-theme-rapide": "^0.5.2"
+  },
+  "devDependencies": {
+    "wrangler": "catalog:"
+  }
+}

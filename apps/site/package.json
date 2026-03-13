@@ -1,0 +1,28 @@
+{
+  "name": "site",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port=3002",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "lint": "vp lint",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check"
+  },
+  "dependencies": {
+    "@astrojs/react": "^5.0.0",
+    "@orpc/client": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "astro": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tailwindcss": "catalog:"
+  },
+  "devDependencies": {
+    "wrangler": "catalog:"
+  }
+}

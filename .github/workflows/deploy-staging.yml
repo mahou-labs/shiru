@@ -1,0 +1,216 @@
+name: Deploy Main
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-main-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  changes:
+    name: Detect Changes
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    outputs:
+      dashboard: ${{ steps.filter.outputs.dashboard }}
+      docs: ${{ steps.filter.outputs.docs }}
+      site: ${{ steps.filter.outputs.site }}
+      api: ${{ steps.filter.outputs.api }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            dashboard:
+              - 'apps/dashboard/**'
+              - 'packages/ui/**'
+              - 'pnpm-lock.yaml'
+            docs:
+              - 'apps/docs/**'
+              - 'pnpm-lock.yaml'
+            site:
+              - 'apps/site/**'
+              - 'pnpm-lock.yaml'
+            api:
+              - 'apps/api/**'
+              - 'pnpm-lock.yaml'
+
+  deploy-dashboard-staging:
+    name: Deploy Dashboard (Staging)
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: [ci, changes]
+    if: needs.changes.outputs.dashboard == 'true'
+    environment:
+      name: staging
+      url: ${{ vars.DASHBOARD_STAGING_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+
+      - name: Build dashboard
+        run: pnpm run build
+        working-directory: apps/dashboard
+        env:
+          VITE_API_URL: ${{ vars.API_STAGING_URL }}
+          VITE_POSTHOG_KEY: ${{ vars.POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/dashboard
+          environment: staging
+          config: wrangler.jsonc
+          command: deploy --name shiru-dashboard-staging
+
+  deploy-api:
+    name: Deploy API (Staging)
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: [ci, changes]
+    if: needs.changes.outputs.api == 'true'
+    environment:
+      name: staging
+      url: ${{ vars.API_STAGING_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+
+      - name: Build API
+        run: pnpm run build
+        working-directory: apps/api
+
+      - name: Apply D1 migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/api
+          environment: staging
+          command: d1 migrations apply shiru-db-staging
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/api
+          environment: staging
+          command: deploy -c wrangler.jsonc
+
+  deploy-docs:
+    name: Deploy Docs (Production)
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: [ci, changes]
+    if: needs.changes.outputs.docs == 'true'
+    environment:
+      name: production
+      url: ${{ vars.DOCS_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+
+      - name: Build docs
+        run: pnpm run build
+        working-directory: apps/docs
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/docs
+          command: deploy
+
+  deploy-site:
+    name: Deploy Site (Production)
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: [ci, changes]
+    if: needs.changes.outputs.site == 'true'
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+
+      - name: Build site
+        run: pnpm run build
+        working-directory: apps/site
+        env:
+          PUBLIC_API_URL: ${{ vars.API_URL }}
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/site
+          command: deploy

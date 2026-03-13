@@ -1,0 +1,63 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "shiru-api",
+  "compatibility_date": "2025-08-03",
+  "main": "./src/index.ts",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+    },
+  },
+  "vars": {
+    "ENVIRONMENT": "dev",
+    "DASHBOARD_URL": "http://localhost:3001",
+    "SITE_URL": "http://localhost:3002",
+    "BETTER_AUTH_URL": "http://localhost:3000",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "shiru-db",
+      "migrations_dir": "drizzle/migrations",
+      "preview_database_id": "56fc2b20-1607-4395-9f6b-5403c8f5000b",
+      "database_id": "8ff928e2-beb4-4a24-be2f-f75976822f94",
+    },
+  ],
+  "env": {
+    "staging": {
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "DASHBOARD_URL": "https://staging-dashboard.shiru.sh",
+        "SITE_URL": "https://shiru.sh",
+        "BETTER_AUTH_URL": "https://staging-api.shiru.sh",
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "shiru-db-staging",
+          "database_id": "2c92aeeb-7ff9-4b03-a001-dc7667e1b308",
+          "migrations_dir": "drizzle/migrations",
+        },
+      ],
+    },
+    "prod": {
+      "vars": {
+        "ENVIRONMENT": "production",
+        "DASHBOARD_URL": "https://dashboard.shiru.sh",
+        "SITE_URL": "https://shiru.sh",
+        "BETTER_AUTH_URL": "https://api.shiru.sh",
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "shiru-db-prod",
+          "database_id": "35ee7738-80ea-4e70-802c-301eaecb7bde",
+          "migrations_dir": "drizzle/migrations",
+        },
+      ],
+    },
+  },
+}
