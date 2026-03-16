@@ -13,6 +13,8 @@ jobs:
   ci:
     name: CI
     uses: ./.github/workflows/ci.yml
+    secrets:
+      NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
 
   changes:
     name: Detect Changes
@@ -63,7 +65,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: package.json
           cache: pnpm
 
       - name: Install dependencies
@@ -107,7 +109,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: package.json
           cache: pnpm
 
       - name: Install dependencies
@@ -155,7 +157,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: package.json
           cache: pnpm
 
       - name: Install dependencies
@@ -193,7 +195,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: package.json
           cache: pnpm
 
       - name: Install dependencies

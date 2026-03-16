@@ -7,9 +7,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "lint": "vp lint",
-    "format": "vp fmt",
-    "format:check": "vp fmt --check"
+    "check": "astro sync && vp check"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.0",

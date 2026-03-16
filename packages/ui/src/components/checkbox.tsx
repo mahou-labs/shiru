@@ -15,8 +15,8 @@ function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
       <CheckboxPrimitive.Indicator
         className="-inset-px absolute flex items-center justify-center rounded-[4px] text-primary-foreground data-unchecked:hidden data-checked:bg-primary data-indeterminate:text-foreground"
         data-slot="checkbox-indicator"
-        render={(props: React.HTMLAttributes<HTMLSpanElement>, state) => (
-          <span {...props}>
+        render={(indicatorProps: React.HTMLAttributes<HTMLSpanElement>, state) => (
+          <span {...indicatorProps}>
             {state.indeterminate ? (
               <svg
                 className="size-3"

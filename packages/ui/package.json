@@ -14,10 +14,7 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc -b",
-    "lint": "vp lint",
-    "format": "vp fmt",
-    "format:check": "vp fmt --check"
+    "check": "vp check"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

@@ -6,7 +6,6 @@
     "oxlint": {
       "initialization_options": {
         "settings": {
-          "configPath": ".oxlintrc.jsonc",
           "run": "onType"
         }
       }
@@ -14,7 +13,6 @@
     "oxfmt": {
       "initialization_options": {
         "settings": {
-          "fmt.configPath": ".oxfmtrc.jsonc",
           "run": "onSave"
         }
       }

@@ -24,7 +24,7 @@ export const getRouter = () => {
             children: "retry",
             onClick: () => {
               query.reset();
-              query.fetch();
+              void query.fetch();
             },
           },
         });

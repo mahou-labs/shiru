@@ -1,6 +1,4 @@
 import { Hono } from "hono";
-import { db } from "./utils/db";
-import { users } from "./schema/auth";
 import { createContext } from "./utils/context";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ResponseHeadersPlugin } from "@orpc/server/plugins";
@@ -45,7 +43,7 @@ app.use("/rpc/*", async (c, next) => {
   });
 
   if (matched) {
-    return c.newResponse(response.body as ReadableStream | null, response);
+    return c.newResponse(response.body, response);
   }
 
   await next();

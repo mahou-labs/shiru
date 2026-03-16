@@ -63,7 +63,7 @@ function RouteComponent() {
   const { data: orgInvites, isLoading: isInvitesPending } = useLiveQuery((q) =>
     q
       .from({ orgInvites: orgInvitesCollection })
-      .where(({ orgInvites }) => eq(orgInvites.status, "pending")),
+      .where(({ orgInvites: inv }) => eq(inv.status, "pending")),
   );
 
   const isPending = isOrgPending || isMembersPending || isInvitesPending;
@@ -147,6 +147,7 @@ function RouteComponent() {
         await queryClient.invalidateQueries(orpc.organization.getFullOrg.queryOptions());
         toastManager.add({ title: "Organization updated successfully", type: "success" });
       } catch (error) {
+        // oxlint-disable-next-line no-console
         console.error(error);
         toastManager.add({
           title: "Failed to update organization",
@@ -171,6 +172,7 @@ function RouteComponent() {
         toastManager.add({ title: "Organization deleted successfully", type: "success" });
         // Redirect will happen automatically when the organization is deleted
       } catch (error) {
+        // oxlint-disable-next-line no-console
         console.error(error);
         toastManager.add({
           title: "Failed to delete organization",
@@ -207,6 +209,7 @@ function RouteComponent() {
             });
           }
         } catch (error) {
+          // oxlint-disable-next-line no-console
           console.error("Slug check error:", error);
         }
       }, 500);
@@ -221,6 +224,7 @@ function RouteComponent() {
       await queryClient.invalidateQueries(orpc.organization.getMembers.queryOptions());
       toastManager.add({ title: "Member role updated", type: "success" });
     } catch (error) {
+      // oxlint-disable-next-line no-console
       console.error(error);
       toastManager.add({ title: "Failed to update member role", type: "error" });
     }
@@ -234,6 +238,7 @@ function RouteComponent() {
       toastManager.add({ title: "Member removed successfully", type: "success" });
       setMemberToDelete(null);
     } catch (error) {
+      // oxlint-disable-next-line no-console
       console.error(error);
       toastManager.add({ title: "Failed to remove member", type: "error" });
     }
@@ -246,6 +251,7 @@ function RouteComponent() {
       toastManager.add({ title: "Left organization successfully", type: "success" });
       // Redirect will happen automatically
     } catch (error) {
+      // oxlint-disable-next-line no-console
       console.error(error);
       toastManager.add({ title: "Failed to leave organization", type: "error" });
     }
@@ -447,7 +453,7 @@ function RouteComponent() {
           <Form
             onSubmit={(e) => {
               e.preventDefault();
-              inviteForm.handleSubmit();
+              void inviteForm.handleSubmit();
             }}
           >
             <DialogHeader>
@@ -466,7 +472,7 @@ function RouteComponent() {
                       value={field.state.value}
                     />
                     {field.state.meta.errors.map((error) => (
-                      <FieldError key={String(error)}>{String(error)}</FieldError>
+                      <FieldError key={error?.message}>{error?.message}</FieldError>
                     ))}
                   </Field>
                 )}
@@ -502,7 +508,7 @@ function RouteComponent() {
           <Form
             onSubmit={(e) => {
               e.preventDefault();
-              deleteForm.handleSubmit();
+              void deleteForm.handleSubmit();
             }}
           >
             <DialogHeader>
@@ -523,9 +529,6 @@ function RouteComponent() {
                       placeholder="Type organization name here"
                       value={field.state.value}
                     />
-                    {field.state.meta.errors.map((error) => (
-                      <FieldError key={String(error)}>{String(error)}</FieldError>
-                    ))}
                   </Field>
                 )}
               </deleteForm.Field>
@@ -689,7 +692,11 @@ function Member({
         {canChangeRole ? (
           <Select
             value={role}
-            onValueChange={(newRole) => onRoleUpdate(id, newRole as "admin" | "member")}
+            onValueChange={(newRole) => {
+              if (newRole === "admin" || newRole === "member") {
+                onRoleUpdate(id, newRole);
+              }
+            }}
           >
             <SelectTrigger className="w-24">
               <SelectValue />

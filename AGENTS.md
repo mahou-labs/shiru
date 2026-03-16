@@ -143,8 +143,13 @@ export const myTable = sqliteTable("my_table", {
   organizationId: text("organization_id")
     .notNull()
     .references(() => organization.id, { onDelete: "cascade" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()).$onUpdate(() => new Date()),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date())
+    .$onUpdate(() => new Date()),
 });
 ```
 
@@ -221,3 +226,21 @@ shiru/
 | Styling       | Tailwind v4 + CVA                |
 | Validation    | Zod v4                           |
 | Icons         | nucleo-ui-outline-duo-18         |
+
+<!-- intent-skills:start -->
+
+# Skill mappings - when working in these areas, load the linked skill file into context.
+
+skills:
+
+- task: "Vite+ dev workflow, builds, and CLI operations (vp dev, vp build, vp check)"
+  load: "node_modules/vite-plus/skills/vite-plus/SKILL.md"
+- task: "React live queries, data hooks (useLiveQuery, useLiveSuspenseQuery, useLiveInfiniteQuery)"
+  load: "apps/dashboard/node_modules/@tanstack/react-db/skills/react-db/SKILL.md"
+- task: "TanStack DB collections, optimistic mutations, query builder, and data sync"
+  load: "node_modules/.pnpm/@tanstack+db@0.5.33_typescript@5.9.3/node_modules/@tanstack/db/skills/db-core/SKILL.md"
+- task: "Devtools Vite plugin configuration (source inspection, console piping, editor integration)"
+  load: "apps/dashboard/node_modules/@tanstack/devtools-vite/skills/devtools-vite-plugin/SKILL.md"
+- task: "Devtools setup, plugin registration, and framework adapter configuration"
+load: "node*modules/.pnpm/@tanstack+react-devtools@0.10.0*@types+react-dom@19.2.3_@types+react@19.2.14__@types+re_41629928d1f9c9a97e80206fc73bcd51/node_modules/@tanstack/devtools/skills/devtools-app-setup/SKILL.md"
+<!-- intent-skills:end -->

@@ -36,7 +36,7 @@ function RouteComponent() {
   const handleTabChange = (value: string) => {
     const tab = tabs.find((t) => t.id === value);
     if (tab) {
-      navigate({ to: tab.to });
+      void navigate({ to: tab.to });
     }
   };
 

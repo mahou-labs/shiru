@@ -51,7 +51,8 @@ function InputGroupAddon({
       data-align={align}
       data-slot="input-group-addon"
       onMouseDown={(e) => {
-        const target = e.target as HTMLElement;
+        const target = e.target;
+        if (!(target instanceof HTMLElement)) return;
         const isInteractive = target.closest("button, a");
         if (isInteractive) return;
         e.preventDefault();

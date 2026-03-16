@@ -1,7 +1,6 @@
 import * as z from "zod";
 import { auth } from "../utils/auth";
 import { authedProcedure, protectedProcedure } from "../utils/orpc";
-import { log } from "@/utils/logger";
 import { ORPCError } from "@orpc/server";
 
 export const orgInviteRouter = {
@@ -18,7 +17,7 @@ export const orgInviteRouter = {
   create: protectedProcedure
     .input(
       z.object({
-        email: z.string().email(),
+        email: z.email(),
         role: z.enum(["admin", "member", "owner"]),
       }),
     )

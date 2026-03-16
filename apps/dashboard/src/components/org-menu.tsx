@@ -39,12 +39,7 @@ export function OrgMenu() {
     await setActiveOrganization({ organizationId: id });
   };
 
-  const plan = subscription?.plan?.toLowerCase();
-  const subscriptionLabel = plan?.includes("starter")
-    ? "Starter Plan"
-    : plan?.includes("growth")
-      ? "Growth Plan"
-      : "Free Trial";
+  const subscriptionLabel = subscription?.status === "active" ? "Active" : "Free Trial";
 
   if (isPending) {
     return (

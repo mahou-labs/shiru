@@ -9,10 +9,7 @@
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "lint": "vp lint",
-    "format": "vp fmt",
-    "format:check": "vp fmt --check",
-    "typecheck": "tsc -b"
+    "check": "vp check"
   },
   "dependencies": {
     "@orpc/server": "^1.13.7",
@@ -25,7 +22,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-email": "^5.2.5",
-    "resend": "^6.9.3",
+    "resend": "^6.9.4",
     "uuid": "catalog:",
     "zod": "catalog:"
   },

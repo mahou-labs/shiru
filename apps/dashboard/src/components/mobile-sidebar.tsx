@@ -16,7 +16,11 @@ export function MobileSidebar() {
 
   return (
     <Sheet open={isMobileOpen} onOpenChange={setMobileOpen}>
-      <SheetPopup side="left" showCloseButton={false} className="w-64 max-w-[calc(100%-3rem)] rounded-none before:rounded-none sm:before:rounded-none">
+      <SheetPopup
+        side="left"
+        showCloseButton={false}
+        className="w-64 max-w-[calc(100%-3rem)] rounded-none before:rounded-none sm:before:rounded-none"
+      >
         <div className="flex h-full flex-col gap-3 bg-sidebar p-4">
           <OrgMenu />
           <nav className="mt-3 flex flex-1 flex-col gap-1.5">

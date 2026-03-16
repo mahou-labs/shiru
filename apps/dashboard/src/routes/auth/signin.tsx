@@ -60,9 +60,7 @@ function RouteComponent() {
     <>
       <div className="mb-6">
         <h1 className="font-heading text-xl text-foreground">Welcome back</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Sign in to your account to continue.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Sign in to your account to continue.</p>
       </div>
 
       <form
@@ -128,7 +126,7 @@ function RouteComponent() {
                 checked={field.state.value}
                 id={field.name}
                 name={field.name}
-                onCheckedChange={(checked) => field.handleChange(checked as boolean)}
+                onCheckedChange={(checked) => field.handleChange(checked)}
               />
               <span className="text-muted-foreground">Remember me</span>
             </label>

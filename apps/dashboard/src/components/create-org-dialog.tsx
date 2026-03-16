@@ -99,7 +99,7 @@ export function CreateOrgDialog({
         <Form
           onSubmit={(e) => {
             e.preventDefault();
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
         >
           <DialogHeader>

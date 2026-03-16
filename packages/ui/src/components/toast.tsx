@@ -63,7 +63,10 @@ function Toasts({ position = "bottom-right" }: { position: ToastPosition }) {
         data-slot="toast-viewport"
       >
         {toasts.map((toast) => {
-          const Icon = toast.type ? TOAST_ICONS[toast.type as keyof typeof TOAST_ICONS] : null;
+          const Icon =
+            toast.type && toast.type in TOAST_ICONS
+              ? TOAST_ICONS[toast.type as keyof typeof TOAST_ICONS] // oxlint-disable-line no-unsafe-type-assertion
+              : null;
 
           return (
             <Toast.Root
@@ -168,8 +171,12 @@ function AnchoredToasts() {
     <Toast.Portal data-slot="toast-portal-anchored">
       <Toast.Viewport className="outline-0" data-slot="toast-viewport-anchored">
         {toasts.map((toast) => {
-          const Icon = toast.type ? TOAST_ICONS[toast.type as keyof typeof TOAST_ICONS] : null;
-          const tooltipStyle = (toast.data as { tooltipStyle?: boolean })?.tooltipStyle ?? false;
+          const Icon =
+            toast.type && toast.type in TOAST_ICONS
+              ? TOAST_ICONS[toast.type as keyof typeof TOAST_ICONS] // oxlint-disable-line no-unsafe-type-assertion
+              : null;
+          const toastData = toast.data as Record<string, unknown> | undefined; // oxlint-disable-line no-unsafe-type-assertion
+          const tooltipStyle = (toastData?.tooltipStyle as boolean | undefined) ?? false; // oxlint-disable-line no-unsafe-type-assertion
           const positionerProps = toast.positionerProps;
 
           if (!positionerProps?.anchor) {

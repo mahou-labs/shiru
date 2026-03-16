@@ -68,7 +68,7 @@ type SearchBarProps = {
 export function SearchBar({ isCollapsed }: SearchBarProps) {
   const [open, setOpen] = useState(false);
   const modifierKey = useModifierKey();
-  useHotkey("Mod+K", () => setOpen((open) => !open));
+  useHotkey("Mod+K", () => setOpen((prev) => !prev));
 
   function handleItemClick(_item: Item) {
     setOpen(false);

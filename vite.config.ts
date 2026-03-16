@@ -3,8 +3,8 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   lint: {
     options: {
-      typeCheck: false,
-      typeAware: false,
+      typeCheck: true,
+      typeAware: true,
     },
     ignorePatterns: ["**/*.gen.ts", "**/posthog.astro"],
     categories: {

@@ -57,9 +57,9 @@ function ResetPasswordRoute() {
               type: "success",
             });
           },
-          onError: (error) => {
+          onError: (err) => {
             toastManager.add({
-              title: error.error.message || "Failed to reset password",
+              title: err.error.message || "Failed to reset password",
               type: "error",
             });
           },
@@ -161,7 +161,9 @@ function ResetPasswordRoute() {
     <>
       <div className="mb-6">
         <h1 className="font-heading text-xl text-foreground">Reset your password</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Choose a new password for your account.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Choose a new password for your account.
+        </p>
       </div>
 
       <form
@@ -169,7 +171,7 @@ function ResetPasswordRoute() {
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          form.handleSubmit();
+          void form.handleSubmit();
         }}
       >
         <form.Field name="password">
@@ -185,8 +187,8 @@ function ResetPasswordRoute() {
                 type="password"
                 value={field.state.value}
               />
-              {field.state.meta.errors.map((error) => (
-                <FieldError key={error?.message}>{error?.message}</FieldError>
+              {field.state.meta.errors.map((fieldError) => (
+                <FieldError key={fieldError?.message}>{fieldError?.message}</FieldError>
               ))}
             </Field>
           )}
@@ -205,8 +207,8 @@ function ResetPasswordRoute() {
                 type="password"
                 value={field.state.value}
               />
-              {field.state.meta.errors.map((error) => (
-                <FieldError key={error?.message}>{error?.message}</FieldError>
+              {field.state.meta.errors.map((fieldError) => (
+                <FieldError key={fieldError?.message}>{fieldError?.message}</FieldError>
               ))}
             </Field>
           )}

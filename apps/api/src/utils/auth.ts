@@ -41,7 +41,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
-    sendResetPassword: async ({ user, url }) => {
+    sendResetPassword: async ({ user: _user, url: _url }) => {
       // void email.sendPasswordResetEmail({
       //   email: user.email,
       //   name: user.name,
@@ -162,7 +162,7 @@ export const auth = betterAuth({
     organization({
       allowUserToCreateOrganization: true,
       allowUserToJoinOrganization: true,
-      async sendInvitationEmail(data) {
+      async sendInvitationEmail(_data) {
         // await email.sendOrgInvite({
         //   email: data.email,
         //   invitedByUsername: data.inviter.user.name,

@@ -50,7 +50,7 @@ function OnboardingComponent() {
           type: "success",
         });
         await queryClient.fetchQuery(orpc.user.getSession.queryOptions());
-        navigate({ to: "/" });
+        void navigate({ to: "/" });
       } else {
         toastManager.add({
           title: "Failed to create organization",
@@ -83,7 +83,7 @@ function OnboardingComponent() {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              form.handleSubmit();
+              void form.handleSubmit();
             }}
           >
             <form.Field name="name">

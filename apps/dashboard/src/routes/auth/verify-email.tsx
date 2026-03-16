@@ -59,7 +59,7 @@ function VerifyEmailRoute() {
       }
     };
 
-    verifyToken();
+    void verifyToken();
   }, [token, error]);
 
   const handleResendVerification = async () => {
@@ -69,7 +69,7 @@ function VerifyEmailRoute() {
         title: "Please sign in to resend verification email",
         type: "error",
       });
-      navigate({ to: "/auth/signin" });
+      void navigate({ to: "/auth/signin" });
       return;
     }
 

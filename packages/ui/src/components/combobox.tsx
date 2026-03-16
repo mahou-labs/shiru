@@ -14,17 +14,13 @@ const ComboboxContext = React.createContext<{
   multiple: false,
 });
 
-type ComboboxRootProps<ItemValue, Multiple extends boolean | undefined> = Parameters<
-  typeof ComboboxPrimitive.Root<ItemValue, Multiple>
->[0];
-
 function Combobox<ItemValue, Multiple extends boolean | undefined = false>(
   props: ComboboxPrimitive.Root.Props<ItemValue, Multiple>,
 ) {
   const chipsRef = React.useRef<HTMLDivElement | null>(null);
   return (
     <ComboboxContext.Provider value={{ chipsRef, multiple: !!props.multiple }}>
-      <ComboboxPrimitive.Root {...(props as ComboboxRootProps<ItemValue, Multiple>)} />
+      <ComboboxPrimitive.Root {...props} />
     </ComboboxContext.Provider>
   );
 }
@@ -41,7 +37,7 @@ function ComboboxInput({
   size?: "sm" | "default" | "lg" | number;
 }) {
   const { multiple } = React.useContext(ComboboxContext);
-  const sizeValue = (size ?? "default") as "sm" | "default" | "lg" | number;
+  const sizeValue = size ?? "default";
 
   // multiple mode
   if (multiple) {

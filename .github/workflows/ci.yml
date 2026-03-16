@@ -5,84 +5,35 @@ on:
     branches:
       - main
   workflow_call:
+    secrets:
+      NUCLEO_LICENSE_KEY:
+        required: true
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # TODO: re-enable these checks once codebase stabilizes
-  # typecheck:
-  #   name: Type Check
-  #   runs-on: blacksmith-2vcpu-ubuntu-2404-arm
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-
-  #     - name: Setup pnpm
-  #       uses: pnpm/action-setup@v4
-
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 22
-  #         cache: pnpm
-
-  #     - name: Install dependencies
-  #       run: pnpm install --frozen-lockfile
-  #       env:
-          # NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
-
-  #     - name: Type check
-  #       run: pnpm run typecheck
-
-  # lint:
-  #   name: Lint
-  #   runs-on: blacksmith-2vcpu-ubuntu-2404-arm
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-
-  #     - name: Setup pnpm
-  #       uses: pnpm/action-setup@v4
-
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 22
-  #         cache: pnpm
-
-  #     - name: Install dependencies
-  #       run: pnpm install --frozen-lockfile
-
-  #     - name: Lint
-  #       run: pnpm run lint
-
-  # format:
-  #   name: Format Check
-  #   runs-on: blacksmith-2vcpu-ubuntu-2404-arm
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-
-  #     - name: Setup pnpm
-  #       uses: pnpm/action-setup@v4
-
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 22
-  #         cache: pnpm
-
-  #     - name: Install dependencies
-  #       run: pnpm install --frozen-lockfile
-
-  #     - name: Check formatting
-  #       run: pnpm run format:check
-
-  # Placeholder job so the workflow file remains valid
-  noop:
-    name: CI (disabled)
-    runs-on: ubuntu-latest
+  check:
+    name: Check
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
     steps:
-      - run: echo "CI checks temporarily disabled"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+
+      - name: Check
+        run: pnpm check

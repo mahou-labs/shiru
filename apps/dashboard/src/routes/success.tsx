@@ -11,7 +11,7 @@ export const Route = createFileRoute("/success")({
   component: SuccessComponent,
   validateSearch: (search: Record<string, unknown>): SuccessSearch => {
     return {
-      checkout_id: search.checkout_id as string | undefined,
+      checkout_id: typeof search.checkout_id === "string" ? search.checkout_id : undefined,
     };
   },
 });
@@ -26,7 +26,7 @@ function SuccessComponent() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          navigate({ to: "/" });
+          void navigate({ to: "/" });
           return 0;
         }
         return prev - 1;
