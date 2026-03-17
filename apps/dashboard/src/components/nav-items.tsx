@@ -1,5 +1,9 @@
 import type { ToOptions } from "@tanstack/react-router";
-import { IconGearOutlineDuo18, IconHouse2OutlineDuo18 } from "nucleo-ui-outline-duo-18";
+import {
+  IconBookOpen2OutlineDuo18,
+  IconGearOutlineDuo18,
+  IconHouse2OutlineDuo18,
+} from "nucleo-ui-outline-duo-18";
 
 export type NavItem = {
   icon: React.FC<{ className?: string }>;
@@ -16,6 +20,12 @@ export const navItems: NavItem[] = [
     label: "Dashboard",
     href: "/",
     matchPath: (pathname) => pathname === "/",
+  },
+  {
+    icon: IconBookOpen2OutlineDuo18,
+    label: "Editor",
+    href: "/editor",
+    matchPath: (pathname) => pathname.startsWith("/editor"),
   },
   {
     icon: IconGearOutlineDuo18,
