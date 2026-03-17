@@ -17,7 +17,10 @@ import { scan } from "react-scan";
 import { formDevtoolsPlugin } from "@tanstack/react-form-devtools";
 // import { hotkeysDevtoolsPlugin } from "@tanstack/react-hotkeys-devtools";
 import { ThemeProvider } from "better-themes";
-import { IconCircleXmarkOutlineDuo18 } from "nucleo-ui-outline-duo-18";
+import {
+  IconAlertWarningOutlineDuo18,
+  IconCircleXmarkOutlineDuo18,
+} from "nucleo-ui-outline-duo-18";
 import PostHogProvider from "@/contexts/posthog-context";
 
 type RouterAppContext = {
@@ -43,8 +46,30 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
   component: RootDocument,
   notFoundComponent: NotFoundPage,
-  errorComponent: (e) => <pre>{JSON.stringify(e, null, 2)}</pre>,
+  errorComponent: ErrorPage,
 });
+
+function ErrorPage({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <div className="flex h-svh items-center justify-center">
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <IconAlertWarningOutlineDuo18 />
+          </EmptyMedia>
+          <EmptyTitle>Something went wrong</EmptyTitle>
+          <EmptyDescription>{error.message || "An unexpected error occurred."}</EmptyDescription>
+        </EmptyHeader>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={reset}>
+            Try again
+          </Button>
+          <Button render={<Link to="/" />}>Go to Dashboard</Button>
+        </div>
+      </Empty>
+    </div>
+  );
+}
 
 function NotFoundPage() {
   return (
@@ -77,7 +102,7 @@ function RootDocument() {
       <head>
         <HeadContent />
       </head>
-      <body className="h-svh">
+      <body className="h-svh antialiased">
         <PostHogProvider>
           <ThemeProvider attribute="class" disableTransitionOnChange>
             <ToastProvider>
