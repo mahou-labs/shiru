@@ -10,8 +10,8 @@ import {
   useState,
 } from "react";
 import {
-  IconAlertInfoOutlineDuo18,
   IconBlockquoteOutlineDuo18,
+  IconCircleInfoOutlineDuo18,
   IconBulletListOutlineDuo18,
   IconCheckListOutlineDuo18,
   IconDividerXOutlineDuo18,
@@ -96,11 +96,11 @@ const commands: CommandItem[] = [
     },
   },
   {
-    title: "Callout",
-    description: "Info, warning, or tip block",
-    icon: IconAlertInfoOutlineDuo18,
+    title: "Aside",
+    description: "Note, tip, caution, or danger block",
+    icon: IconCircleInfoOutlineDuo18,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setCallout({ type: "info" }).run();
+      editor.chain().focus().deleteRange(range).setAside({ variant: "note" }).run();
     },
   },
   {

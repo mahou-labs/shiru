@@ -357,35 +357,39 @@
   color: var(--muted-foreground);
 }
 
-/* Callout styles */
-.callout {
+/* Aside styles (Starlight note/tip/caution/danger) */
+.aside {
   border-radius: var(--radius);
-  border-left: 3px solid;
-  padding: 0.75rem 1rem;
+  border-left: 0.25rem solid;
+  padding: 1rem;
   margin: 1rem 0;
 }
 
-.callout-info {
-  border-left-color: var(--info);
+.aside-note {
+  --aside-accent: var(--info);
+  border-left-color: var(--aside-accent);
   background-color: color-mix(in srgb, var(--info) 6%, transparent);
 }
 
-.callout-warning {
-  border-left-color: var(--warning);
-  background-color: color-mix(in srgb, var(--warning) 6%, transparent);
-}
-
-.callout-danger {
-  border-left-color: var(--destructive);
-  background-color: color-mix(in srgb, var(--destructive) 6%, transparent);
-}
-
-.callout-tip {
-  border-left-color: var(--success);
+.aside-tip {
+  --aside-accent: var(--success);
+  border-left-color: var(--aside-accent);
   background-color: color-mix(in srgb, var(--success) 6%, transparent);
 }
 
-.callout-header {
+.aside-caution {
+  --aside-accent: var(--warning);
+  border-left-color: var(--aside-accent);
+  background-color: color-mix(in srgb, var(--warning) 6%, transparent);
+}
+
+.aside-danger {
+  --aside-accent: var(--destructive);
+  border-left-color: var(--aside-accent);
+  background-color: color-mix(in srgb, var(--destructive) 6%, transparent);
+}
+
+.aside-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -393,27 +397,25 @@
   user-select: none;
 }
 
-.callout-header-icon {
+.aside-header-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.aside-header-icon {
   flex-shrink: 0;
+  color: var(--aside-accent);
 }
 
-.callout-info .callout-header-icon {
-  color: var(--info-foreground);
+.aside-header-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--aside-accent);
 }
 
-.callout-warning .callout-header-icon {
-  color: var(--warning-foreground);
-}
-
-.callout-danger .callout-header-icon {
-  color: var(--destructive-foreground);
-}
-
-.callout-tip .callout-header-icon {
-  color: var(--success-foreground);
-}
-
-.callout-type-buttons {
+.aside-type-buttons {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -421,11 +423,11 @@
   transition: opacity 150ms;
 }
 
-.callout:hover .callout-type-buttons {
+.aside:hover .aside-type-buttons {
   opacity: 1;
 }
 
-.callout-type-button {
+.aside-type-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -442,20 +444,20 @@
     color 100ms;
 }
 
-.callout-type-button:hover {
+.aside-type-button:hover {
   background-color: var(--accent);
   color: var(--foreground);
 }
 
-.callout-type-button.is-active {
+.aside-type-button.is-active {
   background-color: var(--accent);
   color: var(--foreground);
 }
 
-.callout-content {
+.aside-content {
   min-height: 1.5rem;
 }
 
-.callout-content p:last-child {
+.aside-content p:last-child {
   margin-bottom: 0;
 }

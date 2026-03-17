@@ -10,10 +10,13 @@ import Typography from "@tiptap/extension-typography";
 import Underline from "@tiptap/extension-underline";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { common, createLowlight } from "lowlight";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+
+import { Button } from "@shiru/ui/button";
+import { toStarlightMDX } from "./utils/mdx";
 
 import { EditorBubbleMenu } from "./editor-bubble-menu";
-import { Callout } from "./extensions/callout-extension";
+import { Aside } from "./extensions/aside-extension";
 import { SlashCommand } from "./slash-command";
 import "./editor.css";
 
@@ -51,18 +54,22 @@ function greet(name: string): string {
 
 > This is a blockquote. It can contain **formatted text** and multiple paragraphs.
 
-## Callouts
+## Asides
 
-:::callout{type="info"}
-This is an **info** callout. Use it to highlight important information.
+:::note
+This is a **note** aside. Use it to highlight important information.
 :::
 
-:::callout{type="warning"}
-This is a **warning** callout. Use it to warn users about potential issues.
+:::tip
+This is a **tip** aside. Use it to share helpful advice.
 :::
 
-:::callout{type="tip"}
-This is a **tip** callout. Use it to share helpful advice.
+:::caution
+This is a **caution** aside. Use it to warn users about potential issues.
+:::
+
+:::danger
+This is a **danger** aside. Use it for critical warnings.
 :::
 
 `;
@@ -103,7 +110,7 @@ export function Editor() {
       CodeBlockLowlight.configure({
         lowlight,
       }),
-      Callout,
+      Aside,
       SlashCommand,
     ],
     content: initialContent,
@@ -116,6 +123,17 @@ export function Editor() {
   });
 
   const providerValue = useMemo(() => ({ editor }), [editor]);
+  const [mdxOutput, setMdxOutput] = useState<string | null>(null);
+
+  const handleExportMDX = useCallback(() => {
+    if (!editor) return;
+    const markdown = editor.getMarkdown();
+    const mdx = toStarlightMDX(markdown, {
+      title: "Test Page",
+      description: "Generated from the editor",
+    });
+    setMdxOutput(mdx);
+  }, [editor]);
 
   if (!editor) {
     return (
@@ -134,6 +152,24 @@ export function Editor() {
           </div>
         </div>
         <EditorBubbleMenu editor={editor} />
+
+        {/* Debug bar for testing MDX export */}
+        <div className="flex items-center gap-2 border-t border-border bg-muted/50 px-4 py-2">
+          <Button size="sm" variant="outline" onClick={handleExportMDX}>
+            Export as MDX
+          </Button>
+          {mdxOutput && (
+            <Button size="sm" variant="ghost" onClick={() => setMdxOutput(null)}>
+              Close
+            </Button>
+          )}
+        </div>
+
+        {mdxOutput && (
+          <div className="max-h-64 overflow-auto border-t border-border bg-muted p-4">
+            <pre className="whitespace-pre-wrap font-mono text-xs text-foreground">{mdxOutput}</pre>
+          </div>
+        )}
       </div>
     </EditorContext.Provider>
   );
