@@ -7,6 +7,7 @@ import { cors } from "hono/cors";
 import { env } from "cloudflare:workers";
 import { logger } from "hono/logger";
 import { auth } from "./utils/auth";
+import { rateLimiter } from "hono-rate-limiter";
 
 export type Env = { Bindings: CloudflareBindings };
 const app = new Hono<Env>();
@@ -23,6 +24,14 @@ app.use(
     credentials: true,
   }),
 );
+
+app.use(
+  rateLimiter({
+    binding: env.RATE_LIMITER,
+    keyGenerator: (c) => c.req.header("cf-connecting-ip") ?? "",
+  }),
+);
+
 app.use(logger());
 
 app.get("/health", (c) => {
