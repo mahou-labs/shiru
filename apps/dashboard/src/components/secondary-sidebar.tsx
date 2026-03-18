@@ -21,8 +21,8 @@ export function SecondarySidebarHost() {
   return (
     <div
       className={cn(
-        "relative hidden h-full shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:block",
-        !isSecondaryCollapsed && "border-r border-border",
+        "relative hidden h-full shrink-0 overflow-hidden border-r border-border transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:block",
+        isSecondaryCollapsed && "border-r-transparent",
       )}
       style={{ width: isSecondaryCollapsed ? 0 : width }}
     >
@@ -31,7 +31,7 @@ export function SecondarySidebarHost() {
         aria-label={`${secondarySidebar.title} sidebar`}
         className={cn(
           "absolute inset-y-0 left-0 flex h-full flex-col bg-background/95 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-          isSecondaryCollapsed ? "pointer-events-none -translate-x-4 opacity-0" : "translate-x-0 opacity-100",
+          isSecondaryCollapsed ? "pointer-events-none -translate-x-3 opacity-0" : "translate-x-0 opacity-100",
         )}
         style={{ width }}
       >
