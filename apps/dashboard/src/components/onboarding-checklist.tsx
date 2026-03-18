@@ -8,7 +8,7 @@ import {
   IconXmarkOutlineDuo18,
   IconChevronRightOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/utils/cn";
 import { orpc } from "@/utils/orpc-client";
 
@@ -76,12 +76,12 @@ export function OnboardingChecklist({ collapsed }: { collapsed?: boolean }) {
     return () => window.removeEventListener(ONBOARDING_RESET_EVENT, handler);
   }, [orgId]);
 
-  const handleDismiss = useCallback(() => {
+  function handleDismiss() {
     if (orgId) {
       setDismissed(orgId, true);
       setDismissedState(true);
     }
-  }, [orgId]);
+  }
 
   // Don't render if loading, no data, all complete, or dismissed
   if (isLoading || !status || status.allComplete || dismissed) {

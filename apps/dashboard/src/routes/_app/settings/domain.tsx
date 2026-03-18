@@ -8,7 +8,7 @@ import {
   IconTrashOutlineDuo18,
   IconArrowRotateClockwiseOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { Button } from "@shiru/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shiru/ui/card";
@@ -55,18 +55,27 @@ function DomainSettingsRoute() {
   // Auto-poll when domain is pending
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const refreshStatus = useCallback(async () => {
+  async function refreshStatus() {
     try {
       await checkStatus({});
       await queryClient.invalidateQueries(orpc.domain.getDomain.queryOptions());
     } catch {
       // Silently handle polling errors
     }
-  }, [checkStatus, queryClient]);
+  }
 
   useEffect(() => {
+    async function refreshPendingDomainStatus() {
+      try {
+        await checkStatus({});
+        await queryClient.invalidateQueries(orpc.domain.getDomain.queryOptions());
+      } catch {
+        // Silently handle polling errors
+      }
+    }
+
     if (domain && domain.status === "pending_verification") {
-      pollIntervalRef.current = setInterval(refreshStatus, 30_000);
+      pollIntervalRef.current = setInterval(refreshPendingDomainStatus, 30_000);
       return () => {
         if (pollIntervalRef.current) {
           clearInterval(pollIntervalRef.current);
@@ -76,7 +85,7 @@ function DomainSettingsRoute() {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
     }
-  }, [domain, refreshStatus]);
+  }, [checkStatus, domain, queryClient]);
 
   const form = useForm({
     defaultValues: { hostname: "" },

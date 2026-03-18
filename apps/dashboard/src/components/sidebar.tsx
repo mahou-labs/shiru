@@ -31,7 +31,7 @@ export function Sidebar() {
         isCollapsed ? "w-16" : "w-64",
       )}
     >
-      <OrgMenu />
+      <OrgMenu collapsed={isCollapsed} />
       <OnboardingChecklist collapsed={isCollapsed} />
       <nav className="mt-3 flex flex-1 flex-col gap-1.5">
         <TooltipProvider delay={0} timeout={500}>

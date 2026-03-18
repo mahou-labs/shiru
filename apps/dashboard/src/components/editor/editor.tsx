@@ -10,7 +10,7 @@ import Typography from "@tiptap/extension-typography";
 import Underline from "@tiptap/extension-underline";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { common, createLowlight } from "lowlight";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@shiru/ui/button";
 import { toStarlightMDX } from "./utils/mdx";
@@ -122,10 +122,9 @@ export function Editor() {
     },
   });
 
-  const providerValue = useMemo(() => ({ editor }), [editor]);
   const [mdxOutput, setMdxOutput] = useState<string | null>(null);
 
-  const handleExportMDX = useCallback(() => {
+  function handleExportMDX() {
     if (!editor) return;
     const markdown = editor.getMarkdown();
     const mdx = toStarlightMDX(markdown, {
@@ -133,7 +132,7 @@ export function Editor() {
       description: "Generated from the editor",
     });
     setMdxOutput(mdx);
-  }, [editor]);
+  }
 
   if (!editor) {
     return (
@@ -144,7 +143,7 @@ export function Editor() {
   }
 
   return (
-    <EditorContext.Provider value={providerValue}>
+    <EditorContext.Provider value={{ editor }}>
       <div className="tiptap-editor flex flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[65ch] px-6 py-8 sm:px-8 sm:py-12">

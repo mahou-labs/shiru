@@ -2,7 +2,6 @@ import { Extension, type Editor, ReactRenderer } from "@tiptap/react";
 import Suggestion, { type SuggestionOptions, type SuggestionProps } from "@tiptap/suggestion";
 import {
   forwardRef,
-  useCallback,
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
@@ -160,15 +159,12 @@ const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandListProps>(
       }
     }, [selectedIndex]);
 
-    const selectItem = useCallback(
-      (index: number) => {
-        const item = props.items[index];
-        if (item) {
-          props.command(item);
-        }
-      },
-      [props],
-    );
+    function selectItem(index: number) {
+      const item = props.items[index];
+      if (item) {
+        props.command(item);
+      }
+    }
 
     useImperativeHandle(ref, () => ({
       onKeyDown: ({ event }: { event: KeyboardEvent }) => {
