@@ -12,6 +12,7 @@ import type { ToOptions } from "@tanstack/react-router";
 import { Link, useLocation } from "@tanstack/react-router";
 import { IconSidebarLeftOutlineDuo18 } from "nucleo-ui-outline-duo-18";
 import { navItems } from "./nav-items";
+import { OnboardingChecklist } from "./onboarding-checklist";
 import { OrgMenu } from "./org-menu";
 
 const tooltipHandle = TooltipCreateHandle<React.ComponentType>();
@@ -31,6 +32,7 @@ export function Sidebar() {
       )}
     >
       <OrgMenu />
+      <OnboardingChecklist collapsed={isCollapsed} />
       <nav className="mt-3 flex flex-1 flex-col gap-1.5">
         <TooltipProvider delay={0} timeout={500}>
           {topItems.map((item) => (

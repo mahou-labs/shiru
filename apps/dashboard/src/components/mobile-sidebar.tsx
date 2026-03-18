@@ -5,6 +5,7 @@ import { Sheet, SheetPopup } from "@shiru/ui/sheet";
 import { Link, useLocation } from "@tanstack/react-router";
 import type { ToOptions } from "@tanstack/react-router";
 import { navItems } from "./nav-items";
+import { OnboardingChecklist } from "./onboarding-checklist";
 import { OrgMenu } from "./org-menu";
 
 export function MobileSidebar() {
@@ -23,6 +24,7 @@ export function MobileSidebar() {
       >
         <div className="flex h-full flex-col gap-3 bg-sidebar p-4">
           <OrgMenu />
+          <OnboardingChecklist />
           <nav className="mt-3 flex flex-1 flex-col gap-1.5">
             {topItems.map((item) => (
               <MobileNavItem

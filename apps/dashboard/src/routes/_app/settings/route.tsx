@@ -28,6 +28,7 @@ function RouteComponent() {
 
   const tabs = [
     { id: "overview", label: "Overview", to: "/settings" },
+    { id: "domain", label: "Domain", to: "/settings/domain" },
     { id: "organization", label: "Organization", to: "/settings/organization" },
     { id: "account", label: "Account", to: "/settings/account" },
   ];

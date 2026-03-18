@@ -1,5 +1,7 @@
 import type { RouterClient } from "@orpc/server";
 import { protectedProcedure, publicProcedure } from "../utils/orpc";
+import { domainRouter } from "./domain-router";
+import { onboardingRouter } from "./onboarding-router";
 import { orgInviteRouter } from "./orgInvites";
 import { organizationRouter } from "./organization";
 // import { uploadRouter } from "./upload";
@@ -16,6 +18,8 @@ export const appRouter = {
       user: context.user,
     };
   }),
+  domain: domainRouter,
+  onboarding: onboardingRouter,
   organization: organizationRouter,
   orgInvite: orgInviteRouter,
   // upload: uploadRouter,
