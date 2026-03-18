@@ -20,6 +20,7 @@ import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-passw
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AppOnboardingRouteImport } from './routes/_app/onboarding'
 import { Route as AppInviteRouteImport } from './routes/_app/invite'
+import { Route as AppEditorRouteImport } from './routes/_app/editor'
 import { Route as AppSettingsRouteRouteImport } from './routes/_app/settings/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppSettingsOrganizationRouteImport } from './routes/_app/settings/organization'
@@ -79,6 +80,11 @@ const AppInviteRoute = AppInviteRouteImport.update({
   path: '/invite',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppEditorRoute = AppEditorRouteImport.update({
+  id: '/editor',
+  path: '/editor',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/success': typeof SuccessRoute
   '/settings': typeof AppSettingsRouteRouteWithChildren
+  '/editor': typeof AppEditorRoute
   '/invite': typeof AppInviteRoute
   '/onboarding': typeof AppOnboardingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/success': typeof SuccessRoute
+  '/editor': typeof AppEditorRoute
   '/invite': typeof AppInviteRoute
   '/onboarding': typeof AppOnboardingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteRouteWithChildren
   '/success': typeof SuccessRoute
   '/_app/settings': typeof AppSettingsRouteRouteWithChildren
+  '/_app/editor': typeof AppEditorRoute
   '/_app/invite': typeof AppInviteRoute
   '/_app/onboarding': typeof AppOnboardingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/success'
     | '/settings'
+    | '/editor'
     | '/invite'
     | '/onboarding'
     | '/auth/forgot-password'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/success'
+    | '/editor'
     | '/invite'
     | '/onboarding'
     | '/auth/forgot-password'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/success'
     | '/_app/settings'
+    | '/_app/editor'
     | '/_app/invite'
     | '/_app/onboarding'
     | '/auth/forgot-password'
@@ -285,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInviteRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/editor': {
+      id: '/_app/editor'
+      path: '/editor'
+      fullPath: '/editor'
+      preLoaderRoute: typeof AppEditorRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/settings': {
       id: '/_app/settings'
       path: '/settings'
@@ -333,6 +352,7 @@ const AppSettingsRouteRouteWithChildren =
 
 interface AppRouteRouteChildren {
   AppSettingsRouteRoute: typeof AppSettingsRouteRouteWithChildren
+  AppEditorRoute: typeof AppEditorRoute
   AppInviteRoute: typeof AppInviteRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -340,6 +360,7 @@ interface AppRouteRouteChildren {
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSettingsRouteRoute: AppSettingsRouteRouteWithChildren,
+  AppEditorRoute: AppEditorRoute,
   AppInviteRoute: AppInviteRoute,
   AppOnboardingRoute: AppOnboardingRoute,
   AppIndexRoute: AppIndexRoute,

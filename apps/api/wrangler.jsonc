@@ -26,6 +26,16 @@
       "database_id": "8ff928e2-beb4-4a24-be2f-f75976822f94",
     },
   ],
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 200,
+        "period": 60,
+      },
+    },
+  ],
   "env": {
     "staging": {
       "vars": {
@@ -34,6 +44,16 @@
         "SITE_URL": "https://shiru.sh",
         "BETTER_AUTH_URL": "https://staging-api.shiru.sh",
       },
+      "ratelimits": [
+        {
+          "name": "RATE_LIMITER",
+          "namespace_id": "1002",
+          "simple": {
+            "limit": 200,
+            "period": 60,
+          },
+        },
+      ],
       "d1_databases": [
         {
           "binding": "DB",
@@ -50,6 +70,16 @@
         "SITE_URL": "https://shiru.sh",
         "BETTER_AUTH_URL": "https://api.shiru.sh",
       },
+      "ratelimits": [
+        {
+          "name": "RATE_LIMITER",
+          "namespace_id": "1003",
+          "simple": {
+            "limit": 200,
+            "period": 60,
+          },
+        },
+      ],
       "d1_databases": [
         {
           "binding": "DB",

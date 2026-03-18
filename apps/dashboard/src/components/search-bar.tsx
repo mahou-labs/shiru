@@ -1,4 +1,4 @@
-import { useModifierKey } from "@/hooks/use-modifier-key";
+import { useMetaKey } from "@/hooks/use-modifier-key";
 import { cn } from "@/utils/cn";
 import { Button } from "@shiru/ui/button";
 import {
@@ -67,7 +67,7 @@ type SearchBarProps = {
 
 export function SearchBar({ isCollapsed }: SearchBarProps) {
   const [open, setOpen] = useState(false);
-  const modifierKey = useModifierKey();
+  const metaKey = useMetaKey();
   useHotkey("Mod+K", () => setOpen((prev) => !prev));
 
   function handleItemClick(_item: Item) {
@@ -83,7 +83,7 @@ export function SearchBar({ isCollapsed }: SearchBarProps) {
               render={
                 <Button
                   variant="ghost"
-                  className="h-8 w-full justify-start gap-3 px-2 text-muted-foreground outline-solid outline outline-border hover:bg-transparent"
+                  className="h-8 w-full justify-start gap-3 px-2 text-muted-foreground border border-sidebar-border bg-background hover:bg-background"
                 />
               }
             >
@@ -96,7 +96,7 @@ export function SearchBar({ isCollapsed }: SearchBarProps) {
               >
                 <span>Search</span>
                 <KbdGroup>
-                  <Kbd>{modifierKey}</Kbd>
+                  <Kbd>{metaKey}</Kbd>
                   <Kbd>K</Kbd>
                 </KbdGroup>
               </div>

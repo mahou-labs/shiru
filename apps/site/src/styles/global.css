@@ -1,71 +1,47 @@
 @import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap");
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Geist Pixel Square";
-  src: url("/fonts/GeistPixel-Square.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Geist Pixel Grid";
-  src: url("/fonts/GeistPixel-Grid.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Geist Pixel Circle";
-  src: url("/fonts/GeistPixel-Circle.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Geist Pixel Triangle";
-  src: url("/fonts/GeistPixel-Triangle.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Geist Pixel Line";
-  src: url("/fonts/GeistPixel-Line.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-border: var(--border);
+  --font-mono: var(--font-mono);
 }
 
 :root {
-  --font-sans: "Geist", system-ui, sans-serif;
-  --font-pixel-square: "Geist Pixel Square", ui-monospace, monospace;
-  --font-pixel-grid: "Geist Pixel Grid", ui-monospace, monospace;
-  --font-pixel-circle: "Geist Pixel Circle", ui-monospace, monospace;
-  --font-pixel-triangle: "Geist Pixel Triangle", ui-monospace, monospace;
-  --font-pixel-line: "Geist Pixel Line", ui-monospace, monospace;
+  --font-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --brand: oklch(52% 0.15 205);
+  --brand-fg: oklch(98% 0.008 205);
+  --fg: oklch(18% 0.02 205);
+  --fg-muted: oklch(48% 0.02 205);
+  --fg-subtle: oklch(58% 0.015 205);
+  --bg: oklch(97% 0.012 205);
+  --bg-elevated: oklch(99% 0.005 205);
+  --border: oklch(18% 0.02 205 / 10%);
 }
 
 html {
   font-family: var(--font-sans);
-  color: #fafafa;
-  background-color: #09090b;
+  color: var(--fg);
+  background-color: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background-color: #09090b;
+  background-color: var(--bg);
   min-height: 100vh;
 }
 
 ::selection {
-  background-color: rgba(103, 232, 249, 0.3);
-  color: #ecfeff;
+  background-color: oklch(52% 0.15 205 / 25%);
+  color: oklch(15% 0.03 205);
 }
 
 *,

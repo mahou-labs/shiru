@@ -3,153 +3,99 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout>
-  <!-- Floating Nav -->
-  <nav class="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
-    <div
-      class="flex items-center rounded-full py-2.5 px-5 gap-6"
-      style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px);"
+  <nav class="mx-auto flex max-w-3xl items-center justify-between px-6 pt-8 pb-4">
+    <a href="/" class="flex items-center gap-2.5 no-underline">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 18 18"
+        fill="none"
+        class="shrink-0"
+      >
+        <path d="M8.99999 15.051C9.16999 15.051 9.33899 15.006 9.49399 14.917C10.137 14.546 11.226 14.07 12.635 14.072C13.534 14.073 14.302 14.269 14.905 14.507C15.553 14.762 16.249 14.267 16.249 13.57V4.48701C16.249 4.13301 16.068 3.80701 15.763 3.62701C15.126 3.25101 14.037 2.76401 12.623 2.76401C10.733 2.76401 9.42499 3.63601 8.99899 3.94601" fill="oklch(52% 0.15 205 / 20%)" stroke="var(--fg)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M9.00001 15.051C8.83001 15.051 8.66101 15.006 8.50601 14.917C7.86301 14.546 6.77401 14.07 5.36501 14.072C4.46601 14.073 3.69801 14.269 3.09501 14.507C2.44701 14.762 1.75101 14.27 1.75101 13.574C1.75101 10.981 1.75101 6.10201 1.75101 4.48401C1.75101 4.13001 1.93201 3.80801 2.23701 3.62801C2.87401 3.25201 3.96301 2.76501 5.37701 2.76501C7.26701 2.76501 8.57501 3.63701 9.00101 3.94701V15.051H9.00001Z" stroke="var(--fg)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      </svg>
+      <span class="text-sm font-semibold tracking-tight">Shiru</span>
+    </a>
+
+    <a
+      href="https://github.com/mahou-labs/shiru"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="rounded-sm text-sm text-fg-muted no-underline transition-colors hover:text-fg focus-visible:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2"
     >
-      <a href="/" class="flex items-center gap-2 no-underline">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 18 18"
-          fill="none"
-          class="shrink-0"
-        >
-          <path d="M8.99999 15.051C9.16999 15.051 9.33899 15.006 9.49399 14.917C10.137 14.546 11.226 14.07 12.635 14.072C13.534 14.073 14.302 14.269 14.905 14.507C15.553 14.762 16.249 14.267 16.249 13.57V4.48701C16.249 4.13301 16.068 3.80701 15.763 3.62701C15.126 3.25101 14.037 2.76401 12.623 2.76401C10.733 2.76401 9.42499 3.63601 8.99899 3.94601" fill="white" fill-opacity="0.3"></path>
-          <path d="M8.99999 15.051C9.16999 15.051 9.33899 15.006 9.49399 14.917C10.137 14.546 11.226 14.07 12.635 14.072C13.534 14.073 14.302 14.269 14.905 14.507C15.553 14.762 16.249 14.267 16.249 13.57V4.48701C16.249 4.13301 16.068 3.80701 15.763 3.62701C15.126 3.25101 14.037 2.76401 12.623 2.76401C10.733 2.76401 9.42499 3.63601 8.99899 3.94601" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
-          <path d="M9.00001 15.051C8.83001 15.051 8.66101 15.006 8.50601 14.917C7.86301 14.546 6.77401 14.07 5.36501 14.072C4.46601 14.073 3.69801 14.269 3.09501 14.507C2.44701 14.762 1.75101 14.27 1.75101 13.574C1.75101 10.981 1.75101 6.10201 1.75101 4.48401C1.75101 4.13001 1.93201 3.80801 2.23701 3.62801C2.87401 3.25201 3.96301 2.76501 5.37701 2.76501C7.26701 2.76501 8.57501 3.63701 9.00101 3.94701V15.051H9.00001Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
-        </svg>
-        <span class="text-[15px] font-medium tracking-[-0.2px] text-[#fafafa]">Shiru</span>
-      </a>
-
-      <div class="w-px h-4 shrink-0" style="background: rgba(255,255,255,0.1);">
-      </div>
-
-      <span
-        class="text-[13px] font-medium text-[#3f3f46] cursor-not-allowed select-none"
-        title="Coming soon"
-      >
-        Docs
-      </span>
-
-      <div class="w-px h-4 shrink-0" style="background: rgba(255,255,255,0.1);">
-      </div>
-
-      <a
-        href="https://github.com/mahou-labs/shiru"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="text-[13px] font-medium text-[#a1a1aa] no-underline hover:text-[#fafafa] transition-colors"
-      >
-        GitHub
-      </a>
-    </div>
+      GitHub
+    </a>
   </nav>
 
-  <!-- Full-height page wrapper -->
-  <div class="relative flex flex-col items-center justify-center min-h-screen overflow-hidden bg-[#000000] selection:bg-white/30">
+  <main class="mx-auto flex max-w-3xl flex-col items-center px-6 pt-20 pb-20 sm:pt-28 md:pt-36">
 
-    <!-- Grain overlay -->
-    <svg class="fixed inset-0 w-full h-full pointer-events-none z-40 opacity-[0.03]" aria-hidden="true">
-      <filter id="grain">
-        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"></feTurbulence>
-        <feColorMatrix type="saturate" values="0"></feColorMatrix>
-      </filter>
-      <rect width="100%" height="100%" filter="url(#grain)"></rect>
-    </svg>
+    <p class="mb-10 text-sm font-medium text-fg-subtle">
+      Open-Source &middot; Self-Hostable &middot; Coming Soon
+    </p>
 
-    <!-- Linear/Resend style top ambient glow -->
-    <div class="absolute top-[-20%] left-1/2 -translate-x-1/2 w-200 h-125 bg-white opacity-[0.05] blur-[120px] rounded-full pointer-events-none"></div>
-    <!-- Sharp top horizon line -->
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-200 h-px bg-linear-to-r from-transparent via-white/20 to-transparent pointer-events-none"></div>
+    <h1
+      class="mb-5 max-w-2xl text-center font-bold leading-[1.08] tracking-[-0.035em]"
+      style="font-size: clamp(2.5rem, 6vw, 4rem);"
+    >
+      Stop feeding your AI bad documentation
+    </h1>
 
-    <!-- Hero content -->
-    <main class="relative flex flex-col items-center z-10 px-4 mt-8">
+    <p class="mb-12 max-w-xs text-center text-lg leading-relaxed text-fg-muted sm:max-w-sm">
+      Write docs once. Humans understand them.
+      AI agents actually parse them.
+    </p>
 
-      <!-- Badge -->
-      <div
-        class="flex items-center rounded-full py-1 pr-4 pl-1 gap-3 mb-10 shadow-sm transition-transform hover:scale-105"
-        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);"
+    <form
+      id="waitlist-form"
+      class="flex w-full max-w-md items-center gap-1 rounded-xl border border-border bg-bg-elevated p-1 shadow-sm transition-opacity duration-150"
+    >
+      <input
+        type="email"
+        id="email-input"
+        name="email"
+        placeholder="you@company.com"
+        required
+        class="min-w-0 flex-1 border-none bg-transparent px-4 py-2.5 text-base text-fg outline-none placeholder:text-fg-subtle/50 focus:outline-none"
+        aria-label="Email address"
+      />
+      <button
+        type="submit"
+        id="submit-button"
+        class="cursor-pointer whitespace-nowrap rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-brand-fg transition-colors hover:bg-brand/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <span
-          class="inline-flex items-center rounded-full py-1 px-3 bg-white text-[11px] font-bold tracking-[0.04em] text-black leading-none"
-        >
-          COMING SOON
-        </span>
-        <span class="text-[13px] font-medium text-[#a1a1aa]">
-          Self-host with full control
-        </span>
-      </div>
+        Join Waitlist
+      </button>
+    </form>
 
-      <!-- Heading -->
-      <h1
-        class="text-[clamp(44px,6vw,72px)] font-medium leading-[1.05] tracking-[-0.04em] max-w-4xl mb-6 text-center text-transparent bg-clip-text bg-linear-to-b from-white via-white to-white/60"
-      >
-        Stop feeding your AI bad documentation
-      </h1>
+    <div
+      id="success-message"
+      class="mt-1 hidden w-full max-w-md items-center justify-center rounded-xl border border-border bg-bg-elevated p-4 text-center text-sm font-medium text-fg-muted"
+    >
+      You're on the list &mdash; we'll be in touch.
+    </div>
 
-      <!-- Subtext -->
-      <p
-        class="text-[16px] md:text-[17px] leading-relaxed max-w-lg mb-12 text-center text-[#71717a] font-normal"
-      >
-        Write docs once. Humans understand them. AI agents actually parse them. Open-source, self-host or cloud.
-      </p>
+    <p class="mt-4 text-center text-xs text-fg-subtle">
+      We'll notify you when early access opens.
+    </p>
+  </main>
 
-      <!-- Waitlist area -->
-      <div class="w-full max-w-105 relative h-14">
-        <form
-          id="waitlist-form"
-          class="absolute inset-0 flex items-center w-full rounded-xl p-1 bg-[#09090b]/80 backdrop-blur-md z-20 transition-all duration-300 focus-within:ring-1 focus-within:ring-white/30 hover:bg-[#09090b]"
-          style="border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 4px 24px -6px rgba(0,0,0,0.5);"
-        >
-          <input
-            type="email"
-            id="email-input"
-            name="email"
-            placeholder="Enter your email address..."
-            required
-            class="flex-1 min-w-0 bg-transparent py-2.5 px-4 text-[15px] text-white placeholder-[#71717a] border-none outline-none focus:ring-0"
-            aria-label="Email address"
-          />
-          <button
-            type="submit"
-            id="submit-button"
-            class="rounded-lg py-2.5 px-5 bg-white text-[14px] font-medium text-black text-center whitespace-nowrap cursor-pointer hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(255,255,255,0.15)]"
-          >
-            Join Waitlist
-          </button>
-        </form>
-
-        <div
-          id="success-message"
-          class="hidden absolute inset-0 items-center justify-center w-full rounded-xl text-[15px] font-medium text-[#a1a1aa] text-center bg-[#09090b]/80 backdrop-blur-md z-10"
-          style="border: 1px solid rgba(255,255,255,0.12);"
-        >
-          You're on the list &mdash; we'll be in touch.
-        </div>
-      </div>
-
-      <!-- Helper text -->
-      <p class="text-[13px] text-[#71717a] mt-6 text-center font-medium">
-        We'll notify you when early access opens.
-      </p>
-    </main>
-
-    <!-- Footer link -->
+  <footer class="mx-auto flex max-w-3xl flex-col items-center gap-3 px-6 py-10">
     <a
       href="https://x.com/nchartiot"
       target="_blank"
       rel="noopener noreferrer"
-      class="absolute bottom-8 flex items-center gap-2 text-[13px] font-medium text-[#71717a] no-underline hover:text-[#d4d4d8] transition-colors z-10"
+      class="flex items-center gap-2 rounded-sm text-xs font-medium text-fg-subtle no-underline transition-colors hover:text-fg focus-visible:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
       </svg>
       <span>Follow for updates</span>
     </a>
-  </div>
+    <span class="text-xs text-fg-subtle">
+      &copy; 2025&ndash;2026 Mahou Labs
+    </span>
+  </footer>
 
   <script>
     import { orpc } from "../utils/orpc-client";
@@ -192,6 +138,7 @@ import Layout from "../layouts/Layout.astro";
         form.style.opacity = "0";
         form.style.pointerEvents = "none";
         setTimeout(() => {
+          form.style.display = "none";
           successMessage.classList.remove("hidden");
           successMessage.classList.add("flex");
         }, 150);
