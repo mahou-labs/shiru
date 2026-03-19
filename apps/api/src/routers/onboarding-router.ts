@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/server";
 import { and, eq, ne } from "drizzle-orm";
 import * as z from "zod";
 import { invitations, members, organizations } from "@/schema/auth";
@@ -103,9 +104,18 @@ export const onboardingRouter = {
   scrapeWebsite: authedProcedure
     .input(z.object({ url: z.string().url() }))
     .handler(async ({ input }) => {
+      const emptyResult = { name: null, description: null, logo: null, suggestedSlug: "" };
+
       let normalizedUrl = input.url;
       if (!/^https?:\/\//i.test(normalizedUrl)) {
         normalizedUrl = `https://${normalizedUrl}`;
+      }
+
+      const parsed = new URL(normalizedUrl);
+      if (parsed.protocol !== "https:") return emptyResult;
+      if (parsed.hostname === "localhost" || parsed.hostname.endsWith(".local")) return emptyResult;
+      if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|0\.)/.test(parsed.hostname)) {
+        return emptyResult;
       }
 
       const metadata = await extractWebsiteMetadata(normalizedUrl);
@@ -123,7 +133,10 @@ export const onboardingRouter = {
     }),
 
   getOnboardingStatus: protectedProcedure.handler(async ({ context: { session } }) => {
-    const orgId = session.activeOrganizationId ?? "";
+    const orgId = session.activeOrganizationId;
+    if (!orgId) {
+      throw new ORPCError("BAD_REQUEST", { message: "No active organization" });
+    }
 
     const [domainResult, orgResult, membersResult, invitesResult] = await Promise.all([
       tryCatch(
