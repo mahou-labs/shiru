@@ -8,7 +8,11 @@ import { navItems } from "./nav-items";
 import { OrgMenu } from "./org-menu";
 import type { AppShellSecondarySidebar } from "./app-shell-layout";
 
-export function MobileSidebar({ secondarySidebar }: { secondarySidebar?: AppShellSecondarySidebar }) {
+export function MobileSidebar({
+  secondarySidebar,
+}: {
+  secondarySidebar?: AppShellSecondarySidebar;
+}) {
   const { mobilePanel, setMobilePanel } = useSidebar();
   const location = useLocation();
 

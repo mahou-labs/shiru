@@ -35,7 +35,9 @@ export function EditorSecondarySidebar() {
       <section className="space-y-2">
         <div>
           <p className="font-medium text-sm text-foreground">Document outline</p>
-          <p className="text-muted-foreground text-xs">Keep the page structure visible while you write.</p>
+          <p className="text-muted-foreground text-xs">
+            Keep the page structure visible while you write.
+          </p>
         </div>
 
         <div className="space-y-1">
@@ -56,7 +58,9 @@ export function EditorSecondarySidebar() {
       <section className="space-y-2">
         <div>
           <p className="font-medium text-sm text-foreground">Workspace files</p>
-          <p className="text-muted-foreground text-xs">A second sidebar can switch from navigation to a lightweight file tree.</p>
+          <p className="text-muted-foreground text-xs">
+            A second sidebar can switch from navigation to a lightweight file tree.
+          </p>
         </div>
 
         <div className="space-y-1">
@@ -75,7 +79,9 @@ export function EditorSecondarySidebar() {
       <section className="space-y-2">
         <div>
           <p className="font-medium text-sm text-foreground">Writing aids</p>
-          <p className="text-muted-foreground text-xs">Use this zone for quick guidance, AI actions, or reusable workflow shortcuts.</p>
+          <p className="text-muted-foreground text-xs">
+            Use this zone for quick guidance, AI actions, or reusable workflow shortcuts.
+          </p>
         </div>
 
         <div className="space-y-1">

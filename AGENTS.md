@@ -41,6 +41,14 @@ Testing libraries installed but no tests exist yet. `@testing-library/react`, `j
 
 ## Code Style Guidelines
 
+### React Compiler
+
+This project uses the React Compiler. **Never use `useMemo`, `useCallback`, or `React.memo`** — the compiler handles memoization automatically. Plain functions and values are fine.
+
+### Comments
+
+Do not add unnecessary or obvious comments to code. Code should be self-documenting. Avoid section dividers (`// ---- section ----`), JSDoc on internal functions, and comments that restate what the code does. Only add comments when the *why* is non-obvious.
+
 ### Linting & Formatting
 
 - **Linter**: OxLint (not ESLint) - config in `.oxlintrc.jsonc`

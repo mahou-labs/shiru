@@ -187,14 +187,7 @@ function DomainSettingsRoute() {
                     </Field>
                   )}
                 </form.Field>
-                {/* DEBUG: remove after fixing */}
-                {(() => {
-                  const val = form.state.values.hostname;
-                  const regexResult = HOSTNAME_REGEX.test(val);
-                  // oxlint-disable-next-line no-console
-                  console.log("[domain debug]", { val, regexResult, isSubmitting: form.state.isSubmitting, canSubmit: form.state.canSubmit, regexSource: HOSTNAME_REGEX.source });
-                  return null;
-                })()}
+
                 <Button
                   disabled={
                     form.state.isSubmitting || !HOSTNAME_REGEX.test(form.state.values.hostname)

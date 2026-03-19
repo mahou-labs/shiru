@@ -6,8 +6,15 @@ import {
   IconSunOutlineDuo18,
   IconUsersOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
-import { resetOnboardingDismissal } from "@/components/onboarding-checklist";
 import { orpc } from "@/utils/orpc-client";
+
+function resetOnboardingDismissal(orgId: string) {
+  try {
+    localStorage.removeItem(`onboarding-dismissed-${orgId}`);
+  } catch {
+    // noop
+  }
+}
 
 export const Route = createFileRoute("/_app/settings/")({
   component: RouteComponent,

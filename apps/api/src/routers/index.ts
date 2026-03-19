@@ -2,11 +2,9 @@ import type { RouterClient } from "@orpc/server";
 import { protectedProcedure, publicProcedure } from "../utils/orpc";
 import { domainRouter } from "./domain-router";
 import { onboardingRouter } from "./onboarding-router";
-import { orgInviteRouter } from "./orgInvites";
-import { organizationRouter } from "./organization";
-// import { uploadRouter } from "./upload";
-import { userRouter } from "./user";
-import { waitlistRouter } from "./waitlist";
+import { organizationRouter } from "./organization-router";
+import { userRouter } from "./user-router";
+import { waitlistRouter } from "./waitlist-router";
 
 export const appRouter = {
   healthCheck: publicProcedure.handler(() => {
@@ -21,8 +19,6 @@ export const appRouter = {
   domain: domainRouter,
   onboarding: onboardingRouter,
   organization: organizationRouter,
-  orgInvite: orgInviteRouter,
-  // upload: uploadRouter,
   user: userRouter,
   waitlist: waitlistRouter,
 };

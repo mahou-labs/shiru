@@ -1,56 +1,14 @@
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
-import { env } from "cloudflare:workers";
 import * as z from "zod";
 import { customDomains } from "@/schema/custom-domain";
+import { getCloudflareClient, getZoneId } from "@/utils/cloudflare";
 import { db } from "@/utils/db";
 import { log } from "@/utils/logger";
 import { tryCatch } from "@/utils/try-catch";
 import { protectedProcedure } from "../utils/orpc";
 
 const HOSTNAME_REGEX = /^(?!:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
-
-type CloudflareCustomHostnameResponse = {
-  success: boolean;
-  result?: {
-    id: string;
-    hostname: string;
-    status: string;
-    ssl: {
-      status: string;
-      validation_records?: Array<{
-        txt_name?: string;
-        txt_value?: string;
-        status?: string;
-      }>;
-    };
-    ownership_verification?: {
-      type: string;
-      name: string;
-      value: string;
-    };
-    verification_errors?: string[];
-  };
-  errors?: Array<{ code: number; message: string }>;
-};
-
-async function cloudflareRequest<T = CloudflareCustomHostnameResponse>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
-  const headers = new Headers(options.headers);
-  headers.set("Authorization", `Bearer ${env.CLOUDFLARE_API_TOKEN}`);
-  if (!headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  const response = await fetch(`https://api.cloudflare.com/client/v4${path}`, {
-    ...options,
-    headers,
-  });
-
-  return response.json();
-}
 
 export const domainRouter = {
   getDomain: protectedProcedure.handler(async ({ context: { session } }) => {
@@ -90,7 +48,6 @@ export const domainRouter = {
         throw new ORPCError("BAD_REQUEST", { message: "No active organization" });
       }
 
-      // Check if a domain already exists for this org
       const { data: existing } = await tryCatch(
         db
           .select({ id: customDomains.id })
@@ -105,24 +62,20 @@ export const domainRouter = {
         });
       }
 
-      // Create custom hostname via Cloudflare API
-      const cfResponse = await cloudflareRequest(
-        `/zones/${env.CLOUDFLARE_ZONE_ID}/custom_hostnames`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            hostname: input.hostname,
-            ssl: {
-              method: "txt",
-              type: "dv",
-            },
-          }),
-        },
+      const cf = getCloudflareClient();
+      const zoneId = getZoneId();
+
+      const { data: cfResult, error: cfError } = await tryCatch(
+        cf.customHostnames.create({
+          zone_id: zoneId,
+          hostname: input.hostname,
+          ssl: { method: "txt", type: "dv" },
+        }),
       );
 
-      if (!cfResponse.success || !cfResponse.result) {
-        const errorMsg = cfResponse.errors?.map((e) => e.message).join(", ") ?? "Unknown error";
-        log.error("domain.createDomain_cloudflare_failed", new Error(errorMsg), {
+      if (cfError || !cfResult) {
+        const errorMsg = cfError instanceof Error ? cfError.message : "Unknown error";
+        log.error("domain.createDomain_cloudflare_failed", cfError ?? new Error(errorMsg), {
           hostname: input.hostname,
           organizationId: orgId,
         });
@@ -131,8 +84,7 @@ export const domainRouter = {
         });
       }
 
-      const cfResult = cfResponse.result;
-      const sslValidation = cfResult.ssl.validation_records?.[0];
+      const sslValidation = cfResult.ssl?.validation_records?.[0];
 
       const { data: domain, error } = await tryCatch(
         db
@@ -157,12 +109,7 @@ export const domainRouter = {
           hostname: input.hostname,
           organizationId: orgId,
         });
-        // Best-effort cleanup: delete the CF hostname we just created
-        await tryCatch(
-          cloudflareRequest(`/zones/${env.CLOUDFLARE_ZONE_ID}/custom_hostnames/${cfResult.id}`, {
-            method: "DELETE",
-          }),
-        );
+        await tryCatch(cf.customHostnames.delete(cfResult.id, { zone_id: zoneId }));
         throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Failed to save domain" });
       }
 
@@ -191,24 +138,24 @@ export const domainRouter = {
       return domain;
     }
 
-    // Poll Cloudflare for current status
-    const cfResponse = await cloudflareRequest(
-      `/zones/${env.CLOUDFLARE_ZONE_ID}/custom_hostnames/${domain.cloudflareHostnameId}`,
+    const cf = getCloudflareClient();
+    const zoneId = getZoneId();
+
+    const { data: cfResult, error: cfError } = await tryCatch(
+      cf.customHostnames.get(domain.cloudflareHostnameId, { zone_id: zoneId }),
     );
 
-    if (!cfResponse.success || !cfResponse.result) {
+    if (cfError || !cfResult) {
       log.error(
         "domain.checkDomainStatus_cloudflare_failed",
-        new Error(cfResponse.errors?.map((e) => e.message).join(", ") ?? "Unknown error"),
+        cfError ?? new Error("Unknown error"),
         { hostname: domain.hostname, organizationId: orgId },
       );
       return domain;
     }
 
-    const cfResult = cfResponse.result;
-    const sslValidation = cfResult.ssl.validation_records?.[0];
+    const sslValidation = cfResult.ssl?.validation_records?.[0];
 
-    // Map Cloudflare status to our status
     let status = domain.status;
     if (cfResult.status === "active") {
       status = "active";
@@ -219,12 +166,10 @@ export const domainRouter = {
     }
 
     let sslStatus = domain.sslStatus;
-    if (cfResult.ssl.status === "active") {
+    const cfSslStatus = cfResult.ssl?.status;
+    if (cfSslStatus === "active") {
       sslStatus = "active";
-    } else if (
-      cfResult.ssl.status === "validation_timed_out" ||
-      cfResult.ssl.status === "deleted"
-    ) {
+    } else if (cfSslStatus === "validation_timed_out" || cfSslStatus === "deleted") {
       sslStatus = "error";
     } else {
       sslStatus = "pending";
@@ -235,7 +180,6 @@ export const domainRouter = {
         ? cfResult.verification_errors.join(", ")
         : null;
 
-    // Update DB with latest status
     const { data: updated, error: updateError } = await tryCatch(
       db
         .update(customDomains)
@@ -280,13 +224,12 @@ export const domainRouter = {
       throw new ORPCError("NOT_FOUND", { message: "No custom domain configured" });
     }
 
-    // Delete from Cloudflare
     if (domain.cloudflareHostnameId) {
+      const cf = getCloudflareClient();
+      const zoneId = getZoneId();
+
       const { error: cfError } = await tryCatch(
-        cloudflareRequest(
-          `/zones/${env.CLOUDFLARE_ZONE_ID}/custom_hostnames/${domain.cloudflareHostnameId}`,
-          { method: "DELETE" },
-        ),
+        cf.customHostnames.delete(domain.cloudflareHostnameId, { zone_id: zoneId }),
       );
 
       if (cfError) {
@@ -294,11 +237,9 @@ export const domainRouter = {
           hostname: domain.hostname,
           organizationId: orgId,
         });
-        // Continue with DB deletion even if CF fails
       }
     }
 
-    // Delete from DB
     const { error: deleteError } = await tryCatch(
       db.delete(customDomains).where(eq(customDomains.id, domain.id)),
     );

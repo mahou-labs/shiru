@@ -5,7 +5,7 @@ import { orpc } from "./orpc-client";
 
 const queryClient = new QueryClient();
 
-const orgInvitesOptions = orpc.orgInvite.list.queryOptions();
+const orgInvitesOptions = orpc.organization.listInvites.queryOptions();
 export const orgInvitesCollection = createCollection(
   queryCollectionOptions({
     queryKey: orgInvitesOptions.queryKey,
@@ -14,11 +14,14 @@ export const orgInvitesCollection = createCollection(
     queryClient,
     onInsert: async ({ transaction }) => {
       const inviteToInsert = transaction.mutations[0].modified;
-      await orpc.orgInvite.create.call({ email: inviteToInsert.email, role: inviteToInsert.role });
+      await orpc.organization.createInvite.call({
+        email: inviteToInsert.email,
+        role: inviteToInsert.role,
+      });
     },
     onDelete: async ({ transaction }) => {
       const { original } = transaction.mutations[0];
-      await orpc.orgInvite.delete.call({ id: original.id });
+      await orpc.organization.deleteInvite.call({ id: original.id });
     },
   }),
 );

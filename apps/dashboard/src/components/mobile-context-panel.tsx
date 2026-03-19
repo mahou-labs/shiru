@@ -15,7 +15,11 @@ const kindDescriptions = {
   actions: "Open contextual actions without interrupting your flow.",
 } as const;
 
-export function MobileContextPanel({ secondarySidebar }: { secondarySidebar?: AppShellSecondarySidebar }) {
+export function MobileContextPanel({
+  secondarySidebar,
+}: {
+  secondarySidebar?: AppShellSecondarySidebar;
+}) {
   const { mobilePanel, setMobilePanel } = useSidebar();
 
   if (!secondarySidebar || secondarySidebar.mobileMode !== "sheet") {

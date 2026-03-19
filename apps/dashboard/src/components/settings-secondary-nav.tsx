@@ -69,7 +69,9 @@ export function SettingsSecondaryNav({ as = "nav" }: { as?: "div" | "nav" }) {
 
             <div className="min-w-0 flex-1">
               <p className="font-medium text-sm">{item.label}</p>
-              <p className="mt-0.5 line-clamp-2 text-muted-foreground text-xs">{item.description}</p>
+              <p className="mt-0.5 line-clamp-2 text-muted-foreground text-xs">
+                {item.description}
+              </p>
             </div>
           </Link>
         );

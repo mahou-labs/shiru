@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useLocation } from "@tanstack/react-router";
 

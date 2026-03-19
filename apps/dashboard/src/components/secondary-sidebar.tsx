@@ -35,7 +35,9 @@ export function SecondarySidebar({ children, desktopWidth, kind, title }: Second
         aria-label={`${title} sidebar`}
         className={cn(
           "absolute inset-y-0 left-0 flex h-full flex-col bg-background/95 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-          isSecondaryCollapsed ? "pointer-events-none -translate-x-3 opacity-0" : "translate-x-0 opacity-100",
+          isSecondaryCollapsed
+            ? "pointer-events-none -translate-x-3 opacity-0"
+            : "translate-x-0 opacity-100",
         )}
         style={{ width }}
       >

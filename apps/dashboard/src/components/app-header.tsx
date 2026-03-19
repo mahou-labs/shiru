@@ -14,7 +14,8 @@ import { SearchBar } from "./search-bar";
 import { UserMenu } from "./user-menu";
 
 export function AppHeader({ secondarySidebar }: { secondarySidebar?: AppShellSecondarySidebar }) {
-  const { isSecondaryCollapsed, setMobileOpen, setMobilePanel, toggleSecondarySidebar } = useSidebar();
+  const { isSecondaryCollapsed, setMobileOpen, setMobilePanel, toggleSecondarySidebar } =
+    useSidebar();
 
   const ContextIcon =
     secondarySidebar?.kind === "navigation" ? IconGearOutlineDuo18 : IconBookOpen2OutlineDuo18;
