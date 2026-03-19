@@ -69,20 +69,27 @@ export const organizationRouter = {
       const hostnameValue = input.hostname;
       if (data?.id && hostnameValue && HOSTNAME_REGEX.test(hostnameValue)) {
         const orgId = data.id;
-        const { error: domainError } = await tryCatch(
-          (async () => {
-            const cf = getCloudflareClient();
-            const zoneId = getZoneId();
+        const cf = getCloudflareClient();
+        const zoneId = getZoneId();
 
-            const cfResult = await cf.customHostnames.create({
-              zone_id: zoneId,
-              hostname: hostnameValue,
-              ssl: { method: "txt", type: "dv" },
-            });
+        const { data: cfResult, error: cfError } = await tryCatch(
+          cf.customHostnames.create({
+            zone_id: zoneId,
+            hostname: hostnameValue,
+            ssl: { method: "txt", type: "dv" },
+          }),
+        );
 
-            const sslValidation = cfResult.ssl?.validation_records?.[0];
+        if (cfError || !cfResult) {
+          log.error("org.createOrg_domain_cf_failed", cfError ?? new Error("No result"), {
+            hostname: hostnameValue,
+            organizationId: orgId,
+          });
+        } else {
+          const sslValidation = cfResult.ssl?.validation_records?.[0];
 
-            await db.insert(customDomains).values({
+          const { error: dbError } = await tryCatch(
+            db.insert(customDomains).values({
               organizationId: orgId,
               hostname: hostnameValue,
               cloudflareHostnameId: cfResult.id,
@@ -92,15 +99,16 @@ export const organizationRouter = {
               sslStatus: "pending",
               sslValidationTxtName: sslValidation?.txt_name ?? null,
               sslValidationTxtValue: sslValidation?.txt_value ?? null,
-            });
-          })(),
-        );
+            }),
+          );
 
-        if (domainError) {
-          log.error("org.createOrg_domain_failed", domainError, {
-            hostname: hostnameValue,
-            organizationId: orgId,
-          });
+          if (dbError) {
+            log.error("org.createOrg_domain_db_failed", dbError, {
+              hostname: hostnameValue,
+              organizationId: orgId,
+            });
+            await tryCatch(cf.customHostnames.delete(cfResult.id, { zone_id: zoneId }));
+          }
         }
       }
 
