@@ -5,11 +5,11 @@ import { Link, useLocation } from "@tanstack/react-router";
 import type { ToOptions } from "@tanstack/react-router";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { navItems } from "./nav-items";
-import { OnboardingChecklist } from "./onboarding-checklist";
 import { OrgMenu } from "./org-menu";
+import type { AppShellSecondarySidebar } from "./app-shell-layout";
 
-export function MobileSidebar() {
-  const { mobilePanel, secondarySidebar, setMobilePanel } = useSidebar();
+export function MobileSidebar({ secondarySidebar }: { secondarySidebar?: AppShellSecondarySidebar }) {
+  const { mobilePanel, setMobilePanel } = useSidebar();
   const location = useLocation();
 
   const topItems = navItems.filter((item) => !item.bottom);
@@ -31,7 +31,6 @@ export function MobileSidebar() {
       >
         <div className="flex h-full flex-col gap-3 bg-sidebar p-4">
           <OrgMenu collapsed={false} />
-          <OnboardingChecklist />
           <nav className="mt-3 flex flex-1 flex-col gap-1.5">
             {topItems.map((item) => (
               <MobileNavItem

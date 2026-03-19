@@ -8,18 +8,13 @@ import {
   IconMenuBarsOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 import { useSidebar } from "@/contexts/sidebar-context";
+import type { AppShellSecondarySidebar } from "./app-shell-layout";
 import { NotificationsButton } from "./notifications-button";
 import { SearchBar } from "./search-bar";
 import { UserMenu } from "./user-menu";
 
-export function AppHeader() {
-  const {
-    isSecondaryCollapsed,
-    secondarySidebar,
-    setMobileOpen,
-    setMobilePanel,
-    toggleSecondarySidebar,
-  } = useSidebar();
+export function AppHeader({ secondarySidebar }: { secondarySidebar?: AppShellSecondarySidebar }) {
+  const { isSecondaryCollapsed, setMobileOpen, setMobilePanel, toggleSecondarySidebar } = useSidebar();
 
   const ContextIcon =
     secondarySidebar?.kind === "navigation" ? IconGearOutlineDuo18 : IconBookOpen2OutlineDuo18;

@@ -12,7 +12,6 @@ import type { ToOptions } from "@tanstack/react-router";
 import { Link, useLocation } from "@tanstack/react-router";
 import { IconSidebarLeftOutlineDuo18 } from "nucleo-ui-outline-duo-18";
 import { navItems } from "./nav-items";
-import { OnboardingChecklist } from "./onboarding-checklist";
 import { OrgMenu } from "./org-menu";
 
 const tooltipHandle = TooltipCreateHandle<React.ComponentType>();
@@ -32,7 +31,6 @@ export function Sidebar() {
       )}
     >
       <OrgMenu collapsed={isCollapsed} />
-      <OnboardingChecklist collapsed={isCollapsed} />
       <nav className="mt-3 flex flex-1 flex-col gap-1.5">
         <TooltipProvider delay={0} timeout={500}>
           {topItems.map((item) => (
@@ -140,7 +138,7 @@ export function SidebarItem({
       {...props}
       className={cn(
         "group relative flex h-8 w-full items-center gap-3 rounded-lg px-2 font-medium text-sidebar-foreground text-sm",
-        "outline-border hover:bg-sidebar-accent hover:outline hover:text-sidebar-accent-foreground",
+        "outline-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2",
         isActive && "bg-sidebar-accent outline text-sidebar-accent-foreground",
       )}

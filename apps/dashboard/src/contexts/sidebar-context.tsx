@@ -12,17 +12,6 @@ export type SecondarySidebarKind = "navigation" | "workspace" | "actions";
 export type SecondarySidebarMobileMode = "nav-section" | "sheet";
 export const secondarySidebarDesktopWidth = 304;
 
-export type SecondarySidebarConfig = {
-  id: string;
-  title: string;
-  kind: SecondarySidebarKind;
-  desktopWidth?: number;
-  mobileMode: SecondarySidebarMobileMode;
-  collapsePrimaryByDefault?: boolean;
-  content: ReactNode;
-  mobileContent?: ReactNode;
-};
-
 type MobilePanel = "primary" | "secondary" | null;
 
 type SidebarContextValue = {
@@ -32,8 +21,6 @@ type SidebarContextValue = {
   isSecondaryCollapsed: boolean;
   setIsSecondaryCollapsed: (value: boolean | ((prev: boolean) => boolean)) => void;
   toggleSecondarySidebar: () => void;
-  secondarySidebar: SecondarySidebarConfig | null;
-  registerSecondarySidebar: (config: SecondarySidebarConfig | null) => void;
   mobilePanel: MobilePanel;
   setMobilePanel: (value: MobilePanel) => void;
   isMobileOpen: boolean;
@@ -45,16 +32,10 @@ const SidebarContext = createContext<SidebarContextValue | null>(null);
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSecondaryCollapsed, setIsSecondaryCollapsed] = useState(false);
-  const [secondarySidebar, setSecondarySidebar] = useState<SecondarySidebarConfig | null>(null);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
   const location = useLocation();
 
   useHotkey("Mod+B", () => setIsCollapsed((prev) => !prev));
-  useHotkey("Mod+\\", () => {
-    if (secondarySidebar) {
-      setIsSecondaryCollapsed((prev) => !prev);
-    }
-  });
 
   const toggleSidebar = () => {
     setIsCollapsed((prev) => !prev);
@@ -62,11 +43,6 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
 
   const toggleSecondarySidebar = () => {
     setIsSecondaryCollapsed((prev) => !prev);
-  };
-
-  const registerSecondarySidebar = (config: SecondarySidebarConfig | null) => {
-    setSecondarySidebar(config);
-    setIsSecondaryCollapsed(false);
   };
 
   const setMobileOpen = (value: boolean) => {
@@ -88,8 +64,6 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     isSecondaryCollapsed,
     setIsSecondaryCollapsed,
     toggleSecondarySidebar,
-    secondarySidebar,
-    registerSecondarySidebar,
     mobilePanel,
     setMobilePanel,
     isMobileOpen: mobilePanel === "primary",

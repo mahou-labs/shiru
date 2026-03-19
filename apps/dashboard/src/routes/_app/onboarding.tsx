@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useDebounce } from "@uidotdev/usehooks";
 import { z } from "zod";
+import { AppShellLayout } from "@/components/app-shell-layout";
 import { Button } from "@shiru/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shiru/ui/card";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@shiru/ui/field";
@@ -72,88 +73,90 @@ function OnboardingComponent() {
   );
 
   return (
-    <div className="flex h-full items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle>Welcome to Shiru!</CardTitle>
-          <CardDescription>Let's get you started by creating your organization</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void form.handleSubmit();
-            }}
-          >
-            <form.Field name="name">
-              {(field) => (
-                <Field>
-                  <FieldLabel>Organization Name</FieldLabel>
-                  <Input
-                    disabled={form.state.isSubmitting}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="Enter your organization name"
-                    value={field.state.value}
-                  />
-                  {field.state.meta.errors.map((error) => (
-                    <FieldError key={error?.message}>{error?.message}</FieldError>
-                  ))}
-                </Field>
-              )}
-            </form.Field>
-
-            <form.Field
-              name="slug"
-              validators={{
-                onChange: onboardingSchema.shape.slug,
+    <AppShellLayout>
+      <div className="flex h-full items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Welcome to Shiru!</CardTitle>
+            <CardDescription>Let's get you started by creating your organization</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void form.handleSubmit();
               }}
             >
-              {(field) => {
-                const isTyping = field.state.value !== debouncedSlug;
-
-                return (
+              <form.Field name="name">
+                {(field) => (
                   <Field>
-                    <FieldLabel>Organization Slug</FieldLabel>
+                    <FieldLabel>Organization Name</FieldLabel>
                     <Input
                       disabled={form.state.isSubmitting}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="your-organization-slug"
+                      placeholder="Enter your organization name"
                       value={field.state.value}
                     />
                     {field.state.meta.errors.map((error) => (
                       <FieldError key={error?.message}>{error?.message}</FieldError>
                     ))}
-                    {field.state.meta.errors.length === 0 && field.state.value && (
-                      <FieldDescription>
-                        {isTyping || isLoading
-                          ? "Checking availability..."
-                          : slugAvailable
-                            ? "✓ Available"
-                            : "✗ Taken"}
-                      </FieldDescription>
-                    )}
                   </Field>
-                );
-              }}
-            </form.Field>
+                )}
+              </form.Field>
 
-            <Button
-              className="w-full"
-              disabled={
-                !form.state.canSubmit ||
-                form.state.isSubmitting ||
-                slug !== debouncedSlug ||
-                (debouncedSlug.length >= 4 && isLoading) ||
-                !slugAvailable
-              }
-              type="submit"
-            >
-              {form.state.isSubmitting ? "Creating..." : "Create Organization"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+              <form.Field
+                name="slug"
+                validators={{
+                  onChange: onboardingSchema.shape.slug,
+                }}
+              >
+                {(field) => {
+                  const isTyping = field.state.value !== debouncedSlug;
+
+                  return (
+                    <Field>
+                      <FieldLabel>Organization Slug</FieldLabel>
+                      <Input
+                        disabled={form.state.isSubmitting}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="your-organization-slug"
+                        value={field.state.value}
+                      />
+                      {field.state.meta.errors.map((error) => (
+                        <FieldError key={error?.message}>{error?.message}</FieldError>
+                      ))}
+                      {field.state.meta.errors.length === 0 && field.state.value && (
+                        <FieldDescription>
+                          {isTyping || isLoading
+                            ? "Checking availability..."
+                            : slugAvailable
+                              ? "✓ Available"
+                              : "✗ Taken"}
+                        </FieldDescription>
+                      )}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+
+              <Button
+                className="w-full"
+                disabled={
+                  !form.state.canSubmit ||
+                  form.state.isSubmitting ||
+                  slug !== debouncedSlug ||
+                  (debouncedSlug.length >= 4 && isLoading) ||
+                  !slugAvailable
+                }
+                type="submit"
+              >
+                {form.state.isSubmitting ? "Creating..." : "Create Organization"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </AppShellLayout>
   );
 }

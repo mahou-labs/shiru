@@ -7,6 +7,7 @@ import {
   SheetTitle,
 } from "@shiru/ui/sheet";
 import { useSidebar } from "@/contexts/sidebar-context";
+import type { AppShellSecondarySidebar } from "./app-shell-layout";
 
 const kindDescriptions = {
   navigation: "Browse this screen without leaving the current workspace.",
@@ -14,8 +15,8 @@ const kindDescriptions = {
   actions: "Open contextual actions without interrupting your flow.",
 } as const;
 
-export function MobileContextPanel() {
-  const { mobilePanel, secondarySidebar, setMobilePanel } = useSidebar();
+export function MobileContextPanel({ secondarySidebar }: { secondarySidebar?: AppShellSecondarySidebar }) {
+  const { mobilePanel, setMobilePanel } = useSidebar();
 
   if (!secondarySidebar || secondarySidebar.mobileMode !== "sheet") {
     return null;
