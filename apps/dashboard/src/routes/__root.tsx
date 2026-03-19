@@ -22,6 +22,7 @@ import {
   IconCircleXmarkOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 import PostHogProvider from "@/contexts/posthog-context";
+import UserJotProvider from "@/contexts/userjot-context";
 
 type RouterAppContext = {
   orpc: typeof orpc;
@@ -104,13 +105,15 @@ function RootDocument() {
       </head>
       <body className="h-svh antialiased">
         <PostHogProvider>
-          <ThemeProvider attribute="class" disableTransitionOnChange>
-            <ToastProvider>
-              <AnchoredToastProvider>
-                <Outlet />
-              </AnchoredToastProvider>
-            </ToastProvider>
-          </ThemeProvider>
+          <UserJotProvider>
+            <ThemeProvider attribute="class" disableTransitionOnChange>
+              <ToastProvider>
+                <AnchoredToastProvider>
+                  <Outlet />
+                </AnchoredToastProvider>
+              </ToastProvider>
+            </ThemeProvider>
+          </UserJotProvider>
         </PostHogProvider>
 
         <TanStackDevtools
