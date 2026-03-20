@@ -1,4 +1,4 @@
-export {};
+// oxlint-disable unicorn/no-empty-file
 
 /*
 Example TanStack collection setup kept for reference.

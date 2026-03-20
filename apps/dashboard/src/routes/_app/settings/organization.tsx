@@ -775,9 +775,11 @@ function PendingInvite({
             disabled={isRevoking}
             size="sm"
             variant="ghost"
-            onClick={() => void onRevoke(invite.id)}
+            onClick={() => onRevoke(invite.id)}
             aria-label={
-              isRevoking ? `Revoking invite for ${invite.email}` : `Revoke invite for ${invite.email}`
+              isRevoking
+                ? `Revoking invite for ${invite.email}`
+                : `Revoke invite for ${invite.email}`
             }
           >
             {isRevoking ? (
