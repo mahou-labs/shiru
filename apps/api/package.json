@@ -12,17 +12,18 @@
     "check": "vp check"
   },
   "dependencies": {
-    "@orpc/server": "^1.13.7",
+    "@orpc/server": "^1.13.9",
     "@polar-sh/better-auth": "catalog:",
-    "@polar-sh/sdk": "^0.46.4",
-    "@react-email/components": "^1.0.9",
+    "@polar-sh/sdk": "^0.46.6",
+    "@react-email/components": "^1.0.10",
     "better-auth": "catalog:",
+    "cloudflare": "^5.2.0",
     "drizzle-orm": "1.0.0-beta.15-859cf75",
     "hono": "^4.12.7",
     "hono-rate-limiter": "^0.5.3",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-email": "^5.2.5",
+    "react-email": "^5.2.10",
     "resend": "^6.9.4",
     "uuid": "catalog:",
     "zod": "catalog:"

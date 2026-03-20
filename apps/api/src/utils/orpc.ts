@@ -3,12 +3,40 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { organizations } from "@/schema/auth";
 import { subscriptions } from "@/schema/subscription";
+import { auth } from "./auth";
 import type { RpcContext } from "./context";
 import { db } from "./db";
 import { log } from "./logger";
 import { tryCatch } from "./try-catch";
 
 const TRIAL_PERIOD = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Attempts to resolve an active organization for the user when none is set.
+ * Lists the user's orgs, picks the first one, and sets it as active (forwarding
+ * session cookies via resHeaders). Returns the resolved org ID, or null if the
+ * user has no organizations.
+ */
+export async function resolveActiveOrganization(
+  headers: Headers,
+  resHeaders: Headers | undefined,
+): Promise<string | null> {
+  const orgs = await auth.api.listOrganizations({ headers });
+  const nextOrg = orgs?.[0];
+
+  const { headers: sessionHeaders } = await auth.api.setActiveOrganization({
+    headers,
+    returnHeaders: true,
+    body: { organizationId: nextOrg?.id ?? null },
+  });
+
+  const cookies = sessionHeaders.getSetCookie();
+  for (const cookie of cookies) {
+    resHeaders?.append("set-cookie", cookie);
+  }
+
+  return nextOrg?.id ?? null;
+}
 
 export const o = os.$context<RpcContext>();
 
@@ -43,9 +71,13 @@ const requireSubscription = o
     },
   })
   .middleware(async ({ context, errors, next }) => {
-    const orgId = context?.session?.activeOrganizationId;
+    let orgId = context?.session?.activeOrganizationId;
+
     if (!orgId) {
-      throw errors.NOT_FOUND({ data: { reason: "no_organization" } });
+      orgId = await resolveActiveOrganization(context.headers, context.resHeaders);
+      if (!orgId) {
+        throw errors.NOT_FOUND({ data: { reason: "no_organization" } });
+      }
     }
 
     const { data: subscription, error: dbSubError } = await tryCatch(
@@ -68,7 +100,6 @@ const requireSubscription = o
       }
     }
 
-    // Fall back to trial period check
     const { data: org, error: dbError } = await tryCatch(
       db
         .select({ createdAt: organizations.createdAt })
@@ -87,7 +118,6 @@ const requireSubscription = o
       return next();
     }
 
-    // Had a subscription but it's expired, or trial ran out
     const reason = subscription ? "no_active_subscription" : "trial_expired";
     throw errors.NO_SUBSCRIPTION({ data: { reason } });
   });

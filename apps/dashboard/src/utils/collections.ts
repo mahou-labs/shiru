@@ -1,27 +1,4 @@
-import { QueryClient } from "@tanstack/query-core";
-import { queryCollectionOptions } from "@tanstack/query-db-collection";
-import { createCollection } from "@tanstack/react-db";
-import { orpc } from "./orpc-client";
-
-const queryClient = new QueryClient();
-
-const orgInvitesOptions = orpc.orgInvite.list.queryOptions();
-export const orgInvitesCollection = createCollection(
-  queryCollectionOptions({
-    queryKey: orgInvitesOptions.queryKey,
-    queryFn: orgInvitesOptions.queryFn,
-    getKey: (item) => item.id,
-    queryClient,
-    onInsert: async ({ transaction }) => {
-      const inviteToInsert = transaction.mutations[0].modified;
-      await orpc.orgInvite.create.call({ email: inviteToInsert.email, role: inviteToInsert.role });
-    },
-    onDelete: async ({ transaction }) => {
-      const { original } = transaction.mutations[0];
-      await orpc.orgInvite.delete.call({ id: original.id });
-    },
-  }),
-);
+// oxlint-disable unicorn/no-empty-file
 
 /*
 Example TanStack collection setup kept for reference.

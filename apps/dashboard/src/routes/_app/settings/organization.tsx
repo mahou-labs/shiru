@@ -1,12 +1,14 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import {
   IconCircleUserOutlineDuo18,
-  IconUserPlusOutlineDuo18,
-  IconTrashOutlineDuo18,
-  IconGearOutlineDuo18,
+  IconCopyOutlineDuo18,
   IconDoorOpenOutlineDuo18,
+  IconGearOutlineDuo18,
+  IconLoaderOutlineDuo18,
+  IconTrashOutlineDuo18,
+  IconUserPlusOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 import { useState } from "react";
 import { z } from "zod";
@@ -30,8 +32,6 @@ import { Skeleton } from "@shiru/ui/skeleton";
 import { cn } from "@/utils/cn";
 import { orpc } from "@/utils/orpc-client";
 import { toastManager } from "@shiru/ui/toast";
-import { eq, useLiveQuery } from "@tanstack/react-db";
-import { orgInvitesCollection } from "@/utils/collections";
 
 const inviteSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -43,11 +43,16 @@ export const Route = createFileRoute("/_app/settings/organization")({
 
 function RouteComponent() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const router = useRouter();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
-  const [slugCheckTimeout, setSlugCheckTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [inviteIdBeingRevoked, setInviteIdBeingRevoked] = useState<string | null>(null);
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
+  const orgInvitesQueryOptions = orpc.organization.listInvites.queryOptions();
 
   // Fetch organization data
   const { data: orgData, isPending: isOrgPending } = useQuery(
@@ -56,14 +61,15 @@ function RouteComponent() {
   const { data: membersData, isPending: isMembersPending } = useQuery(
     orpc.organization.getMembers.queryOptions(),
   );
-  // const { data: invitesData, isPending: isInvitesPending } = useQuery(
-  //   orpc.orgInvite.list.queryOptions(),
-  // );
+  const { data: invitesData, isPending: isInvitesPending } = useQuery(orgInvitesQueryOptions);
 
-  const { data: orgInvites, isLoading: isInvitesPending } = useLiveQuery((q) =>
-    q
-      .from({ orgInvites: orgInvitesCollection })
-      .where(({ orgInvites: inv }) => eq(inv.status, "pending")),
+  const orgInvites = (invitesData ?? []).filter((invite) => invite.status === "pending");
+
+  const { mutateAsync: createInvite } = useMutation(
+    orpc.organization.createInvite.mutationOptions(),
+  );
+  const { mutateAsync: revokeInvite, isPending: isRevokingInvite } = useMutation(
+    orpc.organization.deleteInvite.mutationOptions(),
   );
 
   const isPending = isOrgPending || isMembersPending || isInvitesPending;
@@ -81,9 +87,6 @@ function RouteComponent() {
     orpc.organization.updateMemberRole.mutationOptions(),
   );
   const { mutateAsync: leaveOrg } = useMutation(orpc.organization.leaveOrg.mutationOptions());
-  const { mutateAsync: checkSlugAvailability } = useMutation(
-    orpc.organization.checkSlugAvailability.mutationOptions(),
-  );
 
   // Get current user from members data to determine permissions
   const currentUser = membersData?.members?.find((member) => member.user.id === session?.user.id);
@@ -95,31 +98,20 @@ function RouteComponent() {
     defaultValues: { email: "" },
     validators: { onSubmit: inviteSchema },
     onSubmit: async ({ value }) => {
-      orgInvitesCollection.insert({
-        id: "",
-        createdAt: new Date(),
-        email: value.email,
-        role: "member",
-        expiresAt: new Date(Date.now() + 86400000),
-        inviterId: currentUser?.user.id || "",
-        organizationId: session?.session.activeOrganizationId || "",
-        status: "pending",
-      });
-      setIsInviteDialogOpen(false);
-      inviteForm.reset();
-      // try {
-      //   await createInvite({ email: value.email, role: "member" });
-      //   await queryClient.invalidateQueries(orpc.orgInvite.list.queryOptions());
-      //   toastManager.add({ title: "Invitation sent", type: "success" });
-      //   setIsInviteDialogOpen(false);
-      //   inviteForm.reset();
-      // } catch (error) {
-      //   console.error(error);
-      //   toastManager.add({
-      //     title: "Failed to invite member, try again later",
-      //     type: "error",
-      //   });
-      // }
+      try {
+        await createInvite({ email: value.email, role: "member" });
+        await queryClient.invalidateQueries({ queryKey: orgInvitesQueryOptions.queryKey });
+        toastManager.add({ title: "Invitation sent", type: "success" });
+        setIsInviteDialogOpen(false);
+        inviteForm.reset();
+      } catch (error) {
+        // oxlint-disable-next-line no-console
+        console.error(error);
+        toastManager.add({
+          title: error instanceof Error ? error.message : "Failed to invite member",
+          type: "error",
+        });
+      }
     },
   });
 
@@ -157,30 +149,27 @@ function RouteComponent() {
     },
   });
 
-  const deleteForm = useForm({
-    defaultValues: { confirmText: "" },
-    onSubmit: async ({ value }) => {
-      if (value.confirmText !== orgData?.name) {
-        toastManager.add({
-          title: "Please type the organization name to confirm deletion",
-          type: "error",
-        });
-        return;
+  const handleDeleteOrg = async () => {
+    setIsDeleting(true);
+    try {
+      const result = await deleteOrg({});
+      await queryClient.invalidateQueries();
+      await router.invalidate();
+      toastManager.add({ title: "Organization deleted successfully", type: "success" });
+      setIsDeleteDialogOpen(false);
+
+      if (!result.hasRemainingOrgs) {
+        await navigate({ to: "/onboarding" });
       }
-      try {
-        await deleteOrg({});
-        toastManager.add({ title: "Organization deleted successfully", type: "success" });
-        // Redirect will happen automatically when the organization is deleted
-      } catch (error) {
-        // oxlint-disable-next-line no-console
-        console.error(error);
-        toastManager.add({
-          title: "Failed to delete organization",
-          type: "error",
-        });
-      }
-    },
-  });
+    } catch {
+      toastManager.add({
+        title: "Failed to delete organization",
+        type: "error",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Update form defaults when org data loads
   if (orgData && !orgForm.state.values.name && !orgForm.state.values.slug) {
@@ -188,34 +177,6 @@ function RouteComponent() {
     orgForm.setFieldValue("slug", orgData.slug);
     orgForm.setFieldValue("logo", orgData.logo || "");
   }
-
-  // Handle slug availability checking
-  const handleSlugChange = async (value: string) => {
-    orgForm.setFieldValue("slug", value);
-
-    if (slugCheckTimeout) {
-      clearTimeout(slugCheckTimeout);
-    }
-
-    if (value && value !== orgData?.slug) {
-      const timeout = setTimeout(async () => {
-        try {
-          const isAvailable = await checkSlugAvailability(value);
-          if (!isAvailable) {
-            // Handle slug unavailable feedback
-            toastManager.add({
-              title: "This slug is already taken",
-              type: "error",
-            });
-          }
-        } catch (error) {
-          // oxlint-disable-next-line no-console
-          console.error("Slug check error:", error);
-        }
-      }, 500);
-      setSlugCheckTimeout(timeout);
-    }
-  };
 
   // Handle member role update
   const handleRoleUpdate = async (memberId: string, newRole: "admin" | "member") => {
@@ -259,15 +220,22 @@ function RouteComponent() {
 
   // Handle invite revocation
   const handleRevokeInvite = async (inviteId: string) => {
-    orgInvitesCollection.delete(inviteId);
-    // try {
-    //   await deleteInvite({ id: inviteId });
-    //   await queryClient.invalidateQueries(orpc.orgInvite.list.queryOptions());
-    //   toastManager.add({ title: "Invitation revoked", type: "success" });
-    // } catch (error) {
-    //   console.error(error);
-    //   toastManager.add({ title: "Failed to revoke invitation", type: "error" });
-    // }
+    setInviteIdBeingRevoked(inviteId);
+
+    try {
+      await revokeInvite({ id: inviteId });
+      await queryClient.invalidateQueries({ queryKey: orgInvitesQueryOptions.queryKey });
+      toastManager.add({ title: "Invitation revoked", type: "success" });
+    } catch (error) {
+      // oxlint-disable-next-line no-console
+      console.error(error);
+      toastManager.add({
+        title: error instanceof Error ? error.message : "Failed to revoke invitation",
+        type: "error",
+      });
+    } finally {
+      setInviteIdBeingRevoked(null);
+    }
   };
 
   return (
@@ -321,7 +289,7 @@ function RouteComponent() {
                       <FieldLabel>Organization Slug</FieldLabel>
                       <Input
                         disabled={orgForm.state.isSubmitting}
-                        onChange={(e) => handleSlugChange(e.target.value)}
+                        onChange={(e) => orgForm.setFieldValue("slug", e.target.value)}
                         placeholder="acme-corp"
                         value={field.state.value}
                       />
@@ -397,6 +365,7 @@ function RouteComponent() {
                     key={invite.id}
                     invite={invite}
                     canManageMembers={canManageMembers}
+                    isRevoking={isRevokingInvite && inviteIdBeingRevoked === invite.id}
                     onRevoke={handleRevokeInvite}
                   />
                 ))}
@@ -502,59 +471,66 @@ function RouteComponent() {
         </DialogPopup>
       </Dialog>
 
-      {/* Delete Organization Dialog */}
-      <Dialog onOpenChange={setIsDeleteDialogOpen} open={isDeleteDialogOpen}>
+      <Dialog
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) setDeleteConfirmText("");
+        }}
+        open={isDeleteDialogOpen}
+      >
         <DialogPopup className="sm:max-w-md">
-          <Form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void deleteForm.handleSubmit();
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle>Delete Organization</DialogTitle>
-            </DialogHeader>
-            <DialogPanel className="grid gap-4">
-              <p className="text-muted-foreground text-sm">
-                This action cannot be undone. Please type <strong>{orgData?.name}</strong> to
-                confirm.
-              </p>
-              <deleteForm.Field name="confirmText">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>Confirmation</FieldLabel>
-                    <Input
-                      disabled={deleteForm.state.isSubmitting}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Type organization name here"
-                      value={field.state.value}
-                    />
-                  </Field>
-                )}
-              </deleteForm.Field>
-            </DialogPanel>
-            <DialogFooter>
-              <DialogClose
-                render={
-                  <Button
-                    disabled={deleteForm.state.isSubmitting}
-                    onClick={() => setIsDeleteDialogOpen(false)}
-                    type="button"
-                    variant="ghost"
-                  />
-                }
+          <DialogHeader>
+            <DialogTitle>Delete Organization</DialogTitle>
+          </DialogHeader>
+          <DialogPanel className="grid gap-4">
+            <p className="text-sm text-muted-foreground">
+              This action cannot be undone. All data associated with this organization will be
+              permanently deleted. Please type the organization slug to confirm.
+            </p>
+            {orgData?.slug && (
+              <button
+                type="button"
+                className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 font-mono text-sm font-medium text-foreground transition-colors hover:bg-muted/70 active:bg-muted/50"
+                onClick={() => {
+                  void navigator.clipboard.writeText(orgData.slug);
+                  toastManager.add({ title: "Copied to clipboard", type: "success" });
+                }}
               >
-                Cancel
-              </DialogClose>
-              <Button
-                disabled={!deleteForm.state.canSubmit || deleteForm.state.isSubmitting}
-                type="submit"
-                variant="destructive"
-              >
-                {deleteForm.state.isSubmitting ? "Deleting..." : "Delete Organization"}
-              </Button>
-            </DialogFooter>
-          </Form>
+                {orgData.slug}
+                <IconCopyOutlineDuo18 className="size-3.5 text-muted-foreground" />
+              </button>
+            )}
+            <Field>
+              <FieldLabel>Confirmation</FieldLabel>
+              <Input
+                disabled={isDeleting}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type organization slug here"
+                value={deleteConfirmText}
+              />
+            </Field>
+          </DialogPanel>
+          <DialogFooter>
+            <DialogClose
+              render={
+                <Button
+                  disabled={isDeleting}
+                  onClick={() => setIsDeleteDialogOpen(false)}
+                  type="button"
+                  variant="ghost"
+                />
+              }
+            >
+              Cancel
+            </DialogClose>
+            <Button
+              disabled={isDeleting || deleteConfirmText !== orgData?.slug}
+              onClick={() => void handleDeleteOrg()}
+              variant="destructive"
+            >
+              {isDeleting ? "Deleting..." : "Delete Organization"}
+            </Button>
+          </DialogFooter>
         </DialogPopup>
       </Dialog>
 
@@ -623,13 +599,14 @@ type InviteData = {
 type PendingInviteProps = {
   invite: InviteData;
   canManageMembers: boolean;
+  isRevoking: boolean;
   onRevoke: (inviteId: string) => void;
   className?: string;
 };
 
 const roleColors = {
-  owner: "bg-primary text-primary-foreground border-primary",
-  admin: "bg-info text-info-foreground border-info",
+  owner: "border-primary/30 bg-primary/10 text-primary",
+  admin: "border-info/30 bg-info/10 text-info-foreground",
   member: "bg-muted text-muted-foreground border-border",
 } as const;
 
@@ -740,7 +717,13 @@ function Member({
   );
 }
 
-function PendingInvite({ invite, canManageMembers, onRevoke, className }: PendingInviteProps) {
+function PendingInvite({
+  invite,
+  canManageMembers,
+  isRevoking,
+  onRevoke,
+  className,
+}: PendingInviteProps) {
   const name = invite.email.split("@")[0];
   const initials = name
     .split(" ")
@@ -789,12 +772,21 @@ function PendingInvite({ invite, canManageMembers, onRevoke, className }: Pendin
 
         {canManageMembers && (
           <Button
+            disabled={isRevoking}
             size="sm"
             variant="ghost"
             onClick={() => onRevoke(invite.id)}
-            aria-label={`Revoke invite for ${invite.email}`}
+            aria-label={
+              isRevoking
+                ? `Revoking invite for ${invite.email}`
+                : `Revoke invite for ${invite.email}`
+            }
           >
-            <IconTrashOutlineDuo18 className="size-4 text-destructive" />
+            {isRevoking ? (
+              <IconLoaderOutlineDuo18 className="size-4 animate-spin text-muted-foreground" />
+            ) : (
+              <IconTrashOutlineDuo18 className="size-4 text-destructive" />
+            )}
           </Button>
         )}
       </div>

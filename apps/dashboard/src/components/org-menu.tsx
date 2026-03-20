@@ -1,30 +1,32 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   IconCheckOutlineDuo18,
   IconChevronDownOutlineDuo18,
   IconCirclePlusOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@shiru/ui/avatar";
+import { Menu, MenuItem, MenuPopup, MenuPortal, MenuSeparator, MenuTrigger } from "@shiru/ui/menu";
+import { Skeleton } from "@shiru/ui/skeleton";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { cn } from "@/utils/cn";
 import { getInitials } from "@/utils/initials";
 import { orpc } from "@/utils/orpc-client";
 import { CreateOrgDialog } from "./create-org-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@shiru/ui/avatar";
-import { Menu, MenuItem, MenuPopup, MenuPortal, MenuSeparator, MenuTrigger } from "@shiru/ui/menu";
-import { Skeleton } from "@shiru/ui/skeleton";
 
-export function OrgMenu() {
+export function OrgMenu({ collapsed }: { collapsed?: boolean }) {
   const { isCollapsed } = useSidebar();
+  const queryClient = useQueryClient();
   const [isCreateOrgDialogOpen, setIsCreateOrgDialogOpen] = useState(false);
   const { data: sessionData } = useQuery(orpc.user.getSession.queryOptions());
   const session = sessionData?.session;
+  const isMenuCollapsed = collapsed ?? isCollapsed;
 
   const { data: orgs } = useQuery(orpc.organization.getOrgList.queryOptions());
   const { mutateAsync: setActiveOrganization } = useMutation(
     orpc.organization.setActive.mutationOptions({
-      onSuccess: () => {
-        window.location.reload();
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ refetchType: "all" });
       },
     }),
   );
@@ -48,7 +50,7 @@ export function OrgMenu() {
         <div
           className={cn(
             "flex flex-col gap-1.5 transition-opacity duration-300",
-            isCollapsed && "opacity-0",
+            isMenuCollapsed && "opacity-0",
           )}
         >
           <Skeleton className="h-4 w-24" />
@@ -61,7 +63,7 @@ export function OrgMenu() {
 
   return (
     <Menu>
-      <MenuTrigger className="flex cursor-pointer select-none items-center gap-2 rounded-lg">
+      <MenuTrigger className="flex cursor-pointer select-none items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
         <Avatar className="rounded-md">
           <AvatarImage src={activeOrg?.logo ?? undefined} />
           <AvatarFallback className="rounded-md">{getInitials(activeOrg?.name)}</AvatarFallback>
@@ -70,21 +72,21 @@ export function OrgMenu() {
         <div
           className={cn(
             "flex min-w-0 flex-col items-start overflow-hidden transition-opacity duration-300",
-            isCollapsed && "opacity-0",
+            isMenuCollapsed && "opacity-0",
           )}
         >
           <span className="w-full truncate text-start font-semibold text-foreground text-sm">
             {activeOrg?.name}
           </span>
-          <span className="w-full truncate text-start text-foreground-muted text-xs">
+          <span className="w-full truncate text-start text-muted-foreground text-xs">
             {subscriptionLabel}
           </span>
         </div>
 
         <IconChevronDownOutlineDuo18
           className={cn(
-            "ml-auto size-3 shrink-0 text-foreground-muted transition-opacity",
-            isCollapsed && "opacity-0",
+            "ml-auto size-3 shrink-0 text-muted-foreground transition-opacity",
+            isMenuCollapsed && "opacity-0",
           )}
         />
       </MenuTrigger>
