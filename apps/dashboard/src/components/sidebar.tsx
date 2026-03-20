@@ -18,7 +18,7 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        "relative hidden h-full flex-col shrink-0 gap-3 border-r border-sidebar-border bg-sidebar p-4 transition-[width] duration-200 ease-in-out motion-reduce:transition-none lg:flex",
+        "relative hidden h-full flex-col shrink-0 gap-3 bg-sidebar p-4 transition-[width] duration-200 ease-in-out motion-reduce:transition-none lg:flex",
         isCollapsed ? "w-16" : "w-64",
       )}
     >

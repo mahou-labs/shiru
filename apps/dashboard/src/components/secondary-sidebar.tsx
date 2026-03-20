@@ -25,7 +25,7 @@ export function SecondarySidebar({ children, desktopWidth, kind, title }: Second
   return (
     <div
       className={cn(
-        "relative hidden h-full shrink-0 overflow-hidden border-r border-border transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:block",
+        "relative hidden h-full shrink-0 rounded-tl-xl rounded-bl-xl overflow-hidden border-r border-border transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:block",
         isSecondaryCollapsed && "border-r-transparent",
       )}
       style={{ width: isSecondaryCollapsed ? 0 : width }}
