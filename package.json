@@ -5,6 +5,7 @@
     "dev": "turbo dev db:studio --parallel",
     "dev:email": "turbo dev email db:studio --parallel",
     "dev:dashboard": "turbo -F dashboard dev",
+    "dev:dashboard-old": "turbo -F dashboard-old dev",
     "dev:api": "turbo -F api dev",
     "dev:native": "turbo -F native dev",
     "db:studio": "turbo -F api db:studio",

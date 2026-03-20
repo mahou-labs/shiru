@@ -1,5 +1,4 @@
 import { useSidebar } from "@/contexts/sidebar-context";
-import { useUserJot } from "@/contexts/userjot-context";
 import { cn } from "@/utils/cn";
 import { Separator } from "@shiru/ui/separator";
 import { TooltipProvider } from "@shiru/ui/tooltip";
@@ -15,7 +14,6 @@ import { SidebarItem } from "./sidebar-item";
 
 export function Sidebar() {
   const { isCollapsed, toggleSidebar } = useSidebar();
-  const { showWidget } = useUserJot();
 
   return (
     <div
@@ -56,7 +54,11 @@ export function Sidebar() {
             type="button"
             icon={IconChatBubbleOutlineDuo18}
             label="Feedback"
-            onClick={() => showWidget("feedback")}
+            onClick={() =>
+              (
+                window as Window & { uj?: { showWidget?: (type: string) => void } }
+              ).uj?.showWidget?.("feedback")
+            }
           />
           <SidebarItem
             type="button"

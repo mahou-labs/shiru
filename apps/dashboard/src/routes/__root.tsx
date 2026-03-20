@@ -5,13 +5,7 @@ import { AnchoredToastProvider, ToastProvider } from "@shiru/ui/toast";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import {
-  createRootRouteWithContext,
-  HeadContent,
-  Link,
-  Outlet,
-  Scripts,
-} from "@tanstack/react-router";
+import { createRootRouteWithContext, Link, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { scan } from "react-scan";
 import { formDevtoolsPlugin } from "@tanstack/react-form-devtools";
@@ -22,7 +16,7 @@ import {
   IconCircleXmarkOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 import PostHogProvider from "@/contexts/posthog-context";
-import UserJotProvider from "@/contexts/userjot-context";
+// import UserJotProvider from "@/contexts/userjot-context";
 
 type RouterAppContext = {
   orpc: typeof orpc;
@@ -30,22 +24,7 @@ type RouterAppContext = {
 };
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
-  head: () => ({
-    meta: [
-      {
-        charSet: "utf-8",
-      },
-      {
-        name: "viewport",
-        content: "width=device-width, initial-scale=1",
-      },
-      {
-        title: "Shiru",
-      },
-    ],
-  }),
-
-  component: RootDocument,
+  component: RootComponent,
   notFoundComponent: NotFoundPage,
   errorComponent: ErrorPage,
 });
@@ -97,41 +76,37 @@ if (typeof window !== "undefined") {
   });
 }
 
-function RootDocument() {
+function RootComponent() {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <HeadContent />
-      </head>
-      <body className="h-svh antialiased">
+    <>
+      <div className="h-svh antialiased">
         <PostHogProvider>
-          <UserJotProvider>
-            <ThemeProvider attribute="class" disableTransitionOnChange>
-              <ToastProvider>
-                <AnchoredToastProvider>
-                  <Outlet />
-                </AnchoredToastProvider>
-              </ToastProvider>
-            </ThemeProvider>
-          </UserJotProvider>
+          {/*<UserJotProvider>*/}
+          <ThemeProvider attribute="class" disableTransitionOnChange>
+            <ToastProvider>
+              <AnchoredToastProvider>
+                <Outlet />
+              </AnchoredToastProvider>
+            </ToastProvider>
+          </ThemeProvider>
+          {/*</UserJotProvider>*/}
         </PostHogProvider>
+      </div>
 
-        <TanStackDevtools
-          plugins={[
-            {
-              name: "TanStack Query",
-              render: <ReactQueryDevtoolsPanel />,
-            },
-            {
-              name: "TanStack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            formDevtoolsPlugin(),
-            // hotkeysDevtoolsPlugin(),
-          ]}
-        />
-        <Scripts />
-      </body>
-    </html>
+      <TanStackDevtools
+        plugins={[
+          {
+            name: "TanStack Query",
+            render: <ReactQueryDevtoolsPanel />,
+          },
+          {
+            name: "TanStack Router",
+            render: <TanStackRouterDevtoolsPanel />,
+          },
+          formDevtoolsPlugin(),
+          // hotkeysDevtoolsPlugin(),
+        ]}
+      />
+    </>
   );
 }

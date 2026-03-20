@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useHydrated } from "@tanstack/react-router";
 import { useTheme } from "better-themes";
 import {
   IconCheckOutlineDuo18,
@@ -41,7 +40,6 @@ function isValidTheme(theme: string | undefined): theme is ThemeOption {
 }
 
 function RouteComponent() {
-  const hydrated = useHydrated();
   const { theme, setTheme } = useTheme();
 
   return (
@@ -61,7 +59,6 @@ function RouteComponent() {
                 <Button
                   key={themeOption}
                   variant="outline"
-                  disabled={!hydrated}
                   onClick={() => setTheme(themeOption)}
                   className={cn(
                     "h-auto flex-col items-start gap-2 p-4",

@@ -2,7 +2,6 @@ import { createRouter } from "@tanstack/react-router";
 import Loader from "./components/loader";
 import "./index.css";
 import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { routeTree } from "./routeTree.gen";
 import { orpc } from "./utils/orpc-client";
 import { toastManager } from "@shiru/ui/toast";
@@ -44,8 +43,6 @@ export const getRouter = () => {
       return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
     },
   });
-
-  setupRouterSsrQueryIntegration({ router, queryClient });
 
   return router;
 };

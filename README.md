@@ -13,7 +13,7 @@ Shiru is an open-source alternative to [Mintlify](https://mintlify.com) for buil
 ## Tech Stack
 
 - **Monorepo**: Turborepo + Bun
-- **Frontend**: React 19 + TanStack Start (SSR) + TailwindCSS v4
+- **Frontend**: React 19 + TanStack Router (SPA) + TailwindCSS v4
 - **Backend**: Hono + oRPC (type-safe APIs)
 - **Auth**: Better Auth (with organization plugin)
 - **Database**: Drizzle ORM

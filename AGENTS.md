@@ -6,7 +6,8 @@ This file provides guidance for AI coding agents working in this repository.
 
 TypeScript monorepo (Turborepo + pnpm) for an open-source documentation platform (Mintlify alternative):
 
-- **Frontend**: React 19 + TanStack Start (SPA) + TailwindCSS v4
+- **Frontend**: React 19 + TanStack Router (SPA) + TailwindCSS v4
+- **Legacy Frontend**: TanStack Start app preserved in `apps/dashboard-old`
 - **Backend**: Hono + oRPC (type-safe APIs) + Better Auth
 - **Database**: Cloudflare D1 (SQLite) + Drizzle ORM
 - **UI Package**: Base UI + CVA + Tailwind Merge
@@ -17,6 +18,7 @@ TypeScript monorepo (Turborepo + pnpm) for an open-source documentation platform
 pnpm install                   # Install dependencies
 pnpm dev                       # Start all services (dashboard:3001, api:3000, db studio)
 pnpm dev:dashboard             # Start frontend only
+pnpm dev:dashboard-old         # Start legacy frontend only
 pnpm dev:api                   # Start API only
 pnpm lint                      # Run OxLint across all apps
 pnpm format                    # Run OxFmt across all apps
@@ -32,6 +34,7 @@ pnpm db:studio                 # Open Drizzle Studio
 # Run commands in specific apps
 turbo -F api <command>         # Run in API app
 turbo -F dashboard <command>   # Run in dashboard app
+turbo -F dashboard-old <command> # Run in legacy dashboard app
 turbo -F @shiru/ui <command>   # Run in UI package
 ```
 
@@ -161,7 +164,7 @@ export const myTable = sqliteTable("my_table", {
 });
 ```
 
-### Frontend Routes (TanStack Start)
+### Frontend Routes (TanStack Router)
 
 File-based routing in `apps/dashboard/src/routes/`. `_app/` prefix = protected routes:
 
@@ -208,11 +211,12 @@ shiru/
 │   │       ├── routers/  # oRPC route handlers
 │   │       ├── schema/   # Drizzle table definitions
 │   │       └── utils/    # Auth, DB, procedures, tryCatch
-│   ├── dashboard/        # TanStack Start frontend (port 3001)
+│   ├── dashboard/        # TanStack Router SPA frontend (port 3001)
 │   │   └── src/
 │   │       ├── routes/   # File-based routing (_app/ = protected)
 │   │       ├── components/
 │   │       └── utils/    # oRPC client, auth client
+│   ├── dashboard-old/    # Legacy TanStack Start frontend (port 3004)
 │   ├── docs/             # Astro Starlight documentation
 │   └── site/             # Marketing site
 ├── packages/
@@ -229,7 +233,7 @@ shiru/
 | Type-safe RPC | oRPC                             |
 | Auth          | Better Auth                      |
 | Database ORM  | Drizzle                          |
-| Frontend      | TanStack Start/Router/Query/Form |
+| Frontend      | TanStack Router/Query/Form       |
 | UI Base       | Base UI React                    |
 | Styling       | Tailwind v4 + CVA                |
 | Validation    | Zod v4                           |
