@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-if (typeof window !== "undefined" && import.meta.env.VITE_USERJOT_ID && !import.meta.env.DEV) {
+if (typeof window !== "undefined" && import.meta.env.VITE_USERJOT_ID) {
   window.$ujq = window.$ujq || [];
   window.uj =
     window.uj ||
@@ -25,12 +25,21 @@ if (typeof window !== "undefined" && import.meta.env.VITE_USERJOT_ID && !import.
   document.head.appendChild(script);
 
   window.uj.init(import.meta.env.VITE_USERJOT_ID, {
-    widget: true,
-    position: "right",
-    theme: "auto",
+    widget: false,
   });
 }
 
 export default function UserJotProvider({ children }: { children: ReactNode }) {
   return <>{children}</>;
+}
+
+const showWidget = (section?: string) => {
+  console.log(window.uj, section);
+
+  window.uj?.showWidget?.({ section });
+};
+const hideWidget = () => window.uj?.hideWidget?.();
+
+export function useUserJot() {
+  return { showWidget, hideWidget };
 }

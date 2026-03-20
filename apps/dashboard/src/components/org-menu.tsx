@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   IconCheckOutlineDuo18,
   IconChevronDownOutlineDuo18,
@@ -16,6 +16,7 @@ import { CreateOrgDialog } from "./create-org-dialog";
 
 export function OrgMenu({ collapsed }: { collapsed?: boolean }) {
   const { isCollapsed } = useSidebar();
+  const queryClient = useQueryClient();
   const [isCreateOrgDialogOpen, setIsCreateOrgDialogOpen] = useState(false);
   const { data: sessionData } = useQuery(orpc.user.getSession.queryOptions());
   const session = sessionData?.session;
@@ -24,8 +25,8 @@ export function OrgMenu({ collapsed }: { collapsed?: boolean }) {
   const { data: orgs } = useQuery(orpc.organization.getOrgList.queryOptions());
   const { mutateAsync: setActiveOrganization } = useMutation(
     orpc.organization.setActive.mutationOptions({
-      onSuccess: () => {
-        window.location.reload();
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ refetchType: "all" });
       },
     }),
   );
