@@ -27,11 +27,17 @@ export function AppShellLayout({ children, secondarySidebar }: AppShellLayoutPro
   const { toggleSecondarySidebar } = useSidebar();
   const hasSecondarySidebar = secondarySidebar !== undefined;
 
-  useHotkey("Mod+\\", () => {
-    if (hasSecondarySidebar) {
-      toggleSecondarySidebar();
-    }
-  });
+  useHotkey(
+    "Mod+\\",
+    () => {
+      if (hasSecondarySidebar) {
+        toggleSecondarySidebar();
+      }
+    },
+    {
+      ignoreInputs: true,
+    },
+  );
 
   return (
     <>

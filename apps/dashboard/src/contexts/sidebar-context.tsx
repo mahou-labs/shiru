@@ -29,7 +29,9 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
   const location = useLocation();
 
-  useHotkey("Mod+B", () => setIsCollapsed((prev) => !prev));
+  useHotkey("Mod+B", () => setIsCollapsed((prev) => !prev), {
+    ignoreInputs: true,
+  });
 
   const toggleSidebar = () => {
     setIsCollapsed((prev) => !prev);
