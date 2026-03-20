@@ -605,8 +605,8 @@ type PendingInviteProps = {
 };
 
 const roleColors = {
-  owner: "bg-primary text-primary-foreground border-primary",
-  admin: "bg-info text-info-foreground border-info",
+  owner: "border-primary/30 bg-primary/10 text-primary",
+  admin: "border-info/30 bg-info/10 text-info-foreground",
   member: "bg-muted text-muted-foreground border-border",
 } as const;
 

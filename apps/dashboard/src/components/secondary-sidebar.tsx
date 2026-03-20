@@ -41,7 +41,7 @@ export function SecondarySidebar({ children, desktopWidth, kind, title }: Second
         )}
         style={{ width }}
       >
-        <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
+        <div className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-4">
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium text-foreground text-sm">{title}</p>
             <p className="truncate text-muted-foreground text-xs">{kindDescriptions[kind]}</p>

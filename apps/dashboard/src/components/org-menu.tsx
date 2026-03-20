@@ -78,14 +78,14 @@ export function OrgMenu({ collapsed }: { collapsed?: boolean }) {
           <span className="w-full truncate text-start font-semibold text-foreground text-sm">
             {activeOrg?.name}
           </span>
-          <span className="w-full truncate text-start text-foreground-muted text-xs">
+          <span className="w-full truncate text-start text-muted-foreground text-xs">
             {subscriptionLabel}
           </span>
         </div>
 
         <IconChevronDownOutlineDuo18
           className={cn(
-            "ml-auto size-3 shrink-0 text-foreground-muted transition-opacity",
+            "ml-auto size-3 shrink-0 text-muted-foreground transition-opacity",
             isMenuCollapsed && "opacity-0",
           )}
         />

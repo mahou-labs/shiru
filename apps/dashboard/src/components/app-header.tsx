@@ -21,7 +21,7 @@ export function AppHeader({ secondarySidebar }: { secondarySidebar?: AppShellSec
     secondarySidebar?.kind === "navigation" ? IconGearOutlineDuo18 : IconBookOpen2OutlineDuo18;
 
   return (
-    <header className="relative flex h-14 shrink-0 items-center border-b border-border bg-background px-4">
+    <header className="relative flex h-12 shrink-0 items-center border-b border-border bg-background px-4">
       <div className="z-10 flex min-w-0 items-center gap-2">
         <Button
           size="icon"
