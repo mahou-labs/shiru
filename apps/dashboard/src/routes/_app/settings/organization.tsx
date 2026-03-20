@@ -6,6 +6,7 @@ import {
   IconCopyOutlineDuo18,
   IconDoorOpenOutlineDuo18,
   IconGearOutlineDuo18,
+  IconLoaderOutlineDuo18,
   IconTrashOutlineDuo18,
   IconUserPlusOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
@@ -31,8 +32,6 @@ import { Skeleton } from "@shiru/ui/skeleton";
 import { cn } from "@/utils/cn";
 import { orpc } from "@/utils/orpc-client";
 import { toastManager } from "@shiru/ui/toast";
-import { eq, useLiveQuery } from "@tanstack/react-db";
-import { orgInvitesCollection } from "@/utils/collections";
 
 const inviteSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -51,7 +50,9 @@ function RouteComponent() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
+  const [inviteIdBeingRevoked, setInviteIdBeingRevoked] = useState<string | null>(null);
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
+  const orgInvitesQueryOptions = orpc.organization.listInvites.queryOptions();
 
   // Fetch organization data
   const { data: orgData, isPending: isOrgPending } = useQuery(
@@ -60,14 +61,15 @@ function RouteComponent() {
   const { data: membersData, isPending: isMembersPending } = useQuery(
     orpc.organization.getMembers.queryOptions(),
   );
-  // const { data: invitesData, isPending: isInvitesPending } = useQuery(
-  //   orpc.organization.listInvites.queryOptions(),
-  // );
+  const { data: invitesData, isPending: isInvitesPending } = useQuery(orgInvitesQueryOptions);
 
-  const { data: orgInvites, isLoading: isInvitesPending } = useLiveQuery((q) =>
-    q
-      .from({ orgInvites: orgInvitesCollection })
-      .where(({ orgInvites: inv }) => eq(inv.status, "pending")),
+  const orgInvites = (invitesData ?? []).filter((invite) => invite.status === "pending");
+
+  const { mutateAsync: createInvite } = useMutation(
+    orpc.organization.createInvite.mutationOptions(),
+  );
+  const { mutateAsync: revokeInvite, isPending: isRevokingInvite } = useMutation(
+    orpc.organization.deleteInvite.mutationOptions(),
   );
 
   const isPending = isOrgPending || isMembersPending || isInvitesPending;
@@ -96,31 +98,20 @@ function RouteComponent() {
     defaultValues: { email: "" },
     validators: { onSubmit: inviteSchema },
     onSubmit: async ({ value }) => {
-      orgInvitesCollection.insert({
-        id: "",
-        createdAt: new Date(),
-        email: value.email,
-        role: "member",
-        expiresAt: new Date(Date.now() + 86400000),
-        inviterId: currentUser?.user.id || "",
-        organizationId: session?.session.activeOrganizationId || "",
-        status: "pending",
-      });
-      setIsInviteDialogOpen(false);
-      inviteForm.reset();
-      // try {
-      //   await createInvite({ email: value.email, role: "member" });
-      //   await queryClient.invalidateQueries(orpc.organization.listInvites.queryOptions());
-      //   toastManager.add({ title: "Invitation sent", type: "success" });
-      //   setIsInviteDialogOpen(false);
-      //   inviteForm.reset();
-      // } catch (error) {
-      //   console.error(error);
-      //   toastManager.add({
-      //     title: "Failed to invite member, try again later",
-      //     type: "error",
-      //   });
-      // }
+      try {
+        await createInvite({ email: value.email, role: "member" });
+        await queryClient.invalidateQueries({ queryKey: orgInvitesQueryOptions.queryKey });
+        toastManager.add({ title: "Invitation sent", type: "success" });
+        setIsInviteDialogOpen(false);
+        inviteForm.reset();
+      } catch (error) {
+        // oxlint-disable-next-line no-console
+        console.error(error);
+        toastManager.add({
+          title: error instanceof Error ? error.message : "Failed to invite member",
+          type: "error",
+        });
+      }
     },
   });
 
@@ -229,15 +220,22 @@ function RouteComponent() {
 
   // Handle invite revocation
   const handleRevokeInvite = async (inviteId: string) => {
-    orgInvitesCollection.delete(inviteId);
-    // try {
-    //   await deleteInvite({ id: inviteId });
-    //   await queryClient.invalidateQueries(orpc.organization.listInvites.queryOptions());
-    //   toastManager.add({ title: "Invitation revoked", type: "success" });
-    // } catch (error) {
-    //   console.error(error);
-    //   toastManager.add({ title: "Failed to revoke invitation", type: "error" });
-    // }
+    setInviteIdBeingRevoked(inviteId);
+
+    try {
+      await revokeInvite({ id: inviteId });
+      await queryClient.invalidateQueries({ queryKey: orgInvitesQueryOptions.queryKey });
+      toastManager.add({ title: "Invitation revoked", type: "success" });
+    } catch (error) {
+      // oxlint-disable-next-line no-console
+      console.error(error);
+      toastManager.add({
+        title: error instanceof Error ? error.message : "Failed to revoke invitation",
+        type: "error",
+      });
+    } finally {
+      setInviteIdBeingRevoked(null);
+    }
   };
 
   return (
@@ -367,6 +365,7 @@ function RouteComponent() {
                     key={invite.id}
                     invite={invite}
                     canManageMembers={canManageMembers}
+                    isRevoking={isRevokingInvite && inviteIdBeingRevoked === invite.id}
                     onRevoke={handleRevokeInvite}
                   />
                 ))}
@@ -600,6 +599,7 @@ type InviteData = {
 type PendingInviteProps = {
   invite: InviteData;
   canManageMembers: boolean;
+  isRevoking: boolean;
   onRevoke: (inviteId: string) => void;
   className?: string;
 };
@@ -717,7 +717,13 @@ function Member({
   );
 }
 
-function PendingInvite({ invite, canManageMembers, onRevoke, className }: PendingInviteProps) {
+function PendingInvite({
+  invite,
+  canManageMembers,
+  isRevoking,
+  onRevoke,
+  className,
+}: PendingInviteProps) {
   const name = invite.email.split("@")[0];
   const initials = name
     .split(" ")
@@ -766,12 +772,19 @@ function PendingInvite({ invite, canManageMembers, onRevoke, className }: Pendin
 
         {canManageMembers && (
           <Button
+            disabled={isRevoking}
             size="sm"
             variant="ghost"
-            onClick={() => onRevoke(invite.id)}
-            aria-label={`Revoke invite for ${invite.email}`}
+            onClick={() => void onRevoke(invite.id)}
+            aria-label={
+              isRevoking ? `Revoking invite for ${invite.email}` : `Revoke invite for ${invite.email}`
+            }
           >
-            <IconTrashOutlineDuo18 className="size-4 text-destructive" />
+            {isRevoking ? (
+              <IconLoaderOutlineDuo18 className="size-4 animate-spin text-muted-foreground" />
+            ) : (
+              <IconTrashOutlineDuo18 className="size-4 text-destructive" />
+            )}
           </Button>
         )}
       </div>
