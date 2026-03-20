@@ -50,7 +50,7 @@ This project uses the React Compiler. **Never use `useMemo`, `useCallback`, or `
 
 ### Comments
 
-Do not add unnecessary or obvious comments to code. Code should be self-documenting. Avoid section dividers (`// ---- section ----`), JSDoc on internal functions, and comments that restate what the code does. Only add comments when the *why* is non-obvious.
+Do not add unnecessary or obvious comments to code. Code should be self-documenting. Avoid section dividers (`// ---- section ----`), JSDoc on internal functions, and comments that restate what the code does. Only add comments when the _why_ is non-obvious.
 
 ### Linting & Formatting
 
@@ -227,17 +227,17 @@ shiru/
 
 ## Key Libraries
 
-| Purpose       | Library                          |
-| ------------- | -------------------------------- |
-| API Framework | Hono                             |
-| Type-safe RPC | oRPC                             |
-| Auth          | Better Auth                      |
-| Database ORM  | Drizzle                          |
-| Frontend      | TanStack Router/Query/Form       |
-| UI Base       | Base UI React                    |
-| Styling       | Tailwind v4 + CVA                |
-| Validation    | Zod v4                           |
-| Icons         | nucleo-ui-outline-duo-18         |
+| Purpose       | Library                    |
+| ------------- | -------------------------- |
+| API Framework | Hono                       |
+| Type-safe RPC | oRPC                       |
+| Auth          | Better Auth                |
+| Database ORM  | Drizzle                    |
+| Frontend      | TanStack Router/Query/Form |
+| UI Base       | Base UI React              |
+| Styling       | Tailwind v4 + CVA          |
+| Validation    | Zod v4                     |
+| Icons         | nucleo-ui-outline-duo-18   |
 
 ## Design Context
 

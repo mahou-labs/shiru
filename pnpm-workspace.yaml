@@ -3,12 +3,12 @@ packages:
   - packages/*
 
 catalog:
-  '@cloudflare/vite-plugin': ^1.29.1
-  '@orpc/client': ^1.13.8
-  '@polar-sh/better-auth': ^1.8.3
-  '@tailwindcss/vite': ^4.2.2
-  '@types/react': ^19.2.14
-  '@types/react-dom': ^19.2.3
+  "@cloudflare/vite-plugin": ^1.29.1
+  "@orpc/client": ^1.13.8
+  "@polar-sh/better-auth": ^1.8.3
+  "@tailwindcss/vite": ^4.2.2
+  "@types/react": ^19.2.14
+  "@types/react-dom": ^19.2.3
   astro: ^6.0.6
   better-auth: ^1.5.5
   clsx: ^2.1.1

@@ -20,6 +20,7 @@ The current implementation registers custom hostnames with Cloudflare and handle
 ### Architecture decision
 
 Decide whether the docs worker is:
+
 - A **separate Worker** (clean separation, independent scaling, own wrangler.jsonc)
 - A **route within the existing API worker** (simpler, shared D1 binding already set up, but couples concerns)
 
@@ -39,10 +40,10 @@ Recommendation: separate Worker in `apps/docs-worker/` -- docs serving has very 
 
 The current onboarding checklist has 3 steps. These additional steps should be added once the prerequisite features exist:
 
-| Step | Completion Check | Blocked On |
-|---|---|---|
-| Create your first page | At least 1 document/page exists for the org | Editor content model |
-| Publish your docs | Docs have been published at least once | Publishing pipeline |
+| Step                      | Completion Check                             | Blocked On             |
+| ------------------------- | -------------------------------------------- | ---------------------- |
+| Create your first page    | At least 1 document/page exists for the org  | Editor content model   |
+| Publish your docs         | Docs have been published at least once       | Publishing pipeline    |
 | Customize your docs theme | Org has custom theme/branding settings saved | Theme/branding feature |
 
 ### Implementation
@@ -114,15 +115,15 @@ Track onboarding effectiveness to improve conversion.
 
 ### Events to instrument
 
-| Event | Properties |
-|---|---|
-| `onboarding.viewed` | `org_id`, `completed_steps`, `total_steps` |
-| `onboarding.step_completed` | `org_id`, `step_name`, `time_since_org_created` |
-| `onboarding.dismissed` | `org_id`, `completed_steps`, `total_steps` |
-| `onboarding.all_complete` | `org_id`, `time_since_org_created` |
-| `domain.setup_started` | `org_id`, `hostname` |
-| `domain.verification_complete` | `org_id`, `hostname`, `time_since_setup` |
-| `domain.setup_failed` | `org_id`, `hostname`, `error_reason` |
+| Event                          | Properties                                      |
+| ------------------------------ | ----------------------------------------------- |
+| `onboarding.viewed`            | `org_id`, `completed_steps`, `total_steps`      |
+| `onboarding.step_completed`    | `org_id`, `step_name`, `time_since_org_created` |
+| `onboarding.dismissed`         | `org_id`, `completed_steps`, `total_steps`      |
+| `onboarding.all_complete`      | `org_id`, `time_since_org_created`              |
+| `domain.setup_started`         | `org_id`, `hostname`                            |
+| `domain.verification_complete` | `org_id`, `hostname`, `time_since_setup`        |
+| `domain.setup_failed`          | `org_id`, `hostname`, `error_reason`            |
 
 ### Implementation
 
