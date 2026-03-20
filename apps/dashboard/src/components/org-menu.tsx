@@ -63,7 +63,7 @@ export function OrgMenu({ collapsed }: { collapsed?: boolean }) {
 
   return (
     <Menu>
-      <MenuTrigger className="flex cursor-pointer select-none items-center gap-2 rounded-lg">
+      <MenuTrigger className="flex cursor-pointer select-none items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
         <Avatar className="rounded-md">
           <AvatarImage src={activeOrg?.logo ?? undefined} />
           <AvatarFallback className="rounded-md">{getInitials(activeOrg?.name)}</AvatarFallback>

@@ -26,8 +26,8 @@ export type SidebarItemProps = SidebarLinkItemProps | SidebarButtonItemProps;
 
 const baseClasses = cn(
   "group relative flex h-8 w-full items-center gap-3 rounded-lg px-2 font-medium text-sidebar-foreground text-sm",
-  "outline-border hover:bg-sidebar-accent hover:outline hover:text-sidebar-accent-foreground",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2",
+  "outline-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
 );
 
 export function SidebarItem(props: SidebarItemProps) {
@@ -115,7 +115,7 @@ export function MobileNavItem({ icon: Icon, label, href, matchPath }: MobileNavI
       className={cn(
         "group relative flex min-h-11 w-full items-center gap-3 rounded-lg px-3 font-medium text-sidebar-foreground text-sm",
         "outline-border hover:bg-sidebar-accent hover:outline hover:text-sidebar-accent-foreground",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         isActive && "bg-sidebar-accent outline text-sidebar-accent-foreground",
       )}
       title={undefined}

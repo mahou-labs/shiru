@@ -26,7 +26,7 @@ export function UserMenu() {
 
   return (
     <Menu>
-      <MenuTrigger className="cursor-pointer select-none rounded-full">
+      <MenuTrigger className="cursor-pointer select-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <Avatar>
           <AvatarImage src={user?.image ?? undefined} />
           <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
