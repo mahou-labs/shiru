@@ -5,7 +5,7 @@
 @source "../../../packages/ui/src/components/";
 
 #feedback-button {
-  display: none;
+  display: none !important;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -129,7 +129,7 @@
 
 .dark {
   /* ── Surfaces ────────────────────────────────────── */
-  --background: oklch(15% 0.008 205);
+  --background: oklch(17% 0.01 205);
   --foreground: oklch(92% 0.006 205);
   --card: oklch(18.5% 0.009 205);
   --card-foreground: oklch(92% 0.006 205);
@@ -164,7 +164,7 @@
   --ring: oklch(65% 0.14 205);
 
   /* ── Sidebar ────────────────────────────────────── */
-  --sidebar: oklch(17% 0.01 205);
+  --sidebar: oklch(15% 0.008 205);
   --sidebar-foreground: oklch(72% 0.008 205);
   --sidebar-primary: oklch(72% 0.14 205);
   --sidebar-primary-foreground: oklch(16% 0.018 205);
