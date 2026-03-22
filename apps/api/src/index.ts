@@ -1,18 +1,42 @@
-import { Hono } from "hono";
-import { createContext } from "./utils/context";
+import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ResponseHeadersPlugin } from "@orpc/server/plugins";
-import { appRouter } from "./routers";
-import { cors } from "hono/cors";
 import { env } from "cloudflare:workers";
-import { logger } from "hono/logger";
-import { auth } from "./utils/auth";
+import { Hono } from "hono";
 import { rateLimiter } from "hono-rate-limiter";
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { PostHog } from "posthog-node";
+import { appRouter } from "./routers";
+import { auth } from "./utils/auth";
+import { createContext } from "./utils/context";
+import { log } from "./utils/logger";
+
+const posthog = new PostHog(env.POSTHOG_PUBLIC_KEY, {
+  host: "https://t.shiru.sh",
+});
+
+const handleError = async (error: unknown, userId: string, source: "hono" | "orpc") => {
+  log.error(`[${source.toUpperCase()} Error]`, error, { userId });
+  if (env.ENVIRONMENT !== "dev") {
+    await posthog.captureExceptionImmediate(error, userId);
+  }
+};
 
 export type Env = { Bindings: CloudflareBindings };
 const app = new Hono<Env>();
 const handler = new RPCHandler(appRouter, {
+  interceptors: [
+    onError(async (error, { context }) => {
+      await handleError(error, context.user?.id || "", "orpc");
+    }),
+  ],
   plugins: [new ResponseHeadersPlugin()],
+});
+
+app.onError(async (err, c) => {
+  await handleError(err, "", "hono");
+  return c.text("Internal Server Error", 500);
 });
 
 app.use(
