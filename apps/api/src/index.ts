@@ -20,6 +20,7 @@ const handleError = async (error: unknown, userId: string, source: "hono" | "orp
   log.error(`[${source.toUpperCase()} Error]`, error, { userId });
   if (env.ENVIRONMENT !== "dev") {
     await posthog.captureExceptionImmediate(error, userId);
+    await posthog.flush();
   }
 };
 
