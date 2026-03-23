@@ -16,6 +16,7 @@
     "DASHBOARD_URL": "http://localhost:3001",
     "SITE_URL": "http://localhost:3002",
     "BETTER_AUTH_URL": "http://localhost:3000",
+    "POSTHOG_PUBLIC_KEY": "phc_hdbwwJWoeHfDnlt0Jgv7GB8UhAPVvTLaz6hg0DKXZyR",
   },
   "d1_databases": [
     {
@@ -43,6 +44,7 @@
         "DASHBOARD_URL": "https://staging-dashboard.shiru.sh",
         "SITE_URL": "https://shiru.sh",
         "BETTER_AUTH_URL": "https://staging-api.shiru.sh",
+        "POSTHOG_PUBLIC_KEY": "phc_hdbwwJWoeHfDnlt0Jgv7GB8UhAPVvTLaz6hg0DKXZyR",
       },
       "ratelimits": [
         {
@@ -69,6 +71,7 @@
         "DASHBOARD_URL": "https://dashboard.shiru.sh",
         "SITE_URL": "https://shiru.sh",
         "BETTER_AUTH_URL": "https://api.shiru.sh",
+        "POSTHOG_PUBLIC_KEY": "phc_hdbwwJWoeHfDnlt0Jgv7GB8UhAPVvTLaz6hg0DKXZyR",
       },
       "ratelimits": [
         {

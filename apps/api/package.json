@@ -18,9 +18,10 @@
     "@react-email/components": "^1.0.10",
     "better-auth": "catalog:",
     "cloudflare": "^5.2.0",
-    "drizzle-orm": "1.0.0-beta.15-859cf75",
+    "drizzle-orm": "1.0.0-beta.18-7eb39f0",
     "hono": "^4.12.7",
     "hono-rate-limiter": "^0.5.3",
+    "posthog-node": "^5.28.5",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-email": "^5.2.10",
@@ -35,7 +36,7 @@
     "@types/react-dom": "catalog:",
     "@types/uuid": "^11.0.0",
     "better-sqlite3": "^12.6.2",
-    "drizzle-kit": "1.0.0-beta.15-859cf75",
+    "drizzle-kit": "1.0.0-beta.18-7eb39f0",
     "wrangler": "catalog:"
   }
 }
