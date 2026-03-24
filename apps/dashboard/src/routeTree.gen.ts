@@ -24,7 +24,6 @@ import { Route as AppEditorRouteImport } from './routes/_app/editor'
 import { Route as AppSettingsRouteRouteImport } from './routes/_app/settings/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppSettingsOrganizationRouteImport } from './routes/_app/settings/organization'
-import { Route as AppSettingsDomainRouteImport } from './routes/_app/settings/domain'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
 
 const SuccessRoute = SuccessRouteImport.update({
@@ -101,11 +100,6 @@ const AppSettingsOrganizationRoute = AppSettingsOrganizationRouteImport.update({
   path: '/organization',
   getParentRoute: () => AppSettingsRouteRoute,
 } as any)
-const AppSettingsDomainRoute = AppSettingsDomainRouteImport.update({
-  id: '/domain',
-  path: '/domain',
-  getParentRoute: () => AppSettingsRouteRoute,
-} as any)
 const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -126,7 +120,6 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/settings/account': typeof AppSettingsAccountRoute
-  '/settings/domain': typeof AppSettingsDomainRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
   '/settings/': typeof AppSettingsIndexRoute
 }
@@ -143,7 +136,6 @@ export interface FileRoutesByTo {
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/': typeof AppIndexRoute
   '/settings/account': typeof AppSettingsAccountRoute
-  '/settings/domain': typeof AppSettingsDomainRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
   '/settings': typeof AppSettingsIndexRoute
 }
@@ -163,7 +155,6 @@ export interface FileRoutesById {
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/_app/': typeof AppIndexRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
-  '/_app/settings/domain': typeof AppSettingsDomainRoute
   '/_app/settings/organization': typeof AppSettingsOrganizationRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
 }
@@ -183,7 +174,6 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/verify-email'
     | '/settings/account'
-    | '/settings/domain'
     | '/settings/organization'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -200,7 +190,6 @@ export interface FileRouteTypes {
     | '/auth/verify-email'
     | '/'
     | '/settings/account'
-    | '/settings/domain'
     | '/settings/organization'
     | '/settings'
   id:
@@ -219,7 +208,6 @@ export interface FileRouteTypes {
     | '/auth/verify-email'
     | '/_app/'
     | '/_app/settings/account'
-    | '/_app/settings/domain'
     | '/_app/settings/organization'
     | '/_app/settings/'
   fileRoutesById: FileRoutesById
@@ -337,13 +325,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsOrganizationRouteImport
       parentRoute: typeof AppSettingsRouteRoute
     }
-    '/_app/settings/domain': {
-      id: '/_app/settings/domain'
-      path: '/domain'
-      fullPath: '/settings/domain'
-      preLoaderRoute: typeof AppSettingsDomainRouteImport
-      parentRoute: typeof AppSettingsRouteRoute
-    }
     '/_app/settings/account': {
       id: '/_app/settings/account'
       path: '/account'
@@ -356,14 +337,12 @@ declare module '@tanstack/react-router' {
 
 interface AppSettingsRouteRouteChildren {
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
-  AppSettingsDomainRoute: typeof AppSettingsDomainRoute
   AppSettingsOrganizationRoute: typeof AppSettingsOrganizationRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
 }
 
 const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
   AppSettingsAccountRoute: AppSettingsAccountRoute,
-  AppSettingsDomainRoute: AppSettingsDomainRoute,
   AppSettingsOrganizationRoute: AppSettingsOrganizationRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
 }

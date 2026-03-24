@@ -94,11 +94,11 @@
   --primary-foreground: oklch(98% 0.008 205);
 
   /* ── Subtle backgrounds ─────────────────────────── */
-  --secondary: oklch(18% 0.02 205 / 4%);
+  --secondary: oklch(52% 0.12 205 / 8%);
   --secondary-foreground: oklch(18% 0.02 205);
-  --muted: oklch(18% 0.02 205 / 4%);
+  --muted: oklch(52% 0.12 205 / 8%);
   --muted-foreground: oklch(48% 0.02 205);
-  --accent: oklch(18% 0.02 205 / 4%);
+  --accent: oklch(52% 0.12 205 / 16%);
   --accent-foreground: oklch(18% 0.02 205);
 
   /* ── Semantic — standard, untinted ──────────────── */

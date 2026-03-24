@@ -1,6 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
-  IconGlobe2OutlineDuo18,
   IconHouse2OutlineDuo18,
   IconSunOutlineDuo18,
   IconUsersOutlineDuo18,
@@ -14,13 +13,6 @@ const settingsNavItems = [
     icon: IconHouse2OutlineDuo18,
     label: "Overview",
     matchPath: (pathname: string) => pathname === "/settings",
-  },
-  {
-    description: "Configure your docs domain and verification",
-    href: "/settings/domain",
-    icon: IconGlobe2OutlineDuo18,
-    label: "Domain",
-    matchPath: (pathname: string) => pathname.startsWith("/settings/domain"),
   },
   {
     description: "Manage members, roles, and organization details",

@@ -4,14 +4,9 @@ import { authedProcedure, protectedProcedure, resolveActiveOrganization } from "
 import { log } from "@/utils/logger";
 import { ORPCError } from "@orpc/server";
 import { tryCatch } from "@/utils/try-catch";
-import { getCloudflareClient, getZoneId } from "@/utils/cloudflare";
-import { organizations } from "@/schema/auth";
-import { customDomains } from "@/schema/custom-domain";
 import { subscriptions } from "@/schema/subscription";
 import { eq } from "drizzle-orm";
 import { db } from "@/utils/db";
-
-const HOSTNAME_REGEX = /^(?!:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
 
 export const organizationRouter = {
   createOrg: authedProcedure
@@ -20,8 +15,6 @@ export const organizationRouter = {
         name: z.string().min(1),
         slug: z.string().min(1),
         logo: z.string().url().optional(),
-        hostingMode: z.enum(["managed", "github"]).optional().default("managed"),
-        hostname: z.string().optional(),
       }),
     )
     .handler(async ({ context: { headers, resHeaders }, input }) => {
@@ -43,73 +36,13 @@ export const organizationRouter = {
         resHeaders?.append("set-cookie", cookie);
       }
 
-      if (data?.id && (input.logo || input.hostingMode !== "managed")) {
-        const updateData: Record<string, string> = {};
-        if (input.logo) updateData.logo = input.logo;
-
-        if (Object.keys(updateData).length > 0) {
-          await tryCatch(
-            auth.api.updateOrganization({
-              headers,
-              body: { data: updateData },
-            }),
-          );
-        }
-
-        if (input.hostingMode) {
-          await tryCatch(
-            db
-              .update(organizations)
-              .set({ hostingMode: input.hostingMode })
-              .where(eq(organizations.id, data.id)),
-          );
-        }
-      }
-
-      const hostnameValue = input.hostname;
-      if (data?.id && hostnameValue && HOSTNAME_REGEX.test(hostnameValue)) {
-        const orgId = data.id;
-        const cf = getCloudflareClient();
-        const zoneId = getZoneId();
-
-        const { data: cfResult, error: cfError } = await tryCatch(
-          cf.customHostnames.create({
-            zone_id: zoneId,
-            hostname: hostnameValue,
-            ssl: { method: "txt", type: "dv" },
+      if (data?.id && input.logo) {
+        await tryCatch(
+          auth.api.updateOrganization({
+            headers,
+            body: { data: { logo: input.logo } },
           }),
         );
-
-        if (cfError || !cfResult) {
-          log.error("org.createOrg_domain_cf_failed", cfError ?? new Error("No result"), {
-            hostname: hostnameValue,
-            organizationId: orgId,
-          });
-        } else {
-          const sslValidation = cfResult.ssl?.validation_records?.[0];
-
-          const { error: dbError } = await tryCatch(
-            db.insert(customDomains).values({
-              organizationId: orgId,
-              hostname: hostnameValue,
-              cloudflareHostnameId: cfResult.id,
-              status: "pending_verification",
-              verificationTxtName: cfResult.ownership_verification?.name ?? null,
-              verificationTxtValue: cfResult.ownership_verification?.value ?? null,
-              sslStatus: "pending",
-              sslValidationTxtName: sslValidation?.txt_name ?? null,
-              sslValidationTxtValue: sslValidation?.txt_value ?? null,
-            }),
-          );
-
-          if (dbError) {
-            log.error("org.createOrg_domain_db_failed", dbError, {
-              hostname: hostnameValue,
-              organizationId: orgId,
-            });
-            await tryCatch(cf.customHostnames.delete(cfResult.id, { zone_id: zoneId }));
-          }
-        }
       }
 
       return data;

@@ -1,6 +1,5 @@
 import type { RouterClient } from "@orpc/server";
 import { protectedProcedure, publicProcedure } from "../utils/orpc";
-import { domainRouter } from "./domain-router";
 import { onboardingRouter } from "./onboarding-router";
 import { organizationRouter } from "./organization-router";
 import { userRouter } from "./user-router";
@@ -16,7 +15,6 @@ export const appRouter = {
       user: context.user,
     };
   }),
-  domain: domainRouter,
   onboarding: onboardingRouter,
   organization: organizationRouter,
   user: userRouter,

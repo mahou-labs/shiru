@@ -2,7 +2,6 @@ import { ORPCError } from "@orpc/server";
 import { and, eq, ne } from "drizzle-orm";
 import * as z from "zod";
 import { invitations, members, organizations } from "@/schema/auth";
-import { customDomains } from "@/schema/custom-domain";
 import { db } from "@/utils/db";
 import { log } from "@/utils/logger";
 import { tryCatch } from "@/utils/try-catch";
@@ -138,14 +137,7 @@ export const onboardingRouter = {
       throw new ORPCError("BAD_REQUEST", { message: "No active organization" });
     }
 
-    const [domainResult, orgResult, membersResult, invitesResult] = await Promise.all([
-      tryCatch(
-        db
-          .select({ id: customDomains.id })
-          .from(customDomains)
-          .where(and(eq(customDomains.organizationId, orgId), eq(customDomains.status, "active")))
-          .then((rows) => rows[0]),
-      ),
+    const [orgResult, membersResult, invitesResult] = await Promise.all([
       tryCatch(
         db
           .select({ logo: organizations.logo })
@@ -171,25 +163,23 @@ export const onboardingRouter = {
       ),
     ]);
 
-    if (domainResult.error || orgResult.error || membersResult.error || invitesResult.error) {
+    if (orgResult.error || membersResult.error || invitesResult.error) {
       log.error(
         "onboarding.getOnboardingStatus_failed",
-        domainResult.error ?? orgResult.error ?? membersResult.error ?? invitesResult.error,
+        orgResult.error ?? membersResult.error ?? invitesResult.error,
         {
           organizationId: orgId,
         },
       );
     }
 
-    const domain = !!domainResult.data;
     const profile = !!orgResult.data?.logo;
     const team = !!membersResult.data || !!invitesResult.data;
 
     return {
-      domain,
       profile,
       team,
-      allComplete: domain && profile && team,
+      allComplete: profile && team,
     };
   }),
 };

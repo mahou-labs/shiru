@@ -22,6 +22,7 @@ export function UserMenu() {
     await authClient.signOut();
     queryClient.clear();
     await router.invalidate();
+    await navigate({ to: "/auth/signin" });
   };
 
   return (

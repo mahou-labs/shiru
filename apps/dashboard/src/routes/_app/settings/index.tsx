@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   IconClipboardCheckOutlineDuo18,
-  IconGlobe2OutlineDuo18,
   IconSunOutlineDuo18,
   IconUsersOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
@@ -42,16 +41,6 @@ function RouteComponent() {
   return (
     <div className="space-y-4 pt-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        <Link
-          to="/settings/domain"
-          className="flex items-start gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
-        >
-          <IconGlobe2OutlineDuo18 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium">Domain</p>
-            <p className="mt-0.5 text-sm text-muted-foreground">Custom domain for your docs</p>
-          </div>
-        </Link>
         <Link
           to="/settings/organization"
           className="flex items-start gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
