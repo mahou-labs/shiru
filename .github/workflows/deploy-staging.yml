@@ -36,16 +36,16 @@ jobs:
             dashboard:
               - 'apps/dashboard/**'
               - 'packages/ui/**'
-              - 'pnpm-lock.yaml'
+              - 'bun.lock'
             docs:
               - 'apps/docs/**'
-              - 'pnpm-lock.yaml'
+              - 'bun.lock'
             site:
               - 'apps/site/**'
-              - 'pnpm-lock.yaml'
+              - 'bun.lock'
             api:
               - 'apps/api/**'
-              - 'pnpm-lock.yaml'
+              - 'bun.lock'
 
   deploy-dashboard-staging:
     name: Deploy Dashboard (Staging)
@@ -59,22 +59,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: package.json
-          cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun ci
         env:
           NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
 
       - name: Build dashboard
-        run: pnpm run build
+        run: bun run build
         working-directory: apps/dashboard
         env:
           VITE_API_URL: ${{ vars.API_STAGING_URL }}
@@ -103,22 +104,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: package.json
-          cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun ci
         env:
           NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
 
       - name: Build API
-        run: pnpm run build
+        run: bun run build
         working-directory: apps/api
 
       - name: Apply D1 migrations
@@ -151,22 +153,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: package.json
-          cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun ci
         env:
           NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
 
       - name: Build docs
-        run: pnpm run build
+        run: bun run build
         working-directory: apps/docs
 
       - name: Deploy to Cloudflare Workers
@@ -189,22 +192,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: package.json
-          cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun ci
         env:
           NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
 
       - name: Build site
-        run: pnpm run build
+        run: bun run build
         working-directory: apps/site
         env:
           PUBLIC_API_URL: ${{ vars.API_URL }}

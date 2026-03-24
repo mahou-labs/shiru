@@ -21,19 +21,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: package.json
-          cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun ci
         env:
           NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
 
       - name: Check
-        run: pnpm check
+        run: bun run check
