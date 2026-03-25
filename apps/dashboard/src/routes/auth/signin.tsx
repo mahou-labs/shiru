@@ -35,8 +35,11 @@ function RouteComponent() {
         {
           onSuccess: async () => {
             toastManager.add({ title: "Sign in successful", type: "success" });
-            await queryClient.fetchQuery(orpc.user.getSession.queryOptions());
-            await navigate({ to: redirect ?? "/" });
+            const session = await queryClient.fetchQuery(orpc.user.getSession.queryOptions());
+            // If user has no active org (and backend couldn't resolve one), send to onboarding
+            const destination =
+              redirect ?? (session?.session.activeOrganizationId ? "/" : "/onboarding");
+            await navigate({ to: destination });
           },
           onError: (error) => {
             toastManager.add({

@@ -1,43 +1,13 @@
 import { createRouterClient } from "@orpc/server";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-const mockAuthApi = vi.hoisted(() => ({
-  listOrganizations: vi.fn(),
-  setActiveOrganization: vi.fn(),
-}));
-
-vi.mock("../utils/auth", () => ({
-  auth: { api: mockAuthApi },
-}));
-
-const { mockDbThen } = vi.hoisted(() => ({ mockDbThen: vi.fn() }));
-
-vi.mock("@/utils/db", () => {
-  const base: Record<string, ReturnType<typeof vi.fn>> = {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-  };
-  const db = new Proxy(base, {
-    get(target, prop) {
-      if (prop === "then") return mockDbThen;
-      if (typeof prop === "string") return target[prop];
-    },
-  });
-  return { db };
-});
-
 vi.mock("@/utils/logger", () => ({
   log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-import { log } from "@/utils/logger";
 import { onboardingRouter } from "./onboarding-router";
-import { createMockContext, createMockSession } from "../test-utils/helpers";
+import { createMockContext } from "../test-utils/helpers";
 import type { RpcContext } from "../utils/context";
-
-const _mockLog = vi.mocked(log);
 
 afterEach(() => vi.clearAllMocks());
 
@@ -209,56 +179,5 @@ describe("scrapeWebsite", () => {
       const result = await client.scrapeWebsite({ url: "https://notfound.com" });
       expect(result.name).toBeNull();
     });
-  });
-});
-
-describe("getOnboardingStatus", () => {
-  // getOnboardingStatus is a protectedProcedure, so we need subscription mock too
-  // We mock the DB to control subscription check in requireSubscription middleware
-  it("throws BAD_REQUEST when no active organization", async () => {
-    // Set up DB mock: first call for subscription check (pass), remaining return empty
-    let callCount = 0;
-    mockDbThen.mockImplementation((cb: (rows: unknown[]) => unknown) => {
-      callCount++;
-      if (callCount === 1)
-        return Promise.resolve(cb([{ currentPeriodEnd: new Date(Date.now() + 86400000) }]));
-      return Promise.resolve(cb([]));
-    });
-
-    const client = createClient(
-      createMockContext({
-        session: createMockSession({ activeOrganizationId: null }),
-      }),
-    );
-
-    // With no activeOrganizationId and no orgs to resolve, the middleware throws
-    mockAuthApi.listOrganizations.mockResolvedValue([]);
-    mockAuthApi.setActiveOrganization.mockResolvedValue({
-      headers: new Headers(),
-    });
-
-    await expect(client.getOnboardingStatus()).rejects.toThrow();
-  });
-
-  it("returns correct onboarding status flags", async () => {
-    let callCount = 0;
-    mockDbThen.mockImplementation((cb: (rows: unknown[]) => unknown) => {
-      callCount++;
-      // Call 1: subscription check (requireSubscription middleware)
-      if (callCount === 1)
-        return Promise.resolve(cb([{ currentPeriodEnd: new Date(Date.now() + 86400000) }]));
-      // Call 2: org logo check
-      if (callCount === 2) return Promise.resolve(cb([{ logo: "https://example.com/logo.png" }]));
-      // Call 3: members check
-      if (callCount === 3) return Promise.resolve(cb([{ id: "member-2" }]));
-      // Call 4: invitations check
-      return Promise.resolve(cb([]));
-    });
-
-    const client = createClient(createMockContext());
-    const result = await client.getOnboardingStatus();
-    expect(result.profile).toBe(true);
-    expect(result.team).toBe(true);
-    expect(result.allComplete).toBe(true);
   });
 });

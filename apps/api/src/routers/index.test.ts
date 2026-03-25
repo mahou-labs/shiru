@@ -38,17 +38,11 @@ describe("appRouter", () => {
     expect(result).toBe("OK");
   });
 
-  it("privateData requires auth — rejects unauthenticated", async () => {
-    const client = createClient();
-    await expect(client.privateData()).rejects.toThrow();
-  });
-
   it("exposes all sub-routers", () => {
     expect(appRouter).toHaveProperty("onboarding");
     expect(appRouter).toHaveProperty("organization");
     expect(appRouter).toHaveProperty("user");
     expect(appRouter).toHaveProperty("waitlist");
     expect(appRouter).toHaveProperty("healthCheck");
-    expect(appRouter).toHaveProperty("privateData");
   });
 });

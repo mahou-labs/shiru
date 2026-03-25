@@ -29,7 +29,9 @@ function RouteComponent() {
         onSuccess: async () => {
           toastManager.add({ title: "Sign up successful", type: "success" });
           await queryClient.fetchQuery(orpc.user.getSession.queryOptions());
-          await navigate({ to: redirect ?? "/" });
+          // New users go to onboarding, unless they're accepting an invite
+          const destination = redirect?.startsWith("/invite") ? redirect : "/onboarding";
+          await navigate({ to: destination });
         },
         onError: (error) => {
           toastManager.add({

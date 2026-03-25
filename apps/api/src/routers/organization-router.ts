@@ -40,7 +40,7 @@ export const organizationRouter = {
         await tryCatch(
           auth.api.updateOrganization({
             headers,
-            body: { data: { logo: input.logo } },
+            body: { data: { logo: input.logo }, organizationId: data.id },
           }),
         );
       }

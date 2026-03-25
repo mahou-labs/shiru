@@ -1,11 +1,5 @@
-import { ORPCError } from "@orpc/server";
-import { and, eq, ne } from "drizzle-orm";
 import * as z from "zod";
-import { invitations, members, organizations } from "@/schema/auth";
-import { db } from "@/utils/db";
-import { log } from "@/utils/logger";
-import { tryCatch } from "@/utils/try-catch";
-import { authedProcedure, protectedProcedure } from "../utils/orpc";
+import { authedProcedure } from "../utils/orpc";
 
 async function extractWebsiteMetadata(url: string) {
   const controller = new AbortController();
@@ -130,56 +124,4 @@ export const onboardingRouter = {
 
       return metadata;
     }),
-
-  getOnboardingStatus: protectedProcedure.handler(async ({ context: { session } }) => {
-    const orgId = session.activeOrganizationId;
-    if (!orgId) {
-      throw new ORPCError("BAD_REQUEST", { message: "No active organization" });
-    }
-
-    const [orgResult, membersResult, invitesResult] = await Promise.all([
-      tryCatch(
-        db
-          .select({ logo: organizations.logo })
-          .from(organizations)
-          .where(eq(organizations.id, orgId))
-          .then((rows) => rows[0]),
-      ),
-      tryCatch(
-        db
-          .select({ id: members.id })
-          .from(members)
-          .where(and(eq(members.organizationId, orgId), ne(members.userId, session.userId)))
-          .limit(1)
-          .then((rows) => rows[0]),
-      ),
-      tryCatch(
-        db
-          .select({ id: invitations.id })
-          .from(invitations)
-          .where(and(eq(invitations.organizationId, orgId), eq(invitations.status, "pending")))
-          .limit(1)
-          .then((rows) => rows[0]),
-      ),
-    ]);
-
-    if (orgResult.error || membersResult.error || invitesResult.error) {
-      log.error(
-        "onboarding.getOnboardingStatus_failed",
-        orgResult.error ?? membersResult.error ?? invitesResult.error,
-        {
-          organizationId: orgId,
-        },
-      );
-    }
-
-    const profile = !!orgResult.data?.logo;
-    const team = !!membersResult.data || !!invitesResult.data;
-
-    return {
-      profile,
-      team,
-      allComplete: profile && team,
-    };
-  }),
 };

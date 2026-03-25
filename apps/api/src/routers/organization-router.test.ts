@@ -102,7 +102,9 @@ describe("createOrg", () => {
     await client.createOrg({ name: "Org", slug: "org", logo: "https://example.com/logo.png" });
 
     expect(mockAuthApi.updateOrganization).toHaveBeenCalledWith(
-      expect.objectContaining({ body: { data: { logo: "https://example.com/logo.png" } } }),
+      expect.objectContaining({
+        body: { data: { logo: "https://example.com/logo.png" }, organizationId: "new-org" },
+      }),
     );
   });
 
