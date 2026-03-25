@@ -20,14 +20,9 @@ npm install @base-ui/react
 ## Canonical imports
 
 ```tsx
-import { Button } from "@/components/ui/button"
-import {
-  Toolbar,
-  ToolbarButton,
-  ToolbarGroup,
-  ToolbarSeparator,
-} from "@/components/ui/toolbar"
-import { Toggle } from "@/components/ui/toggle-group"
+import { Button } from "@/components/ui/button";
+import { Toolbar, ToolbarButton, ToolbarGroup, ToolbarSeparator } from "@/components/ui/toolbar";
+import { Toggle } from "@/components/ui/toggle-group";
 ```
 
 ## Minimal pattern
@@ -44,9 +39,7 @@ import { Toggle } from "@/components/ui/toggle-group"
   </ToolbarGroup>
   <ToolbarSeparator />
   <ToolbarGroup>
-    <ToolbarButton render={<Button type="button" variant="outline" />}>
-      Save
-    </ToolbarButton>
+    <ToolbarButton render={<Button type="button" variant="outline" />}>Save</ToolbarButton>
   </ToolbarGroup>
 </Toolbar>
 ```
@@ -70,4 +63,3 @@ import { Toggle } from "@/components/ui/toggle-group"
 
 - core toolbar patterns: `p-toolbar-1`
 - related composition references: `p-toggle-group-1`, `p-group-1`, `p-select-1`
-

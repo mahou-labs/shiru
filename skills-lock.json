@@ -41,6 +41,11 @@
       "sourceType": "github",
       "computedHash": "c5e41825e8f9ecd52a2b9feac300868f86917371d8e471228cfc1f169dce8676"
     },
+    "coss": {
+      "source": "cosscom/coss",
+      "sourceType": "github",
+      "computedHash": "876a7033152b2aa9592e77dfd1cacd15e02d751e22c92c8422143296f1765006"
+    },
     "create-auth-skill": {
       "source": "better-auth/skills",
       "sourceType": "github",

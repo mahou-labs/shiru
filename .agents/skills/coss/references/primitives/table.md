@@ -31,7 +31,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 ```
 
 ## Minimal pattern
@@ -74,4 +74,3 @@ import {
 - framed table layout: `p-table-2`
 - TanStack integration with row selection: `p-table-3`
 - TanStack sorting + pagination + footer controls: `p-table-4`
-
