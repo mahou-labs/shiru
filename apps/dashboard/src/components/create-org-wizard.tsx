@@ -27,9 +27,9 @@ const slugSchema = z
   .refine((s) => !(s.startsWith("-") || s.endsWith("-")), {
     message: "Slug cannot start or end with a hyphen.",
   })
-    .refine((s) => !s.includes("--"), {
-      message: "Slug cannot contain consecutive hyphens.",
-    });
+  .refine((s) => !s.includes("--"), {
+    message: "Slug cannot contain consecutive hyphens.",
+  });
 
 type WizardData = {
   websiteUrl: string;

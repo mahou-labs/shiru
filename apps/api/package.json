@@ -9,7 +9,8 @@
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "check": "vp check"
+    "check": "vp check",
+    "test": "vp test"
   },
   "dependencies": {
     "@orpc/server": "^1.13.9",
