@@ -37,7 +37,7 @@
     "dev:api": "turbo -F api dev",
     "dev:native": "turbo -F native dev",
     "db:studio": "turbo -F api db:studio",
-    "update": "bun update --interactive",
+    "update": "bun update --interactive --recursive",
     "test": "turbo test",
     "check": "turbo check",
     "build": "turbo build",
