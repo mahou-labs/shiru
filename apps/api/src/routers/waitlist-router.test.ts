@@ -20,6 +20,7 @@ vi.mock("../utils/auth", () => ({
 }));
 
 import { log } from "@/utils/logger";
+
 import { waitlistRouter } from "./waitlist-router";
 
 const mockLog = vi.mocked(log);

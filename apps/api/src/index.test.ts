@@ -39,11 +39,17 @@ vi.mock("hono-rate-limiter", () => ({
 // c.env (like /health) will throw. We test the app's structure and exports instead.
 
 import type { RouterRoute } from "hono/types";
-import app from "./index";
+
+import worker, { app } from "./index";
 import type { Env } from "./index";
 
 describe("Hono app", () => {
-  it("exports a Hono app as default", () => {
+  it("exports a Worker with fetch handler as default", () => {
+    expect(worker).toBeDefined();
+    expect(worker.fetch).toBeInstanceOf(Function);
+  });
+
+  it("exports Hono app as named export", () => {
     expect(app).toBeDefined();
     expect(app.request).toBeInstanceOf(Function);
   });

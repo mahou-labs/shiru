@@ -56,3 +56,38 @@ export const TEST_INVITATION = {
   createdAt: new Date("2026-03-01T00:00:00Z"),
   inviterId: TEST_USER.id,
 };
+
+export const TEST_DOCS_SITE = {
+  id: "docs-site-001",
+  organizationId: TEST_ORG.id,
+  activeVersion: null as number | null,
+  createdAt: new Date("2026-03-01T00:00:00Z"),
+  updatedAt: new Date("2026-03-01T00:00:00Z"),
+};
+
+export const TEST_DOCS_SOURCE = {
+  id: "docs-source-001",
+  docsSiteId: TEST_DOCS_SITE.id,
+  mode: "github" as const,
+  publishableBranch: "main",
+  contentPath: "docs",
+  githubOwner: "test-org",
+  githubRepository: "test-docs",
+  githubInstallationId: "install-001",
+  createdAt: new Date("2026-03-01T00:00:00Z"),
+  updatedAt: new Date("2026-03-01T00:00:00Z"),
+};
+
+export const TEST_DOCS_VERSION = {
+  id: "docs-version-001",
+  docsSiteId: TEST_DOCS_SITE.id,
+  version: 1,
+  sourceRef: "abc123",
+  fileCount: 42,
+  totalSizeBytes: 1024000,
+  status: "published" as const,
+  failureCode: null as string | null,
+  errorMessage: null as string | null,
+  requestedByUserId: TEST_USER.id,
+  createdAt: new Date("2026-03-01T00:00:00Z"),
+};

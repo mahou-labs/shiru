@@ -5,9 +5,9 @@ vi.mock("@/utils/logger", () => ({
   log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-import { onboardingRouter } from "./onboarding-router";
 import { createMockContext } from "../test-utils/helpers";
 import type { RpcContext } from "../utils/context";
+import { onboardingRouter } from "./onboarding-router";
 
 afterEach(() => vi.clearAllMocks());
 

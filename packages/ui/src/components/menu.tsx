@@ -1,6 +1,7 @@
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
-import { IconCheckOutlineDuo18, IconChevronRightOutlineDuo18 } from "nucleo-ui-outline-duo-18";
+import { IconChevronRightOutlineDuo18 } from "nucleo-ui-outline-duo-18";
 import type * as React from "react";
+
 import { cn } from "@/utils/cn";
 
 export const MenuCreateHandle: typeof MenuPrimitive.createHandle = MenuPrimitive.createHandle;

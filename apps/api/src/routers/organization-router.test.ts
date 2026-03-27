@@ -1,5 +1,6 @@
 import { createRouterClient } from "@orpc/server";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+
 import type { RpcContext } from "../utils/context";
 
 const mockAuthApi = vi.hoisted(() => ({
@@ -47,8 +48,9 @@ vi.mock("@/utils/logger", () => ({
 }));
 
 import { log } from "@/utils/logger";
-import { organizationRouter } from "./organization-router";
+
 import { createMockContext } from "../test-utils/helpers";
+import { organizationRouter } from "./organization-router";
 
 const mockLog = vi.mocked(log);
 

@@ -31,14 +31,14 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "shiru-db-prod",
-      "database_id": "35ee7738-80ea-4e70-802c-301eaecb7bde",
+      "database_name": "shiru-db",
+      "database_id": "e510a3f8-0538-496f-a3fe-b277f1e6fedc",
       "migrations_dir": "drizzle/migrations",
     },
   ],
   "kv_namespaces": [
     {
-      "binding": "KV",
+      "binding": "DOCS_KV",
       "id": "56d9abb7d5994c54a03dc3cc91614311",
     },
   ],

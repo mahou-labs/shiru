@@ -11,21 +11,21 @@ Your knowledge of the Agents SDK may be outdated. **Prefer retrieval over pre-tr
 
 Fetch current docs from `https://github.com/cloudflare/agents/tree/main/docs` before implementing.
 
-| Topic | Doc | Use for |
-|-------|-----|---------|
-| Getting started | `docs/getting-started.md` | First agent, project setup |
-| State | `docs/state.md` | `setState`, `validateStateChange`, persistence |
-| Routing | `docs/routing.md` | URL patterns, `routeAgentRequest`, `basePath` |
-| Callable methods | `docs/callable-methods.md` | `@callable`, RPC, streaming, timeouts |
-| Scheduling | `docs/scheduling.md` | `schedule()`, `scheduleEvery()`, cron |
-| Workflows | `docs/workflows.md` | `AgentWorkflow`, durable multi-step tasks |
-| HTTP/WebSockets | `docs/http-websockets.md` | Lifecycle hooks, hibernation |
-| Email | `docs/email.md` | Email routing, secure reply resolver |
-| MCP client | `docs/mcp-client.md` | Connecting to MCP servers |
-| MCP server | `docs/mcp-servers.md` | Building MCP servers with `McpAgent` |
-| Client SDK | `docs/client-sdk.md` | `useAgent`, `useAgentChat`, React hooks |
-| Human-in-the-loop | `docs/human-in-the-loop.md` | Approval flows, pausing workflows |
-| Resumable streaming | `docs/resumable-streaming.md` | Stream recovery on disconnect |
+| Topic               | Doc                           | Use for                                        |
+| ------------------- | ----------------------------- | ---------------------------------------------- |
+| Getting started     | `docs/getting-started.md`     | First agent, project setup                     |
+| State               | `docs/state.md`               | `setState`, `validateStateChange`, persistence |
+| Routing             | `docs/routing.md`             | URL patterns, `routeAgentRequest`, `basePath`  |
+| Callable methods    | `docs/callable-methods.md`    | `@callable`, RPC, streaming, timeouts          |
+| Scheduling          | `docs/scheduling.md`          | `schedule()`, `scheduleEvery()`, cron          |
+| Workflows           | `docs/workflows.md`           | `AgentWorkflow`, durable multi-step tasks      |
+| HTTP/WebSockets     | `docs/http-websockets.md`     | Lifecycle hooks, hibernation                   |
+| Email               | `docs/email.md`               | Email routing, secure reply resolver           |
+| MCP client          | `docs/mcp-client.md`          | Connecting to MCP servers                      |
+| MCP server          | `docs/mcp-servers.md`         | Building MCP servers with `McpAgent`           |
+| Client SDK          | `docs/client-sdk.md`          | `useAgent`, `useAgentChat`, React hooks        |
+| Human-in-the-loop   | `docs/human-in-the-loop.md`   | Approval flows, pausing workflows              |
+| Resumable streaming | `docs/resumable-streaming.md` | Stream recovery on disconnect                  |
 
 Cloudflare docs: https://developers.cloudflare.com/agents/
 
@@ -49,6 +49,7 @@ npm ls agents  # Should show agents package
 ```
 
 If not installed:
+
 ```bash
 npm install agents
 ```
@@ -58,9 +59,9 @@ npm install agents
 ```jsonc
 {
   "durable_objects": {
-    "bindings": [{ "name": "MyAgent", "class_name": "MyAgent" }]
+    "bindings": [{ "name": "MyAgent", "class_name": "MyAgent" }],
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MyAgent"] }]
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MyAgent"] }],
 }
 ```
 
@@ -92,7 +93,7 @@ export class Counter extends Agent<Env, State> {
 }
 
 export default {
-  fetch: (req, env) => routeAgentRequest(req, env) ?? new Response("Not found", { status: 404 })
+  fetch: (req, env) => routeAgentRequest(req, env) ?? new Response("Not found", { status: 404 }),
 };
 ```
 
@@ -100,26 +101,26 @@ export default {
 
 Requests route to `/agents/{agent-name}/{instance-name}`:
 
-| Class | URL |
-|-------|-----|
-| `Counter` | `/agents/counter/user-123` |
-| `ChatRoom` | `/agents/chat-room/lobby` |
+| Class      | URL                        |
+| ---------- | -------------------------- |
+| `Counter`  | `/agents/counter/user-123` |
+| `ChatRoom` | `/agents/chat-room/lobby`  |
 
 Client: `useAgent({ agent: "Counter", name: "user-123" })`
 
 ## Core APIs
 
-| Task | API |
-|------|-----|
-| Read state | `this.state.count` |
-| Write state | `this.setState({ count: 1 })` |
-| SQL query | `` this.sql`SELECT * FROM users WHERE id = ${id}` `` |
-| Schedule (delay) | `await this.schedule(60, "task", payload)` |
-| Schedule (cron) | `await this.schedule("0 * * * *", "task", payload)` |
-| Schedule (interval) | `await this.scheduleEvery(30, "poll")` |
-| RPC method | `@callable() myMethod() { ... }` |
-| Streaming RPC | `@callable({ streaming: true }) stream(res) { ... }` |
-| Start workflow | `await this.runWorkflow("ProcessingWorkflow", params)` |
+| Task                | API                                                    |
+| ------------------- | ------------------------------------------------------ |
+| Read state          | `this.state.count`                                     |
+| Write state         | `this.setState({ count: 1 })`                          |
+| SQL query           | `` this.sql`SELECT * FROM users WHERE id = ${id}` ``   |
+| Schedule (delay)    | `await this.schedule(60, "task", payload)`             |
+| Schedule (cron)     | `await this.schedule("0 * * * *", "task", payload)`    |
+| Schedule (interval) | `await this.scheduleEvery(30, "poll")`                 |
+| RPC method          | `@callable() myMethod() { ... }`                       |
+| Streaming RPC       | `@callable({ streaming: true }) stream(res) { ... }`   |
+| Start workflow      | `await this.runWorkflow("ProcessingWorkflow", params)` |
 
 ## React Client
 
@@ -133,13 +134,11 @@ function App() {
     agent: "Counter",
     name: "my-instance",
     onStateUpdate: (newState) => setLocalState(newState),
-    onIdentity: (name, agentType) => console.log(`Connected to ${name}`)
+    onIdentity: (name, agentType) => console.log(`Connected to ${name}`),
   });
 
   return (
-    <button onClick={() => agent.setState({ count: state.count + 1 })}>
-      Count: {state.count}
-    </button>
+    <button onClick={() => agent.setState({ count: state.count + 1 })}>Count: {state.count}</button>
   );
 }
 ```

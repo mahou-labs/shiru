@@ -1,12 +1,15 @@
+import { ORPCError } from "@orpc/server";
+import { eq } from "drizzle-orm";
 import * as z from "zod";
+
+import { subscriptions } from "@/schema/subscription";
+import { db } from "@/utils/db";
+import { bootstrapDocsForOrg } from "@/utils/docs-bootstrap";
+import { log } from "@/utils/logger";
+import { tryCatch } from "@/utils/try-catch";
+
 import { auth } from "../utils/auth";
 import { authedProcedure, protectedProcedure, resolveActiveOrganization } from "../utils/orpc";
-import { log } from "@/utils/logger";
-import { ORPCError } from "@orpc/server";
-import { tryCatch } from "@/utils/try-catch";
-import { subscriptions } from "@/schema/subscription";
-import { eq } from "drizzle-orm";
-import { db } from "@/utils/db";
 
 export const organizationRouter = {
   createOrg: authedProcedure
@@ -14,7 +17,7 @@ export const organizationRouter = {
       z.object({
         name: z.string().min(1),
         slug: z.string().min(1),
-        logo: z.string().url().optional(),
+        logo: z.url().optional(),
       }),
     )
     .handler(async ({ context: { headers, resHeaders }, input }) => {
@@ -43,6 +46,13 @@ export const organizationRouter = {
             body: { data: { logo: input.logo }, organizationId: data.id },
           }),
         );
+      }
+
+      if (data?.id) {
+        const { error: bootstrapError } = await tryCatch(bootstrapDocsForOrg(data.id));
+        if (bootstrapError) {
+          log.error("org.docs_bootstrap_failed", bootstrapError, { organizationId: data.id });
+        }
       }
 
       return data;

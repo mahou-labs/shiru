@@ -9,7 +9,7 @@ State persists to SQLite and broadcasts to connected clients automatically.
 ### Define Typed State
 
 ```typescript
-type State = { 
+type State = {
   count: number;
   items: string[];
 };
@@ -55,16 +55,16 @@ import { useAgent } from "agents/react";
 
 function App() {
   const [state, setLocalState] = useState<State>({ count: 0 });
-  
+
   const agent = useAgent<State>({
     agent: "MyAgent",
     name: "instance-1",
-    onStateUpdate: (newState) => setLocalState(newState)
+    onStateUpdate: (newState) => setLocalState(newState),
   });
 
-  return <button onClick={() => agent.setState({ count: state.count + 1 })}>
-    Count: {state.count}
-  </button>;
+  return (
+    <button onClick={() => agent.setState({ count: state.count + 1 })}>Count: {state.count}</button>
+  );
 }
 ```
 
@@ -95,12 +95,12 @@ const items = this.sql<{ id: string; name: string }>`
 
 ### Schedule Types
 
-| Mode | Syntax | Use Case |
-|------|--------|----------|
-| Delay | `this.schedule(60, ...)` | Run in 60 seconds |
-| Date | `this.schedule(new Date(...), ...)` | Run at specific time |
-| Cron | `this.schedule("0 8 * * *", ...)` | Recurring schedule |
-| Interval | `this.scheduleEvery(30, ...)` | Fixed interval (every 30s) |
+| Mode     | Syntax                              | Use Case                   |
+| -------- | ----------------------------------- | -------------------------- |
+| Delay    | `this.schedule(60, ...)`            | Run in 60 seconds          |
+| Date     | `this.schedule(new Date(...), ...)` | Run at specific time       |
+| Cron     | `this.schedule("0 8 * * *", ...)`   | Recurring schedule         |
+| Interval | `this.scheduleEvery(30, ...)`       | Fixed interval (every 30s) |
 
 ### Examples
 

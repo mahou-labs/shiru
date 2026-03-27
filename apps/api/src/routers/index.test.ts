@@ -24,8 +24,8 @@ vi.mock("@/utils/email", () => ({
   sendVerificationEmail: vi.fn(),
 }));
 
-import { appRouter } from "./index";
 import { createUnauthenticatedContext } from "../test-utils/helpers";
+import { appRouter } from "./index";
 
 function createClient(context = createUnauthenticatedContext()) {
   return createRouterClient(appRouter, { context });

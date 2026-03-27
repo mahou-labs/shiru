@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "1b1db5d2fb133511785345f0fcb0c9d12a805b04a2789028d8890ebe448aad12"
     },
+    "agents-sdk": {
+      "source": "cloudflare/skills",
+      "sourceType": "github",
+      "computedHash": "921f2a43c0f58851a8bf9faaeb3641fa3108f3a94e787ca8e948626342988658"
+    },
     "animate": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
@@ -31,10 +36,25 @@
       "sourceType": "github",
       "computedHash": "0accf49d7bbda166a682b68bd9f597982ba5d5b286d77b98356c90221186775d"
     },
+    "building-ai-agent-on-cloudflare": {
+      "source": "cloudflare/skills",
+      "sourceType": "github",
+      "computedHash": "e1d8051a52bd96c307a7781fc045a9155f86750e25f151675c19709c88d78468"
+    },
+    "building-mcp-server-on-cloudflare": {
+      "source": "cloudflare/skills",
+      "sourceType": "github",
+      "computedHash": "281b2b0870687792fd23a738b2838f6f581b928a96012de57a9ff61f0df24101"
+    },
     "clarify": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "computedHash": "028f83c9bbb870046cbb0e01df6c81b72cd5311b893f74db95d3c799a615277a"
+    },
+    "cloudflare": {
+      "source": "cloudflare/skills",
+      "sourceType": "github",
+      "computedHash": "02ef72b4906d295d03da15d52357babdef06a762f0374b85c89c73c9b22a7bad"
     },
     "colorize": {
       "source": "pbakaus/impeccable",
@@ -165,6 +185,21 @@
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    },
+    "web-perf": {
+      "source": "cloudflare/skills",
+      "sourceType": "github",
+      "computedHash": "520d36ee93779146266dcdeec31d5e42341c3a40cc35007c1b5e02d6824ff86b"
+    },
+    "workers-best-practices": {
+      "source": "cloudflare/skills",
+      "sourceType": "github",
+      "computedHash": "420e1ad3eaeb8ed2016e6b34fff3757de6aa39899ec2bd6e9784a29c38e70f9a"
+    },
+    "wrangler": {
+      "source": "cloudflare/skills",
+      "sourceType": "github",
+      "computedHash": "cd0ac8f97a2f54d19166acfd380fca8236db5e9f37d3b2066f713967e2673d36"
     }
   }
 }

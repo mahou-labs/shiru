@@ -14,6 +14,20 @@ vi.mock("cloudflare:workers", () => ({
     POSTHOG_PUBLIC_KEY: "phc_test",
     CLOUDFLARE_API_TOKEN: "test-cf",
     CLOUDFLARE_ZONE_ID: "test-zone",
+    GITHUB_TOKEN: "test-github-token",
     RATE_LIMITER: { limit: vi.fn().mockResolvedValue({ success: true }) },
+    PUBLISH_ARTIFACTS: {
+      get: vi.fn(),
+      put: vi.fn(),
+      delete: vi.fn(),
+      list: vi.fn(),
+    },
+    DOCS_KV: {
+      get: vi.fn(),
+      put: vi.fn(),
+      delete: vi.fn(),
+      list: vi.fn().mockResolvedValue({ keys: [] }),
+      getWithMetadata: vi.fn(),
+    },
   },
 }));

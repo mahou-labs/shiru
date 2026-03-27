@@ -16,7 +16,7 @@ export class Chat extends AIChatAgent<Env> {
     const result = streamText({
       model: openai("gpt-4o"),
       messages: await convertToModelMessages(this.messages),
-      onFinish
+      onFinish,
     });
     return result.toUIMessageStreamResponse();
   }
@@ -32,7 +32,7 @@ export class Chat extends AIChatAgent<Env> {
       model: openai("gpt-4o"),
       system: "You are a helpful assistant specializing in...",
       messages: await convertToModelMessages(this.messages),
-      onFinish
+      onFinish,
     });
     return result.toUIMessageStreamResponse();
   }
@@ -49,8 +49,8 @@ const tools = {
   getWeather: tool({
     description: "Get weather for a location",
     parameters: z.object({ location: z.string() }),
-    execute: async ({ location }) => `Weather in ${location}: 72°F, sunny`
-  })
+    execute: async ({ location }) => `Weather in ${location}: 72°F, sunny`,
+  }),
 };
 
 export class Chat extends AIChatAgent<Env> {
@@ -59,7 +59,7 @@ export class Chat extends AIChatAgent<Env> {
       model: openai("gpt-4o"),
       messages: await convertToModelMessages(this.messages),
       tools,
-      onFinish
+      onFinish,
     });
     return result.toUIMessageStreamResponse();
   }
@@ -80,10 +80,10 @@ export class Chat extends AIChatAgent<Env> {
         const result = streamText({
           model: openai("gpt-4o"),
           messages: await convertToModelMessages(this.messages),
-          onFinish
+          onFinish,
         });
         writer.merge(result.toUIMessageStream());
-      }
+      },
     });
     return createUIMessageStreamResponse({ stream });
   }
@@ -113,16 +113,10 @@ import { useAgentChat } from "@cloudflare/ai-chat/react";
 function ChatUI() {
   const agent = useAgent({
     agent: "Chat",
-    name: "my-chat-session"
+    name: "my-chat-session",
   });
 
-  const { 
-    messages, 
-    input, 
-    handleInputChange, 
-    handleSubmit, 
-    status 
-  } = useAgentChat({ agent });
+  const { messages, input, handleInputChange, handleSubmit, status } = useAgentChat({ agent });
 
   return (
     <div>
@@ -131,13 +125,9 @@ function ChatUI() {
           <strong>{m.role}:</strong> {m.content}
         </div>
       ))}
-      
+
       <form onSubmit={handleSubmit}>
-        <input 
-          value={input} 
-          onChange={handleInputChange}
-          disabled={status === "streaming"}
-        />
+        <input value={input} onChange={handleInputChange} disabled={status === "streaming"} />
         <button type="submit">Send</button>
       </form>
     </div>
@@ -170,9 +160,9 @@ Client receives streamed messages via WebSocket RPC.
 
 `useAgentChat` status:
 
-| Status | Meaning |
-|--------|---------|
-| `ready` | Idle, ready for input |
-| `streaming` | Response streaming |
+| Status      | Meaning               |
+| ----------- | --------------------- |
+| `ready`     | Idle, ready for input |
+| `streaming` | Response streaming    |
 | `submitted` | Request sent, waiting |
-| `error` | Error occurred |
+| `error`     | Error occurred        |

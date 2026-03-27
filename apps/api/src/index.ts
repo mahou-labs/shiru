@@ -7,10 +7,17 @@ import { rateLimiter } from "hono-rate-limiter";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { PostHog } from "posthog-node";
+
 import { appRouter } from "./routers";
 import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
 import { log } from "./utils/logger";
+
+let data = await env.KV.get("data");
+await env.KV.put("data", "ITS WORKING");
+if (!data) {
+  data = await env.KV.get("data");
+}
 
 const posthog = new PostHog(env.POSTHOG_PUBLIC_KEY, {
   host: "https://t.shiru.sh",
@@ -83,4 +90,5 @@ app.use("/rpc/*", async (c, next) => {
   await next();
 });
 
+export { app };
 export default app;
