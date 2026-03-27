@@ -20,6 +20,7 @@ export default defineConfig({
       // ─── Suspicious ────────────────────────────────────────
       "no-shadow": "warn",
       "no-self-compare": "warn",
+      "no-unused-vars": "warn",
 
       // ─── Safety / Restriction ──────────────────────────────
       "no-var": "error",
