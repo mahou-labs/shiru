@@ -1,13 +1,22 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "shiru-docs",
-  "compatibility_date": "2025-03-25",
-  "preview_urls": true,
+  "name": "shiru-docs-edge",
+  "compatibility_date": "2025-08-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "r2_buckets": [
+    {
+      "binding": "PUBLISH_ARTIFACTS",
+      "bucket_name": "shiru-publish-artifacts-dev",
+    },
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "56d9abb7d5994c54a03dc3cc91614311",
+    },
+  ],
   "observability": {
     "enabled": true,
-  },
-  "assets": {
-    "directory": "./dist",
-    "not_found_handling": "404-page",
+    "logs": { "enabled": true },
   },
 }
