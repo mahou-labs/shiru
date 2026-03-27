@@ -1,43 +1,43 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   IconHouse2OutlineDuo18,
-  IconSunOutlineDuo18,
-  IconUsersOutlineDuo18,
+  IconGearOutlineDuo18,
+  IconBookOpen2OutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 
 import { cn } from "@/utils/cn";
 
-const settingsNavItems = [
+const docsNavItems = [
   {
-    description: "Overview, setup, and workspace defaults",
-    href: "/settings",
+    description: "Production status, publish, and recent builds",
+    href: "/docs",
     icon: IconHouse2OutlineDuo18,
     label: "Overview",
-    matchPath: (pathname: string) => pathname === "/settings",
+    matchPath: (pathname: string) => pathname === "/docs",
   },
   {
-    description: "Manage members, roles, and organization details",
-    href: "/settings/organization",
-    icon: IconUsersOutlineDuo18,
-    label: "Organization",
-    matchPath: (pathname: string) => pathname.startsWith("/settings/organization"),
+    description: "Version history with status and rollback",
+    href: "/docs/history",
+    icon: IconBookOpen2OutlineDuo18,
+    label: "History",
+    matchPath: (pathname: string) => pathname.startsWith("/docs/history"),
   },
   {
-    description: "Personal preferences and appearance settings",
-    href: "/settings/account",
-    icon: IconSunOutlineDuo18,
-    label: "Account",
-    matchPath: (pathname: string) => pathname.startsWith("/settings/account"),
+    description: "Repository, branch, and content settings",
+    href: "/docs/source",
+    icon: IconGearOutlineDuo18,
+    label: "Source",
+    matchPath: (pathname: string) => pathname.startsWith("/docs/source"),
   },
 ];
 
-export function SettingsSecondaryNav({ as = "nav" }: { as?: "div" | "nav" }) {
+export function DocsSecondaryNav({ as = "nav" }: { as?: "div" | "nav" }) {
   const location = useLocation();
   const Root = as;
 
   return (
-    <Root className="space-y-1" aria-label={as === "nav" ? "Settings sections" : undefined}>
-      {settingsNavItems.map((item) => {
+    <Root className="space-y-1" aria-label={as === "nav" ? "Docs sections" : undefined}>
+      {docsNavItems.map((item) => {
         const Icon = item.icon;
         const isActive = item.matchPath(location.pathname);
 

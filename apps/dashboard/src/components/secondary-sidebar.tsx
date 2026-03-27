@@ -1,8 +1,10 @@
-import type { ReactNode } from "react";
 import { Button } from "@shiru/ui/button";
 import { IconChevronLeftOutlineDuo18 } from "nucleo-ui-outline-duo-18";
+import type { ReactNode } from "react";
+
 import { secondarySidebarDesktopWidth, useSidebar } from "@/contexts/sidebar-context";
 import { cn } from "@/utils/cn";
+
 import type { SecondarySidebarKind } from "./app-shell-layout";
 
 const kindDescriptions = {

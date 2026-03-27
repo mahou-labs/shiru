@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
+
 import { LoadingScreen } from "@/components/loading-screen";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarProvider } from "@/contexts/sidebar-context";

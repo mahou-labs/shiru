@@ -1,21 +1,22 @@
-import { orpc } from "@/utils/orpc-client";
 import { Button } from "@shiru/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@shiru/ui/empty";
 import { AnchoredToastProvider, ToastProvider } from "@shiru/ui/toast";
 import { TanStackDevtools } from "@tanstack/react-devtools";
+import { formDevtoolsPlugin } from "@tanstack/react-form-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, Link, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { scan } from "react-scan";
-import { formDevtoolsPlugin } from "@tanstack/react-form-devtools";
 // import { hotkeysDevtoolsPlugin } from "@tanstack/react-hotkeys-devtools";
 import { ThemeProvider } from "better-themes";
 import {
   IconAlertWarningOutlineDuo18,
   IconCircleXmarkOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
+import { scan } from "react-scan";
+
 import PostHogProvider from "@/contexts/posthog-context";
+import { orpc } from "@/utils/orpc-client";
 
 type RouterAppContext = {
   orpc: typeof orpc;

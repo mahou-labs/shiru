@@ -12,6 +12,7 @@ import {
   type RenderContext,
 } from "@tiptap/react";
 import { ReactNodeViewRenderer } from "@tiptap/react";
+
 import { AsideView } from "./aside-view";
 
 export type AsideVariant = "note" | "tip" | "caution" | "danger";

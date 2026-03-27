@@ -22,9 +22,13 @@ import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-passw
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AppEditorRouteImport } from './routes/_app/editor'
 import { Route as AppSettingsRouteRouteImport } from './routes/_app/settings/route'
+import { Route as AppDocsRouteRouteImport } from './routes/_app/docs/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
+import { Route as AppDocsIndexRouteImport } from './routes/_app/docs/index'
 import { Route as AppSettingsOrganizationRouteImport } from './routes/_app/settings/organization'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
+import { Route as AppDocsSourceRouteImport } from './routes/_app/docs/source'
+import { Route as AppDocsHistoryRouteImport } from './routes/_app/docs/history'
 
 const SuccessRoute = SuccessRouteImport.update({
   id: '/success',
@@ -90,10 +94,20 @@ const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppDocsRouteRoute = AppDocsRouteRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppSettingsRouteRoute,
+} as any)
+const AppDocsIndexRoute = AppDocsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppDocsRouteRoute,
 } as any)
 const AppSettingsOrganizationRoute = AppSettingsOrganizationRouteImport.update({
   id: '/organization',
@@ -105,6 +119,16 @@ const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AppSettingsRouteRoute,
 } as any)
+const AppDocsSourceRoute = AppDocsSourceRouteImport.update({
+  id: '/source',
+  path: '/source',
+  getParentRoute: () => AppDocsRouteRoute,
+} as any)
+const AppDocsHistoryRoute = AppDocsHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AppDocsRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -112,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/invite': typeof InviteRoute
   '/onboarding': typeof OnboardingRoute
   '/success': typeof SuccessRoute
+  '/docs': typeof AppDocsRouteRouteWithChildren
   '/settings': typeof AppSettingsRouteRouteWithChildren
   '/editor': typeof AppEditorRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -119,8 +144,11 @@ export interface FileRoutesByFullPath {
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/docs/history': typeof AppDocsHistoryRoute
+  '/docs/source': typeof AppDocsSourceRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
+  '/docs/': typeof AppDocsIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -135,8 +163,11 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/': typeof AppIndexRoute
+  '/docs/history': typeof AppDocsHistoryRoute
+  '/docs/source': typeof AppDocsSourceRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
+  '/docs': typeof AppDocsIndexRoute
   '/settings': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -146,6 +177,7 @@ export interface FileRoutesById {
   '/invite': typeof InviteRoute
   '/onboarding': typeof OnboardingRoute
   '/success': typeof SuccessRoute
+  '/_app/docs': typeof AppDocsRouteRouteWithChildren
   '/_app/settings': typeof AppSettingsRouteRouteWithChildren
   '/_app/editor': typeof AppEditorRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -154,8 +186,11 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/docs/history': typeof AppDocsHistoryRoute
+  '/_app/docs/source': typeof AppDocsSourceRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
   '/_app/settings/organization': typeof AppSettingsOrganizationRoute
+  '/_app/docs/': typeof AppDocsIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -166,6 +201,7 @@ export interface FileRouteTypes {
     | '/invite'
     | '/onboarding'
     | '/success'
+    | '/docs'
     | '/settings'
     | '/editor'
     | '/auth/forgot-password'
@@ -173,8 +209,11 @@ export interface FileRouteTypes {
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
+    | '/docs/history'
+    | '/docs/source'
     | '/settings/account'
     | '/settings/organization'
+    | '/docs/'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -189,8 +228,11 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/verify-email'
     | '/'
+    | '/docs/history'
+    | '/docs/source'
     | '/settings/account'
     | '/settings/organization'
+    | '/docs'
     | '/settings'
   id:
     | '__root__'
@@ -199,6 +241,7 @@ export interface FileRouteTypes {
     | '/invite'
     | '/onboarding'
     | '/success'
+    | '/_app/docs'
     | '/_app/settings'
     | '/_app/editor'
     | '/auth/forgot-password'
@@ -207,8 +250,11 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/verify-email'
     | '/_app/'
+    | '/_app/docs/history'
+    | '/_app/docs/source'
     | '/_app/settings/account'
     | '/_app/settings/organization'
+    | '/_app/docs/'
     | '/_app/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -313,12 +359,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/docs': {
+      id: '/_app/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof AppDocsRouteRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/settings/': {
       id: '/_app/settings/'
       path: '/'
       fullPath: '/settings/'
       preLoaderRoute: typeof AppSettingsIndexRouteImport
       parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/_app/docs/': {
+      id: '/_app/docs/'
+      path: '/'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof AppDocsIndexRouteImport
+      parentRoute: typeof AppDocsRouteRoute
     }
     '/_app/settings/organization': {
       id: '/_app/settings/organization'
@@ -334,8 +394,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsAccountRouteImport
       parentRoute: typeof AppSettingsRouteRoute
     }
+    '/_app/docs/source': {
+      id: '/_app/docs/source'
+      path: '/source'
+      fullPath: '/docs/source'
+      preLoaderRoute: typeof AppDocsSourceRouteImport
+      parentRoute: typeof AppDocsRouteRoute
+    }
+    '/_app/docs/history': {
+      id: '/_app/docs/history'
+      path: '/history'
+      fullPath: '/docs/history'
+      preLoaderRoute: typeof AppDocsHistoryRouteImport
+      parentRoute: typeof AppDocsRouteRoute
+    }
   }
 }
+
+interface AppDocsRouteRouteChildren {
+  AppDocsHistoryRoute: typeof AppDocsHistoryRoute
+  AppDocsSourceRoute: typeof AppDocsSourceRoute
+  AppDocsIndexRoute: typeof AppDocsIndexRoute
+}
+
+const AppDocsRouteRouteChildren: AppDocsRouteRouteChildren = {
+  AppDocsHistoryRoute: AppDocsHistoryRoute,
+  AppDocsSourceRoute: AppDocsSourceRoute,
+  AppDocsIndexRoute: AppDocsIndexRoute,
+}
+
+const AppDocsRouteRouteWithChildren = AppDocsRouteRoute._addFileChildren(
+  AppDocsRouteRouteChildren,
+)
 
 interface AppSettingsRouteRouteChildren {
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
@@ -353,12 +443,14 @@ const AppSettingsRouteRouteWithChildren =
   AppSettingsRouteRoute._addFileChildren(AppSettingsRouteRouteChildren)
 
 interface AppRouteRouteChildren {
+  AppDocsRouteRoute: typeof AppDocsRouteRouteWithChildren
   AppSettingsRouteRoute: typeof AppSettingsRouteRouteWithChildren
   AppEditorRoute: typeof AppEditorRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppDocsRouteRoute: AppDocsRouteRouteWithChildren,
   AppSettingsRouteRoute: AppSettingsRouteRouteWithChildren,
   AppEditorRoute: AppEditorRoute,
   AppIndexRoute: AppIndexRoute,

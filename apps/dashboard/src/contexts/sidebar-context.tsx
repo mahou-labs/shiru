@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useLocation } from "@tanstack/react-router";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type SecondarySidebarKind = "navigation" | "workspace" | "actions";
 export type SecondarySidebarMobileMode = "nav-section" | "sheet";

@@ -1,13 +1,14 @@
+import { Button } from "@shiru/ui/button";
+import { Field, FieldError, FieldLabel } from "@shiru/ui/field";
+import { Input } from "@shiru/ui/input";
+import { toastManager } from "@shiru/ui/toast";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import z from "zod";
-import { Button } from "@shiru/ui/button";
-import { Field, FieldError, FieldLabel } from "@shiru/ui/field";
-import { Input } from "@shiru/ui/input";
+
 import { authClient } from "@/utils/auth-client";
 import { orpc } from "@/utils/orpc-client";
-import { toastManager } from "@shiru/ui/toast";
 
 export const Route = createFileRoute("/auth/signup")({
   component: RouteComponent,

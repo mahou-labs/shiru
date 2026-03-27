@@ -1,6 +1,8 @@
-import { BubbleMenu } from "@tiptap/react/menus";
+import { Toggle } from "@shiru/ui/toggle";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@shiru/ui/tooltip";
 import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import {
   IconCodeOutlineDuo18,
   IconHighlighterOutlineDuo18,
@@ -9,9 +11,6 @@ import {
   IconTextStrikethroughOutlineDuo18,
   IconTextUnderlineOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
-
-import { Toggle } from "@shiru/ui/toggle";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@shiru/ui/tooltip";
 
 function BubbleToggle({
   pressed,

@@ -1,8 +1,9 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shiru/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
+
 import { CreateOrgWizard } from "@/components/create-org-wizard";
 import { LoadingScreen } from "@/components/loading-screen";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shiru/ui/card";
 import { orpc } from "@/utils/orpc-client";
 
 export const Route = createFileRoute("/onboarding")({

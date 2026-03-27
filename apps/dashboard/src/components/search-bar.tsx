@@ -1,5 +1,3 @@
-import { useMetaKey } from "@/hooks/use-modifier-key";
-import { cn } from "@/utils/cn";
 import { Button } from "@shiru/ui/button";
 import {
   Command,
@@ -28,6 +26,9 @@ import {
   IconMagnifierOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 import { Fragment, useState } from "react";
+
+import { useMetaKey } from "@/hooks/use-modifier-key";
+import { cn } from "@/utils/cn";
 
 type Item = {
   value: string;
