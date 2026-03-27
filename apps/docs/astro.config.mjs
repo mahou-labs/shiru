@@ -7,7 +7,7 @@ export default defineConfig({
   output: "server",
   adapter: cloudflare({
     platformProxy: { enabled: true },
-    persistState: { path: "../../.wrangler" },
+    persistState: { path: "../../.wrangler/state" },
   }),
   integrations: [mdx(), react()],
 });

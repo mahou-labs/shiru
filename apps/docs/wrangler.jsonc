@@ -11,7 +11,7 @@
   ],
   "kv_namespaces": [
     {
-      "binding": "KV",
+      "binding": "DOCS_KV",
       "id": "56d9abb7d5994c54a03dc3cc91614311",
     },
   ],
