@@ -1,22 +1,70 @@
-name: Deploy Production
+name: Release
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Release tag to deploy (e.g., v1.2.3)"
-        required: true
-        type: string
+      bump:
+        description: "Version bump"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  contents: write
 
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
 jobs:
+  create-release:
+    name: Create Release
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine next version
+        id: tag
+        run: |
+          BUMP="${{ inputs.bump }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            NEXT="v0.1.0"
+          else
+            VERSION="${PREV_TAG#v}"
+            MAJOR=$(echo "$VERSION" | cut -d. -f1)
+            MINOR=$(echo "$VERSION" | cut -d. -f2)
+            PATCH=$(echo "$VERSION" | cut -d. -f3)
+            case "$BUMP" in
+              major) NEXT="v$((MAJOR + 1)).0.0" ;;
+              minor) NEXT="v${MAJOR}.$((MINOR + 1)).0" ;;
+              patch) NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+            esac
+          fi
+          echo "tag=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+          echo "Creating release $NEXT (previous: ${PREV_TAG:-none})"
+
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.tag.outputs.tag }}" \
+            --target main \
+            --generate-notes \
+            --title "${{ steps.tag.outputs.tag }}"
+
   ci:
     name: CI
+    needs: create-release
     uses: ./.github/workflows/ci.yml
     secrets:
       NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
@@ -24,20 +72,21 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: create-release
     outputs:
       dashboard: ${{ steps.resolve.outputs.dashboard }}
       api: ${{ steps.resolve.outputs.api }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ needs.create-release.outputs.tag }}
           fetch-depth: 0
 
       - name: Get previous release tag
         id: prev_tag
         run: |
-          CURRENT_TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          CURRENT_TAG="${{ needs.create-release.outputs.tag }}"
           PREV_TAG=$(git describe --tags --abbrev=0 "$CURRENT_TAG^" 2>/dev/null || true)
           if [ -z "$PREV_TAG" ]; then
             echo "No previous tag found, will deploy all release apps"
@@ -49,7 +98,7 @@ jobs:
 
       - name: Detect changed paths
         if: steps.prev_tag.outputs.prev_tag != ''
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         id: filter
         with:
           base: ${{ steps.prev_tag.outputs.prev_tag }}
@@ -76,16 +125,16 @@ jobs:
   deploy-dashboard:
     name: Deploy Dashboard (Production)
     runs-on: blacksmith-2vcpu-ubuntu-2404-arm
-    needs: [ci, changes]
+    needs: [ci, changes, create-release]
     if: needs.changes.outputs.dashboard == 'true'
     environment:
       name: production
       url: ${{ vars.DASHBOARD_URL }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ needs.create-release.outputs.tag }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -93,7 +142,7 @@ jobs:
           bun-version-file: package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: package.json
 
@@ -121,16 +170,16 @@ jobs:
   deploy-api:
     name: Deploy API (Production)
     runs-on: blacksmith-2vcpu-ubuntu-2404-arm
-    needs: [ci, changes]
+    needs: [ci, changes, create-release]
     if: needs.changes.outputs.api == 'true' || needs.changes.outputs.api == ''
     environment:
       name: production
       url: ${{ vars.API_URL }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ needs.create-release.outputs.tag }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -138,7 +187,7 @@ jobs:
           bun-version-file: package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: package.json
 
@@ -155,7 +204,6 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/api
-          environment: prod
           command: d1 migrations apply shiru-db-prod
 
       - name: Deploy to Cloudflare Workers
@@ -164,5 +212,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/api
-          environment: prod
           command: deploy -c wrangler.jsonc

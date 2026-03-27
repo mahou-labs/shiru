@@ -1,5 +1,6 @@
-import { defineConfig } from "drizzle-kit";
 import { execSync } from "node:child_process";
+
+import { defineConfig } from "drizzle-kit";
 
 const getSqlitePath = () => {
   try {
