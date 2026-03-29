@@ -83,36 +83,24 @@ CREATE TABLE `verifications` (
 CREATE TABLE `docs_sites` (
 	`id` text PRIMARY KEY,
 	`organization_id` text NOT NULL,
-	`active_version` integer,
+	`active_commit_sha` text,
+	`source_mode` text DEFAULT 'managed' NOT NULL,
+	`publishable_branch` text DEFAULT 'main' NOT NULL,
+	`content_path` text DEFAULT '' NOT NULL,
+	`github_owner` text,
+	`github_owner_type` text,
+	`github_repository` text,
+	`github_installation_id` text,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	CONSTRAINT `fk_docs_sites_organization_id_organizations_id_fk` FOREIGN KEY (`organization_id`) REFERENCES `organizations`(`id`) ON DELETE CASCADE
 );
 --> statement-breakpoint
-CREATE TABLE `docs_sources` (
-	`id` text PRIMARY KEY,
-	`docs_site_id` text NOT NULL,
-	`mode` text NOT NULL,
-	`publishable_branch` text DEFAULT 'main' NOT NULL,
-	`content_path` text DEFAULT 'docs' NOT NULL,
-	`github_owner` text,
-	`github_repository` text,
-	`github_installation_id` text,
-	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-	CONSTRAINT `fk_docs_sources_docs_site_id_docs_sites_id_fk` FOREIGN KEY (`docs_site_id`) REFERENCES `docs_sites`(`id`) ON DELETE CASCADE
-);
---> statement-breakpoint
 CREATE TABLE `docs_versions` (
 	`id` text PRIMARY KEY,
 	`docs_site_id` text NOT NULL,
-	`version` integer NOT NULL,
-	`source_ref` text,
-	`file_count` integer,
-	`total_size_bytes` integer,
-	`status` text DEFAULT 'publishing' NOT NULL,
-	`failure_code` text,
-	`error_message` text,
+	`version_ref` text NOT NULL,
+	`status` text DEFAULT 'building' NOT NULL,
 	`requested_by_user_id` text,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	CONSTRAINT `fk_docs_versions_docs_site_id_docs_sites_id_fk` FOREIGN KEY (`docs_site_id`) REFERENCES `docs_sites`(`id`) ON DELETE CASCADE,
@@ -137,7 +125,5 @@ CREATE UNIQUE INDEX `organizations_slug_uidx` ON `organizations` (`slug`);--> st
 CREATE INDEX `sessions_userId_idx` ON `sessions` (`user_id`);--> statement-breakpoint
 CREATE INDEX `verifications_identifier_idx` ON `verifications` (`identifier`);--> statement-breakpoint
 CREATE UNIQUE INDEX `docs_sites_organizationId_uidx` ON `docs_sites` (`organization_id`);--> statement-breakpoint
-CREATE UNIQUE INDEX `docs_sources_docsSiteId_uidx` ON `docs_sources` (`docs_site_id`);--> statement-breakpoint
-CREATE UNIQUE INDEX `docs_versions_site_version_uidx` ON `docs_versions` (`docs_site_id`,`version`);--> statement-breakpoint
-CREATE INDEX `docs_versions_docsSiteId_idx` ON `docs_versions` (`docs_site_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `docs_versions_site_versionRef_uidx` ON `docs_versions` (`docs_site_id`,`version_ref`);--> statement-breakpoint
 CREATE INDEX `org_idx` ON `subscriptions` (`organization_id`);

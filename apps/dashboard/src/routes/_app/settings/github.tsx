@@ -1,6 +1,7 @@
 import { Button } from "@shiru/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shiru/ui/card";
 import { Field, FieldLabel } from "@shiru/ui/field";
+import { Input } from "@shiru/ui/input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@shiru/ui/select";
 import { Skeleton } from "@shiru/ui/skeleton";
 import { toastManager } from "@shiru/ui/toast";
@@ -42,6 +43,7 @@ function GitHubSettingsPage() {
       <ConnectionCard
         connected={connection?.connected ?? false}
         githubOwner={connection?.githubOwner ?? null}
+        githubOwnerType={connection?.githubOwnerType ?? null}
         githubInstallationId={connection?.githubInstallationId ?? null}
         installUrl={installUrl}
       />
@@ -49,7 +51,6 @@ function GitHubSettingsPage() {
       {connection?.connected && (
         <RepoSelectionCard
           currentRepo={connection.githubRepository}
-          currentBranch={connection.publishableBranch}
           currentContentPath={connection.contentPath}
           onUpdated={() => queryClient.invalidateQueries({ queryKey: connectionQuery.queryKey })}
         />
@@ -61,16 +62,20 @@ function GitHubSettingsPage() {
 function ConnectionCard({
   connected,
   githubOwner,
+  githubOwnerType,
   githubInstallationId,
   installUrl,
 }: {
   connected: boolean;
   githubOwner: string | null;
+  githubOwnerType: string | null;
   githubInstallationId: string | null;
   installUrl: string | null;
 }) {
   const manageUrl = githubInstallationId
-    ? `https://github.com/settings/installations/${githubInstallationId}`
+    ? githubOwnerType === "Organization" && githubOwner
+      ? `https://github.com/organizations/${githubOwner}/settings/installations/${githubInstallationId}`
+      : `https://github.com/settings/installations/${githubInstallationId}`
     : null;
 
   return (
@@ -117,16 +122,15 @@ function ConnectionCard({
 
 function RepoSelectionCard({
   currentRepo,
-  currentBranch,
   currentContentPath,
   onUpdated,
 }: {
   currentRepo: string | null;
-  currentBranch: string | null;
   currentContentPath: string | null;
   onUpdated: () => void;
 }) {
   const [selectedRepo, setSelectedRepo] = useState(currentRepo ?? "");
+  const [contentPath, setContentPath] = useState(currentContentPath ?? "");
 
   const reposQuery = useQuery({
     ...orpc.github.listRepos.queryOptions(),
@@ -136,7 +140,7 @@ function RepoSelectionCard({
   const { mutateAsync: selectRepo, isPending: isSelecting } = useMutation({
     ...orpc.github.selectRepo.mutationOptions(),
     onSuccess: () => {
-      toastManager.add({ title: "Repository updated" });
+      toastManager.add({ type: "success", title: "Repository updated" });
       onUpdated();
     },
     onError: (error) => {
@@ -178,30 +182,26 @@ function RepoSelectionCard({
               </Select>
             </Field>
 
-            {currentRepo && (
-              <dl className="space-y-2 text-sm">
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-muted-foreground">Current repo</dt>
-                  <dd className="font-medium">{currentRepo}</dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-muted-foreground">Branch</dt>
-                  <dd className="font-medium">{currentBranch ?? "main"}</dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-muted-foreground">Content path</dt>
-                  <dd className="font-medium">{currentContentPath ?? "docs"}</dd>
-                </div>
-              </dl>
-            )}
+            <Field>
+              <FieldLabel>Content path</FieldLabel>
+              <Input
+                placeholder="/ (root)"
+                value={contentPath}
+                onChange={(e) => setContentPath(e.target.value)}
+              />
+              <p className="text-muted-foreground text-xs">
+                Subdirectory containing your docs. Leave empty for repository root.
+              </p>
+            </Field>
 
             <div className="flex justify-end">
               <Button
-                disabled={!selectedRepo || selectedRepo === currentRepo || isSelecting}
+                disabled={!selectedRepo || isSelecting}
                 onClick={() =>
                   selectRepo({
                     repository: selectedRepo,
                     branch: selectedRepoData?.defaultBranch ?? "main",
+                    contentPath: contentPath || "",
                   })
                 }
               >

@@ -204,7 +204,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/api
-          command: d1 migrations apply shiru-db-prod
+          command: d1 migrations apply shiru-db
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3

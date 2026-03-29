@@ -6,7 +6,10 @@ export default defineConfig({
     ? []
     : [cloudflare({ persistState: { path: "../../.wrangler/state" } })],
   resolve: { tsconfigPaths: true },
-  server: { cors: false },
+  server: {
+    cors: false,
+    // allowedHosts: true,
+  },
   test: {
     setupFiles: ["./src/test-utils/setup.ts"],
     environment: "node",

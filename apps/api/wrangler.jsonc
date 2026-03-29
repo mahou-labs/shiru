@@ -36,10 +36,38 @@
       "migrations_dir": "drizzle/migrations",
     },
   ],
-  "kv_namespaces": [
-    {
-      "binding": "DOCS_KV",
-      "id": "56d9abb7d5994c54a03dc3cc91614311",
-    },
-  ],
+  // "r2_buckets": [
+  //   {
+  //     "binding": "DOCS_ARTIFACTS",
+  //     "bucket_name": "shiru-publish-artifacts-dev",
+  //   },
+  // ],
+  // "queues": {
+  //   "producers": [
+  //     {
+  //       "binding": "BUILD_QUEUE",
+  //       "queue": "docs-build",
+  //     },
+  //   ],
+  // },
+  // "containers": [
+  //   {
+  //     "class_name": "DocsBuilder",
+  //     "image": "./Dockerfile",
+  //   },
+  // ],
+  // "durable_objects": {
+  //   "bindings": [
+  //     {
+  //       "class_name": "DocsBuilder",
+  //       "name": "DOCS_BUILDER",
+  //     },
+  //   ],
+  // },
+  // "migrations": [
+  //   {
+  //     "tag": "v1",
+  //     "new_sqlite_classes": ["DocsBuilder"],
+  //   },
+  // ],
 }

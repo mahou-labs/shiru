@@ -4,6 +4,15 @@ import { env, waitUntil } from "cloudflare:workers";
 import { ISRCache } from "./utils/isr-cache";
 import { resolveTenant } from "./utils/tenant-resolver";
 
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Content-Security-Policy":
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com",
+} as const;
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const { request, url } = context;
 
@@ -33,7 +42,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   // Store tenant info for the page route
-  // (locals as Record<string, unknown>).tenant = tenant;
+  (context.locals as Record<string, unknown>).tenant = tenant;
 
   const cache = new ISRCache(env.KV);
   const cached = await cache.get(hostname, url.pathname);
@@ -45,8 +54,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "X-Cache-Status": "HIT",
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "SAMEORIGIN",
+        ...SECURITY_HEADERS,
       },
     });
   }
@@ -66,8 +74,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "X-Cache-Status": "STALE",
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "SAMEORIGIN",
+        ...SECURITY_HEADERS,
       },
     });
   }
@@ -83,8 +90,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "X-Cache-Status": "MISS",
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "SAMEORIGIN",
+        ...SECURITY_HEADERS,
       },
     });
   }

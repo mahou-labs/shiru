@@ -9,8 +9,7 @@ export const POST: APIRoute = async ({ request }) => {
   };
 
   // Authenticate
-  // const expectedSecret = env.REVALIDATION_SECRET;
-  const expectedSecret = "ABC123";
+  const expectedSecret = env.REVALIDATION_SECRET;
   if (!expectedSecret || body.secret !== expectedSecret) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,

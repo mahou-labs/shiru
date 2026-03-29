@@ -21,6 +21,8 @@ export async function loadManifest(
   return obj.json() as Promise<DocsManifest>;
 }
 
+const SAFE_SLUG_PATTERN = /^[a-z0-9][a-z0-9\-/]*$/;
+
 /** Loads the raw MDX/MD source for a given page slug from R2, trying multiple path conventions (.mdx, .md, index variants) until one matches. */
 export async function loadMdxSource(
   r2: R2Bucket,
@@ -28,6 +30,11 @@ export async function loadMdxSource(
   version: number,
   slug: string,
 ): Promise<string | null> {
+  // Validate slug to prevent path traversal
+  if (slug && (!SAFE_SLUG_PATTERN.test(slug) || slug.includes(".."))) {
+    return null;
+  }
+
   // Special case: empty slug = index
   const attempts =
     !slug || slug === ""

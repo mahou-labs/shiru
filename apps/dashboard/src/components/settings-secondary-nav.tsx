@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
+import { IconGithub } from "nucleo-social-media";
 import {
-  IconCodeOutlineDuo18,
   IconHouse2OutlineDuo18,
   IconSunOutlineDuo18,
   IconUsersOutlineDuo18,
@@ -26,7 +26,7 @@ const settingsNavItems = [
   {
     description: "Connect your GitHub App and select a repository",
     href: "/settings/github",
-    icon: IconCodeOutlineDuo18,
+    icon: IconGithub,
     label: "GitHub",
     matchPath: (pathname: string) => pathname.startsWith("/settings/github"),
   },

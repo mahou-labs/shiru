@@ -4,7 +4,7 @@ import * as z from "zod";
 
 import { subscriptions } from "@/schema/subscription";
 import { db } from "@/utils/db";
-import { bootstrapDocsForOrg } from "@/utils/docs-bootstrap";
+// import { bootstrapDocsForOrg } from "@/utils/docs-bootstrap";
 import { log } from "@/utils/logger";
 import { tryCatch } from "@/utils/try-catch";
 
@@ -49,10 +49,10 @@ export const organizationRouter = {
       }
 
       if (data?.id) {
-        const { error: bootstrapError } = await tryCatch(bootstrapDocsForOrg(data.id));
-        if (bootstrapError) {
-          log.error("org.docs_bootstrap_failed", bootstrapError, { organizationId: data.id });
-        }
+        // const { error: bootstrapError } = await tryCatch(bootstrapDocsForOrg(data.id));
+        // if (bootstrapError) {
+        //   log.error("org.docs_bootstrap_failed", bootstrapError, { organizationId: data.id });
+        // }
       }
 
       return data;

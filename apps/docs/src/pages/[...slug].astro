@@ -5,7 +5,6 @@ import { compileMdx } from "../utils/mdx-compiler";
 import {env} from "cloudflare:workers"
 
 const tenant = (Astro.locals as Record<string, any>).tenant;
-console.log({tenant})
 if (!tenant) {
   return Astro.redirect("/404");
 }

@@ -1,8 +1,10 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "f02181d2-98ce-4655-b645-3100fece1857",
-  "prevIds": ["00000000-0000-0000-0000-000000000000"],
+  "id": "6396219a-e28b-4ff1-bcfc-8a762fa9342b",
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
   "ddl": [
     {
       "name": "accounts",
@@ -34,10 +36,6 @@
     },
     {
       "name": "docs_sites",
-      "entityType": "tables"
-    },
-    {
-      "name": "docs_sources",
       "entityType": "tables"
     },
     {
@@ -619,64 +617,24 @@
       "table": "docs_sites"
     },
     {
-      "type": "integer",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "active_version",
-      "entityType": "columns",
-      "table": "docs_sites"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
-      "generated": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "table": "docs_sites"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
-      "generated": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "table": "docs_sites"
-    },
-    {
       "type": "text",
       "notNull": false,
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "id",
+      "name": "active_commit_sha",
       "entityType": "columns",
-      "table": "docs_sources"
+      "table": "docs_sites"
     },
     {
       "type": "text",
       "notNull": true,
       "autoincrement": false,
-      "default": null,
+      "default": "'managed'",
       "generated": null,
-      "name": "docs_site_id",
+      "name": "source_mode",
       "entityType": "columns",
-      "table": "docs_sources"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "mode",
-      "entityType": "columns",
-      "table": "docs_sources"
+      "table": "docs_sites"
     },
     {
       "type": "text",
@@ -686,17 +644,17 @@
       "generated": null,
       "name": "publishable_branch",
       "entityType": "columns",
-      "table": "docs_sources"
+      "table": "docs_sites"
     },
     {
       "type": "text",
       "notNull": true,
       "autoincrement": false,
-      "default": "'docs'",
+      "default": "''",
       "generated": null,
       "name": "content_path",
       "entityType": "columns",
-      "table": "docs_sources"
+      "table": "docs_sites"
     },
     {
       "type": "text",
@@ -706,7 +664,17 @@
       "generated": null,
       "name": "github_owner",
       "entityType": "columns",
-      "table": "docs_sources"
+      "table": "docs_sites"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "github_owner_type",
+      "entityType": "columns",
+      "table": "docs_sites"
     },
     {
       "type": "text",
@@ -716,7 +684,7 @@
       "generated": null,
       "name": "github_repository",
       "entityType": "columns",
-      "table": "docs_sources"
+      "table": "docs_sites"
     },
     {
       "type": "text",
@@ -726,7 +694,7 @@
       "generated": null,
       "name": "github_installation_id",
       "entityType": "columns",
-      "table": "docs_sources"
+      "table": "docs_sites"
     },
     {
       "type": "integer",
@@ -736,7 +704,7 @@
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
-      "table": "docs_sources"
+      "table": "docs_sites"
     },
     {
       "type": "integer",
@@ -746,7 +714,7 @@
       "generated": null,
       "name": "updated_at",
       "entityType": "columns",
-      "table": "docs_sources"
+      "table": "docs_sites"
     },
     {
       "type": "text",
@@ -769,42 +737,12 @@
       "table": "docs_versions"
     },
     {
-      "type": "integer",
+      "type": "text",
       "notNull": true,
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "version",
-      "entityType": "columns",
-      "table": "docs_versions"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "source_ref",
-      "entityType": "columns",
-      "table": "docs_versions"
-    },
-    {
-      "type": "integer",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "file_count",
-      "entityType": "columns",
-      "table": "docs_versions"
-    },
-    {
-      "type": "integer",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "total_size_bytes",
+      "name": "version_ref",
       "entityType": "columns",
       "table": "docs_versions"
     },
@@ -812,29 +750,9 @@
       "type": "text",
       "notNull": true,
       "autoincrement": false,
-      "default": "'publishing'",
+      "default": "'building'",
       "generated": null,
       "name": "status",
-      "entityType": "columns",
-      "table": "docs_versions"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "failure_code",
-      "entityType": "columns",
-      "table": "docs_versions"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "error_message",
       "entityType": "columns",
       "table": "docs_versions"
     },
@@ -909,9 +827,13 @@
       "table": "subscriptions"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "users",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -920,9 +842,13 @@
       "table": "accounts"
     },
     {
-      "columns": ["organization_id"],
+      "columns": [
+        "organization_id"
+      ],
       "tableTo": "organizations",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -931,9 +857,13 @@
       "table": "invitations"
     },
     {
-      "columns": ["inviter_id"],
+      "columns": [
+        "inviter_id"
+      ],
       "tableTo": "users",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -942,9 +872,13 @@
       "table": "invitations"
     },
     {
-      "columns": ["organization_id"],
+      "columns": [
+        "organization_id"
+      ],
       "tableTo": "organizations",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -953,9 +887,13 @@
       "table": "members"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "users",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -964,9 +902,13 @@
       "table": "members"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "users",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -975,9 +917,13 @@
       "table": "sessions"
     },
     {
-      "columns": ["organization_id"],
+      "columns": [
+        "organization_id"
+      ],
       "tableTo": "organizations",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -986,20 +932,13 @@
       "table": "docs_sites"
     },
     {
-      "columns": ["docs_site_id"],
+      "columns": [
+        "docs_site_id"
+      ],
       "tableTo": "docs_sites",
-      "columnsTo": ["id"],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "fk_docs_sources_docs_site_id_docs_sites_id_fk",
-      "entityType": "fks",
-      "table": "docs_sources"
-    },
-    {
-      "columns": ["docs_site_id"],
-      "tableTo": "docs_sites",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -1008,9 +947,13 @@
       "table": "docs_versions"
     },
     {
-      "columns": ["requested_by_user_id"],
+      "columns": [
+        "requested_by_user_id"
+      ],
       "tableTo": "users",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
@@ -1019,9 +962,13 @@
       "table": "docs_versions"
     },
     {
-      "columns": ["organization_id"],
+      "columns": [
+        "organization_id"
+      ],
       "tableTo": "organizations",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -1030,77 +977,90 @@
       "table": "subscriptions"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "accounts_pk",
       "table": "accounts",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "invitations_pk",
       "table": "invitations",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "members_pk",
       "table": "members",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "organizations_pk",
       "table": "organizations",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "sessions_pk",
       "table": "sessions",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "users_pk",
       "table": "users",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "verifications_pk",
       "table": "verifications",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "docs_sites_pk",
       "table": "docs_sites",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
-      "nameExplicit": false,
-      "name": "docs_sources_pk",
-      "table": "docs_sources",
-      "entityType": "pks"
-    },
-    {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "docs_versions_pk",
       "table": "docs_versions",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "subscriptions_pk",
       "table": "subscriptions",
@@ -1237,44 +1197,16 @@
         {
           "value": "docs_site_id",
           "isExpression": false
-        }
-      ],
-      "isUnique": true,
-      "where": null,
-      "origin": "manual",
-      "name": "docs_sources_docsSiteId_uidx",
-      "entityType": "indexes",
-      "table": "docs_sources"
-    },
-    {
-      "columns": [
-        {
-          "value": "docs_site_id",
-          "isExpression": false
         },
         {
-          "value": "version",
+          "value": "version_ref",
           "isExpression": false
         }
       ],
       "isUnique": true,
       "where": null,
       "origin": "manual",
-      "name": "docs_versions_site_version_uidx",
-      "entityType": "indexes",
-      "table": "docs_versions"
-    },
-    {
-      "columns": [
-        {
-          "value": "docs_site_id",
-          "isExpression": false
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "origin": "manual",
-      "name": "docs_versions_docsSiteId_idx",
+      "name": "docs_versions_site_versionRef_uidx",
       "entityType": "indexes",
       "table": "docs_versions"
     },
@@ -1293,21 +1225,27 @@
       "table": "subscriptions"
     },
     {
-      "columns": ["token"],
+      "columns": [
+        "token"
+      ],
       "nameExplicit": false,
       "name": "sessions_token_unique",
       "entityType": "uniques",
       "table": "sessions"
     },
     {
-      "columns": ["email"],
+      "columns": [
+        "email"
+      ],
       "nameExplicit": false,
       "name": "users_email_unique",
       "entityType": "uniques",
       "table": "users"
     },
     {
-      "columns": ["polar_subscription_id"],
+      "columns": [
+        "polar_subscription_id"
+      ],
       "nameExplicit": false,
       "name": "subscriptions_polar_subscription_id_unique",
       "entityType": "uniques",
