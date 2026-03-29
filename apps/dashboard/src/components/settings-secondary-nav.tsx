@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+  IconCodeOutlineDuo18,
   IconHouse2OutlineDuo18,
   IconSunOutlineDuo18,
   IconUsersOutlineDuo18,
@@ -21,6 +22,13 @@ const settingsNavItems = [
     icon: IconUsersOutlineDuo18,
     label: "Organization",
     matchPath: (pathname: string) => pathname.startsWith("/settings/organization"),
+  },
+  {
+    description: "Connect your GitHub App and select a repository",
+    href: "/settings/github",
+    icon: IconCodeOutlineDuo18,
+    label: "GitHub",
+    matchPath: (pathname: string) => pathname.startsWith("/settings/github"),
   },
   {
     description: "Personal preferences and appearance settings",

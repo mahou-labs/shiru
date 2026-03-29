@@ -26,6 +26,7 @@ import { Route as AppDocsRouteRouteImport } from './routes/_app/docs/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppDocsIndexRouteImport } from './routes/_app/docs/index'
 import { Route as AppSettingsOrganizationRouteImport } from './routes/_app/settings/organization'
+import { Route as AppSettingsGithubRouteImport } from './routes/_app/settings/github'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
 import { Route as AppDocsSourceRouteImport } from './routes/_app/docs/source'
 import { Route as AppDocsHistoryRouteImport } from './routes/_app/docs/history'
@@ -114,6 +115,11 @@ const AppSettingsOrganizationRoute = AppSettingsOrganizationRouteImport.update({
   path: '/organization',
   getParentRoute: () => AppSettingsRouteRoute,
 } as any)
+const AppSettingsGithubRoute = AppSettingsGithubRouteImport.update({
+  id: '/github',
+  path: '/github',
+  getParentRoute: () => AppSettingsRouteRoute,
+} as any)
 const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/docs/history': typeof AppDocsHistoryRoute
   '/docs/source': typeof AppDocsSourceRoute
   '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/github': typeof AppSettingsGithubRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
   '/docs/': typeof AppDocsIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/docs/history': typeof AppDocsHistoryRoute
   '/docs/source': typeof AppDocsSourceRoute
   '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/github': typeof AppSettingsGithubRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
   '/docs': typeof AppDocsIndexRoute
   '/settings': typeof AppSettingsIndexRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/_app/docs/history': typeof AppDocsHistoryRoute
   '/_app/docs/source': typeof AppDocsSourceRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
+  '/_app/settings/github': typeof AppSettingsGithubRoute
   '/_app/settings/organization': typeof AppSettingsOrganizationRoute
   '/_app/docs/': typeof AppDocsIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/docs/history'
     | '/docs/source'
     | '/settings/account'
+    | '/settings/github'
     | '/settings/organization'
     | '/docs/'
     | '/settings/'
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/docs/history'
     | '/docs/source'
     | '/settings/account'
+    | '/settings/github'
     | '/settings/organization'
     | '/docs'
     | '/settings'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/_app/docs/history'
     | '/_app/docs/source'
     | '/_app/settings/account'
+    | '/_app/settings/github'
     | '/_app/settings/organization'
     | '/_app/docs/'
     | '/_app/settings/'
@@ -387,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsOrganizationRouteImport
       parentRoute: typeof AppSettingsRouteRoute
     }
+    '/_app/settings/github': {
+      id: '/_app/settings/github'
+      path: '/github'
+      fullPath: '/settings/github'
+      preLoaderRoute: typeof AppSettingsGithubRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
     '/_app/settings/account': {
       id: '/_app/settings/account'
       path: '/account'
@@ -429,12 +448,14 @@ const AppDocsRouteRouteWithChildren = AppDocsRouteRoute._addFileChildren(
 
 interface AppSettingsRouteRouteChildren {
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
+  AppSettingsGithubRoute: typeof AppSettingsGithubRoute
   AppSettingsOrganizationRoute: typeof AppSettingsOrganizationRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
 }
 
 const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
   AppSettingsAccountRoute: AppSettingsAccountRoute,
+  AppSettingsGithubRoute: AppSettingsGithubRoute,
   AppSettingsOrganizationRoute: AppSettingsOrganizationRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
 }
