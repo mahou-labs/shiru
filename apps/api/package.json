@@ -26,7 +26,7 @@
     "hono": "^4.12.7",
     "hono-rate-limiter": "^0.5.3",
     "octokit": "^5.0.5",
-    "posthog-node": "^5.28.5",
+    "posthog-node": "^5.28.9",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-email": "^5.2.10",

@@ -4,8 +4,8 @@ export default defineConfig({
   resolve: { tsconfigPaths: true },
   lint: {
     options: {
-      typeCheck: false,
-      typeAware: false,
+      typeCheck: true,
+      typeAware: true,
     },
     ignorePatterns: ["**/*.gen.ts", "**/posthog.astro"],
     categories: {

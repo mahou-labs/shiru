@@ -96,11 +96,14 @@ function ConnectionCard({
               </p>
             </div>
             {manageUrl && (
-              <Button variant="outline" asChild>
-                <a href={manageUrl} target="_blank" rel="noopener noreferrer">
-                  Manage on GitHub
-                </a>
-              </Button>
+              <Button
+                variant="outline"
+                render={
+                  <a href={manageUrl} target="_blank" rel="noopener noreferrer">
+                    Manage on GitHub
+                  </a>
+                }
+              />
             )}
           </div>
         ) : (
@@ -108,11 +111,7 @@ function ConnectionCard({
             <p className="text-muted-foreground text-sm">
               No GitHub App installed for this organization.
             </p>
-            {installUrl && (
-              <Button asChild>
-                <a href={installUrl}>Install GitHub App</a>
-              </Button>
-            )}
+            {installUrl && <Button render={<a href={installUrl}>Install GitHub App</a>} />}
           </div>
         )}
       </CardContent>
