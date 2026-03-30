@@ -126,7 +126,7 @@ export const organizationRouter = {
       throw new ORPCError("Failed to fetch subscription");
     }
 
-    return subscription[0] ?? null;
+    return subscription?.[0] ?? null;
   }),
 
   updateOrg: protectedProcedure

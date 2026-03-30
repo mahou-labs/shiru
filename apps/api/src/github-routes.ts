@@ -3,13 +3,13 @@ import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { v7 as uuidv7 } from "uuid";
 
-import { members } from "../schema/auth";
-import { docsSites } from "../schema/docs";
-import { auth } from "../utils/auth";
-import { db } from "../utils/db";
-import { verifyWebhookSignature } from "../utils/oktokit";
-import { log } from "../utils/logger";
-import { getInstallationOctokit } from "../utils/oktokit";
+import { members } from "./schema/auth";
+import { docsSites } from "./schema/docs";
+import { auth } from "./utils/auth";
+import { db } from "./utils/db";
+import { log } from "./utils/logger";
+import { verifyWebhookSignature } from "./utils/oktokit";
+import { getInstallationOctokit } from "./utils/oktokit";
 
 type Env = { Bindings: CloudflareBindings };
 const github = new Hono<Env>();
@@ -94,8 +94,8 @@ github.get("/setup", async (c) => {
 
   const account = installation.account;
   const githubOwner = account && "login" in account ? account.login : null;
-  const githubOwnerType =
-    account && "type" in account ? (account.type as "User" | "Organization") : null;
+  const rawType = account && "type" in account ? account.type : null;
+  const githubOwnerType = rawType === "User" || rawType === "Organization" ? rawType : null;
 
   await db
     .insert(docsSites)

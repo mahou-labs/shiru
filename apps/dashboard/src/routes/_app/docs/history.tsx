@@ -69,10 +69,10 @@ function HistoryPage() {
     onSuccess: () => {
       toastManager.add({ title: "Rolled back successfully" });
       setRollbackTarget(null);
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: orpc.docs.siteSettings.get.queryOptions().queryKey,
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: orpc.docs.versionHistory.list.queryOptions({ limit: 20 }).queryKey,
       });
     },
@@ -169,9 +169,7 @@ function HistoryPage() {
               will remain available if you need to switch back.
             </p>
             <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
+              <DialogClose render={<Button variant="outline">Cancel</Button>} />
               <Button
                 disabled={rollbackMutation.isPending}
                 onClick={() => {

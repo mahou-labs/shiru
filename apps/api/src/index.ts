@@ -9,8 +9,8 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { PostHog } from "posthog-node";
 
+import { githubRoutes } from "./github-routes";
 import { appRouter } from "./routers";
-import { githubRoutes } from "./routers/github-routes";
 import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
 import { log } from "./utils/logger";
@@ -113,5 +113,5 @@ app.route("/github", githubRoutes);
 //   }
 // }
 
-// export { app };
+export { app };
 export default app;

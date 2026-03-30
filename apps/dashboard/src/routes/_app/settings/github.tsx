@@ -52,7 +52,11 @@ function GitHubSettingsPage() {
         <RepoSelectionCard
           currentRepo={connection.githubRepository}
           currentContentPath={connection.contentPath}
-          onUpdated={() => queryClient.invalidateQueries({ queryKey: connectionQuery.queryKey })}
+          onUpdated={() =>
+            queryClient.invalidateQueries({
+              queryKey: orpc.github.getConnection.queryOptions().queryKey,
+            })
+          }
         />
       )}
     </div>
@@ -167,7 +171,7 @@ function RepoSelectionCard({
           <div className="space-y-4">
             <Field>
               <FieldLabel>Repository</FieldLabel>
-              <Select value={selectedRepo} onValueChange={setSelectedRepo}>
+              <Select value={selectedRepo} onValueChange={(value) => setSelectedRepo(value ?? "")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a repository" />
                 </SelectTrigger>

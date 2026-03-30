@@ -19,9 +19,11 @@ describe("tryCatch", () => {
       code = "CUSTOM";
     }
     const error = new CustomError("custom");
-    const result = await tryCatch<string, CustomError>(Promise.reject(error));
+    const result = await tryCatch(Promise.reject(error));
     expect(result.error).toBeInstanceOf(CustomError);
-    expect(result.error?.code).toBe("CUSTOM");
+    if (result.error instanceof CustomError) {
+      expect(result.error.code).toBe("CUSTOM");
+    }
   });
 
   it("handles non-Error thrown values", async () => {

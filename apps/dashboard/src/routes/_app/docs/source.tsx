@@ -25,7 +25,7 @@ function SourceConfigPage() {
     ...orpc.docs.sourceConfig.update.mutationOptions(),
     onSuccess: () => {
       toastManager.add({ title: "Source configuration updated" });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: orpc.docs.sourceConfig.get.queryOptions().queryKey,
       });
     },
@@ -36,7 +36,7 @@ function SourceConfigPage() {
 
   const form = useForm({
     defaultValues: {
-      mode: (source?.mode ?? "github") as "managed" | "github",
+      mode: source?.mode === "managed" ? "managed" : "github",
       publishableBranch: source?.publishableBranch ?? "main",
       contentPath: source?.contentPath ?? "docs",
       githubOwner: source?.githubOwner ?? "",
@@ -97,7 +97,7 @@ function SourceConfigPage() {
           <Form
             onSubmit={(e) => {
               e.preventDefault();
-              form.handleSubmit();
+              void form.handleSubmit();
             }}
           >
             <div className="space-y-4">

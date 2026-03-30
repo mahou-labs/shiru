@@ -27,10 +27,10 @@ function DocsOverview() {
           title: "Published successfully",
           description: `Version ${data.version}`,
         });
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: orpc.docs.siteSettings.get.queryOptions().queryKey,
         });
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: orpc.docs.versionHistory.list.queryOptions({ limit: 20 }).queryKey,
         });
       }
