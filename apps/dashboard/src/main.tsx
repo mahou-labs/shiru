@@ -1,5 +1,6 @@
 import { RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
+
 import { getRouter } from "./router";
 
 const router = getRouter();

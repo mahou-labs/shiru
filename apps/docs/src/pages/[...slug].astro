@@ -1,0 +1,38 @@
+---
+import DocsLayout from "../layouts/DocsLayout.astro";
+import { loadManifest, loadMdxSource } from "../utils/source-loader";
+import { compileMdx } from "../utils/mdx-compiler";
+import {env} from "cloudflare:workers"
+
+const tenant = (Astro.locals as Record<string, any>).tenant;
+if (!tenant) {
+  return Astro.redirect("/404");
+}
+
+const slug = Astro.params.slug || "";
+
+// Load manifest for sidebar
+const manifest = await loadManifest(env.PUBLISH_ARTIFACTS, tenant.siteId, tenant.activeVersion);
+if (!manifest) {
+  return new Response("Site not configured", { status: 404 });
+}
+
+// Load MDX source
+const source = await loadMdxSource(env.PUBLISH_ARTIFACTS, tenant.siteId, tenant.activeVersion, slug);
+if (!source) {
+  return new Response("Page not found", { status: 404 });
+}
+
+// Compile MDX
+const { code, frontmatter } = await compileMdx(source);
+---
+
+<DocsLayout
+  title={frontmatter.title as string ?? "Documentation"}
+  description={frontmatter.description as string ?? ""}
+  sidebar={manifest.sidebar}
+>
+  <article class="prose">
+    <Fragment set:html={code} />
+  </article>
+</DocsLayout>

@@ -95,7 +95,7 @@ export const organizations = sqliteTable(
     logo: text("logo"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     metadata: text("metadata"),
-    hostingMode: text("hosting_mode", { enum: ["managed", "github"] }).default("managed"),
+    repoUrl: text("repo_url").default(""),
   },
   (table) => [uniqueIndex("organizations_slug_uidx").on(table.slug)],
 );

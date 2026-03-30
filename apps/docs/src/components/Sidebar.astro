@@ -1,0 +1,48 @@
+---
+type SidebarItem = {
+  title: string;
+  slug: string;
+  order?: number;
+};
+
+type SidebarGroup = {
+  label: string;
+  items: SidebarItem[];
+};
+
+interface Props {
+  groups?: SidebarGroup[];
+}
+
+const { groups = [] } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<aside class="docs-sidebar">
+  <nav aria-label="Documentation">
+    {groups.length > 0 ? (
+      groups.map((group) => (
+        <div class="sidebar-group">
+          <div class="sidebar-group-label">{group.label}</div>
+          <ul class="sidebar-items">
+            {group.items.map((item) => {
+              const href = `/${item.slug}`;
+              const isCurrent = currentPath === href || currentPath === `${href}/`;
+              return (
+                <li class="sidebar-item">
+                  <a href={href} aria-current={isCurrent ? "page" : undefined}>
+                    {item.title}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))
+    ) : (
+      <p style="font-size: var(--text-sm); color: var(--color-text-muted);">
+        No navigation configured.
+      </p>
+    )}
+  </nav>
+</aside>

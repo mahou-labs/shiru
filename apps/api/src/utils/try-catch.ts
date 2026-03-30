@@ -15,6 +15,6 @@ export async function tryCatch<T, E = Error>(promise: Promise<T>): Promise<Resul
     const data = await promise;
     return { data, error: null };
   } catch (error: unknown) {
-    return { data: null, error: error as E }; // oxlint-disable-line no-unsafe-type-assertion
+    return { data: null, error: error as E };
   }
 }

@@ -1,13 +1,14 @@
+import { Button } from "@shiru/ui/button";
+import { Field, FieldError, FieldLabel } from "@shiru/ui/field";
+import { Input } from "@shiru/ui/input";
+import { toastManager } from "@shiru/ui/toast";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import z from "zod";
-import { Button } from "@shiru/ui/button";
-import { Field, FieldError, FieldLabel } from "@shiru/ui/field";
-import { Input } from "@shiru/ui/input";
+
 import { authClient } from "@/utils/auth-client";
 import { orpc } from "@/utils/orpc-client";
-import { toastManager } from "@shiru/ui/toast";
 
 export const Route = createFileRoute("/auth/signup")({
   component: RouteComponent,
@@ -29,7 +30,9 @@ function RouteComponent() {
         onSuccess: async () => {
           toastManager.add({ title: "Sign up successful", type: "success" });
           await queryClient.fetchQuery(orpc.user.getSession.queryOptions());
-          await navigate({ to: redirect ?? "/" });
+          // New users go to onboarding, unless they're accepting an invite
+          const destination = redirect?.startsWith("/invite") ? redirect : "/onboarding";
+          await navigate({ to: destination });
         },
         onError: (error) => {
           toastManager.add({

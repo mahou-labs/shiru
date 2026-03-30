@@ -6,7 +6,9 @@ import {
   SheetPopup,
   SheetTitle,
 } from "@shiru/ui/sheet";
+
 import { useSidebar } from "@/contexts/sidebar-context";
+
 import type { AppShellSecondarySidebar } from "./app-shell-layout";
 
 const kindDescriptions = {

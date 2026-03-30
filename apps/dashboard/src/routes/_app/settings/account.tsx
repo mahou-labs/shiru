@@ -1,3 +1,5 @@
+import { Button } from "@shiru/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shiru/ui/card";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTheme } from "better-themes";
 import {
@@ -6,8 +8,7 @@ import {
   IconDarkModeOutlineDuo18,
   IconSunOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
-import { Button } from "@shiru/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shiru/ui/card";
+
 import { cn } from "@/utils/cn";
 
 export const Route = createFileRoute("/_app/settings/account")({

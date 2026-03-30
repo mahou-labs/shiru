@@ -1,0 +1,113 @@
+/* CSS Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  tab-size: 4;
+  line-height: 1.5;
+}
+
+body {
+  font-family:
+    var(--font-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Font variables */
+:root {
+  --font-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-heading: "Geist", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "Cascadia Code", monospace;
+
+  /* Brand color tokens — Cyan OKLCH hue 205 */
+  --color-primary: oklch(52% 0.15 205);
+  --color-primary-light: oklch(62% 0.12 205);
+  --color-primary-dark: oklch(42% 0.15 205);
+  --color-primary-subtle: oklch(95% 0.03 205);
+
+  /* Neutral tints — hue 205 at low chroma */
+  --color-text: oklch(20% 0.02 205);
+  --color-text-secondary: oklch(40% 0.015 205);
+  --color-text-muted: oklch(55% 0.01 205);
+
+  /* Surfaces */
+  --color-bg: oklch(97% 0.012 205);
+  --color-bg-sidebar: oklch(95% 0.015 205);
+  --color-bg-code: oklch(94% 0.01 205);
+  --color-bg-card: oklch(99% 0.005 205);
+
+  /* Borders */
+  --color-border: oklch(88% 0.015 205);
+  --color-border-light: oklch(92% 0.01 205);
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Typography scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --toc-width: 220px;
+  --content-max-width: 720px;
+  --header-height: 56px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}

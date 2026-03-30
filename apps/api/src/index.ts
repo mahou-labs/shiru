@@ -1,3 +1,4 @@
+// import { Container } from "@cloudflare/containers";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ResponseHeadersPlugin } from "@orpc/server/plugins";
@@ -7,7 +8,9 @@ import { rateLimiter } from "hono-rate-limiter";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { PostHog } from "posthog-node";
+
 import { appRouter } from "./routers";
+import { githubRoutes } from "./routers/github-routes";
 import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
 import { log } from "./utils/logger";
@@ -36,7 +39,8 @@ const handler = new RPCHandler(appRouter, {
 });
 
 app.onError(async (err, c) => {
-  await handleError(err, "", "hono");
+  const context = await createContext(c);
+  await handleError(err, context.user?.id || "", "hono");
   return c.text("Internal Server Error", 500);
 });
 
@@ -83,4 +87,31 @@ app.use("/rpc/*", async (c, next) => {
   await next();
 });
 
+app.route("/github", githubRoutes);
+
+// export class DocsBuilder extends Container<Env> {
+//   // Port the container listens on (default: 8080)
+//   defaultPort = 8080;
+//   // Time before container sleeps due to inactivity (default: 30s)
+//   sleepAfter = "2m";
+//   // Environment variables passed to the container
+//   envVars = {
+//     MESSAGE: "I was passed in via the container class!",
+//   };
+
+//   // Optional lifecycle hooks
+//   override onStart() {
+//     console.log("Container successfully started");
+//   }
+
+//   override onStop() {
+//     console.log("Container successfully shut down");
+//   }
+
+//   override onError(error: unknown) {
+//     console.log("Container error:", error);
+//   }
+// }
+
+// export { app };
 export default app;

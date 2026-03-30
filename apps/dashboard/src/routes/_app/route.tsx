@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
+
 import { LoadingScreen } from "@/components/loading-screen";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarProvider } from "@/contexts/sidebar-context";
@@ -16,6 +17,11 @@ function RouteComponent() {
 
   if (isPending) return <LoadingScreen />;
   if (!session) return <Navigate to="/auth/signin" />;
+
+  // Users without an active organization must complete onboarding first
+  if (!session.session.activeOrganizationId) {
+    return <Navigate to="/onboarding" />;
+  }
 
   return (
     <SidebarProvider>

@@ -1,3 +1,5 @@
+import { Button } from "@shiru/ui/button";
+import { toastManager } from "@shiru/ui/toast";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { zodValidator } from "@tanstack/zod-adapter";
 import {
@@ -7,10 +9,9 @@ import {
 } from "nucleo-ui-outline-duo-18";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+
 import Loader from "@/components/loader";
-import { Button } from "@shiru/ui/button";
 import { authClient } from "@/utils/auth-client";
-import { toastManager } from "@shiru/ui/toast";
 
 const verifyEmailSearchSchema = z.object({
   token: z.string().optional(),

@@ -1,3 +1,5 @@
+import { Avatar, AvatarFallback, AvatarImage } from "@shiru/ui/avatar";
+import { Menu, MenuItem, MenuPopup, MenuPortal, MenuSeparator, MenuTrigger } from "@shiru/ui/menu";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import {
@@ -5,11 +7,10 @@ import {
   IconGearOutlineDuo18,
   IconUsersOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
+
 import { authClient } from "@/utils/auth-client";
 import { getInitials } from "@/utils/initials";
 import { orpc } from "@/utils/orpc-client";
-import { Avatar, AvatarFallback, AvatarImage } from "@shiru/ui/avatar";
-import { Menu, MenuItem, MenuPopup, MenuPortal, MenuSeparator, MenuTrigger } from "@shiru/ui/menu";
 
 export function UserMenu() {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ export function UserMenu() {
     await authClient.signOut();
     queryClient.clear();
     await router.invalidate();
+    await navigate({ to: "/auth/signin" });
   };
 
   return (

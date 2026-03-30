@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+
 import { AppShellLayout } from "@/components/app-shell-layout";
 import { Page } from "@/components/page";
 import { SettingsSecondaryNav } from "@/components/settings-secondary-nav";

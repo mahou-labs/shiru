@@ -1,8 +1,9 @@
-import { useSidebar } from "@/contexts/sidebar-context";
-import { cn } from "@/utils/cn";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@shiru/ui/tooltip";
 import type { ToOptions } from "@tanstack/react-router";
 import { Link, useLocation } from "@tanstack/react-router";
+
+import { useSidebar } from "@/contexts/sidebar-context";
+import { cn } from "@/utils/cn";
 
 type SidebarLinkItemProps = {
   type: "link";
