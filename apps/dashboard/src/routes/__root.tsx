@@ -7,7 +7,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, Link, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-// import { hotkeysDevtoolsPlugin } from "@tanstack/react-hotkeys-devtools";
 import { ThemeProvider } from "better-themes";
 import {
   IconAlertWarningOutlineDuo18,

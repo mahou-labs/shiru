@@ -20,6 +20,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import {
+  IconCheckOutlineDuo18,
   IconCircleUserOutlineDuo18,
   IconCopyOutlineDuo18,
   IconDoorOpenOutlineDuo18,
@@ -28,7 +29,7 @@ import {
   IconTrashOutlineDuo18,
   IconUserPlusOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { z } from "zod";
 
 import { cn } from "@/utils/cn";
@@ -50,6 +51,8 @@ function RouteComponent() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [slugCopied, setSlugCopied] = useState(false);
+  const slugCopiedTimer = useRef<ReturnType<typeof setTimeout>>(null);
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
   const [inviteIdBeingRevoked, setInviteIdBeingRevoked] = useState<string | null>(null);
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
@@ -388,11 +391,17 @@ function RouteComponent() {
                 className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 font-mono text-sm font-medium text-foreground transition-colors hover:bg-muted/70 active:bg-muted/50"
                 onClick={() => {
                   void navigator.clipboard.writeText(orgData.slug);
-                  toastManager.add({ title: "Copied to clipboard", type: "success" });
+                  setSlugCopied(true);
+                  if (slugCopiedTimer.current) clearTimeout(slugCopiedTimer.current);
+                  slugCopiedTimer.current = setTimeout(() => setSlugCopied(false), 2000);
                 }}
               >
                 {orgData.slug}
-                <IconCopyOutlineDuo18 className="size-3.5 text-muted-foreground" />
+                {slugCopied ? (
+                  <IconCheckOutlineDuo18 className="size-3.5 text-emerald-500" />
+                ) : (
+                  <IconCopyOutlineDuo18 className="size-3.5 text-muted-foreground" />
+                )}
               </button>
             )}
             <Field>

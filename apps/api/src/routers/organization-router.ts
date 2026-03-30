@@ -1,10 +1,11 @@
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
 import * as z from "zod";
 
+import { docsSites } from "@/schema/docs";
 import { subscriptions } from "@/schema/subscription";
 import { db } from "@/utils/db";
-// import { bootstrapDocsForOrg } from "@/utils/docs-bootstrap";
 import { log } from "@/utils/logger";
 import { tryCatch } from "@/utils/try-catch";
 
@@ -21,16 +22,16 @@ export const organizationRouter = {
       }),
     )
     .handler(async ({ context: { headers, resHeaders }, input }) => {
-      const data = await auth.api.createOrganization({
+      const organization = await auth.api.createOrganization({
         headers,
-        body: { name: input.name, slug: input.slug },
+        body: { name: input.name, slug: input.slug, logo: input.logo },
       });
 
       const { headers: sessionHeaders } = await auth.api.setActiveOrganization({
         headers,
         returnHeaders: true,
         body: {
-          organizationId: data?.id,
+          organizationId: organization?.id,
         },
       });
 
@@ -39,23 +40,23 @@ export const organizationRouter = {
         resHeaders?.append("set-cookie", cookie);
       }
 
-      if (data?.id && input.logo) {
-        await tryCatch(
-          auth.api.updateOrganization({
-            headers,
-            body: { data: { logo: input.logo }, organizationId: data.id },
+      if (organization?.id) {
+        const { error } = await tryCatch(
+          db.insert(docsSites).values({
+            id: uuidv7(),
+            organizationId: organization.id,
+            sourceMode: "managed",
           }),
         );
+
+        if (error) {
+          log.error("org.bootstrap_docs_site_failed", error, {
+            organizationId: organization.id,
+          });
+        }
       }
 
-      if (data?.id) {
-        // const { error: bootstrapError } = await tryCatch(bootstrapDocsForOrg(data.id));
-        // if (bootstrapError) {
-        //   log.error("org.docs_bootstrap_failed", bootstrapError, { organizationId: data.id });
-        // }
-      }
-
-      return data;
+      return organization;
     }),
 
   checkSlugAvailability: authedProcedure
