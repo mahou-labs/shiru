@@ -1,0 +1,157 @@
+---
+title: Getting Started
+description: Learn how to set up and start using Acme SDK in your project.
+---
+
+# Getting Started
+
+Welcome to the Acme SDK documentation. This guide will walk you through installation, configuration, and your first API call.
+
+## Installation
+
+Install the package using your preferred package manager:
+
+```bash
+npm install @acme/sdk
+```
+
+```bash
+pnpm add @acme/sdk
+```
+
+```bash
+yarn add @acme/sdk
+```
+
+## Quick Start
+
+Import and initialize the client with your API key:
+
+```typescript
+import { AcmeClient } from "@acme/sdk";
+
+const client = new AcmeClient({
+  apiKey: process.env.ACME_API_KEY,
+});
+```
+
+### Make your first request
+
+```typescript
+const result = await client.projects.list();
+
+console.log(result.data);
+// [{ id: "proj_1", name: "My Project", createdAt: "2026-01-15T..." }]
+```
+
+## Configuration
+
+The client accepts the following options:
+
+| Option      | Type     | Default                    | Description                  |
+| ----------- | -------- | -------------------------- | ---------------------------- |
+| `apiKey`    | `string` | —                          | Your API key (required)      |
+| `baseUrl`   | `string` | `https://api.acme.dev/v1`  | API base URL                 |
+| `timeout`   | `number` | `30000`                    | Request timeout in ms        |
+| `retries`   | `number` | `3`                        | Number of retry attempts     |
+
+## Authentication
+
+All requests require an API key. You can generate one from the [dashboard](https://app.acme.dev/settings/api-keys).
+
+<Callout type="warning">
+  Never expose your API key in client-side code. Use environment variables or a server-side proxy.
+</Callout>
+
+## Core Concepts
+
+### Projects
+
+Projects are the top-level organizational unit. Each project contains collections, documents, and team members.
+
+```typescript
+// Create a project
+const project = await client.projects.create({
+  name: "Documentation Site",
+  slug: "docs",
+});
+
+// Retrieve a project
+const project = await client.projects.get("proj_abc123");
+```
+
+### Documents
+
+Documents are the content you publish. Each document belongs to a project and has a unique slug.
+
+```typescript
+// List documents in a project
+const docs = await client.documents.list({
+  projectId: "proj_abc123",
+  status: "published",
+});
+
+// Create a document
+const doc = await client.documents.create({
+  projectId: "proj_abc123",
+  title: "API Reference",
+  slug: "api-reference",
+  content: "# API Reference\n\nThis section covers...",
+});
+```
+
+### Versioning
+
+Every document change creates a new version. You can retrieve or restore any previous version.
+
+```typescript
+// List versions
+const versions = await client.documents.versions.list({
+  documentId: "doc_xyz789",
+});
+
+// Restore a version
+await client.documents.versions.restore({
+  documentId: "doc_xyz789",
+  versionId: "ver_3",
+});
+```
+
+## Error Handling
+
+The SDK throws typed errors you can catch and handle:
+
+```typescript
+import { AcmeError, NotFoundError, RateLimitError } from "@acme/sdk";
+
+try {
+  const doc = await client.documents.get("doc_nonexistent");
+} catch (error) {
+  if (error instanceof NotFoundError) {
+    console.log("Document not found");
+  } else if (error instanceof RateLimitError) {
+    console.log(`Rate limited. Retry after ${error.retryAfter}s`);
+  } else if (error instanceof AcmeError) {
+    console.log(`API error: ${error.message} (${error.code})`);
+  }
+}
+```
+
+## Rate Limits
+
+The API enforces the following rate limits:
+
+| Plan       | Requests/min | Burst |
+| ---------- | ------------ | ----- |
+| Free       | 60           | 10    |
+| Pro        | 600          | 100   |
+| Enterprise | 6000         | 1000  |
+
+When rate limited, the response includes a `Retry-After` header. The SDK handles retries automatically when `retries` is configured.
+
+## Next Steps
+
+- [API Reference](/docs/api-reference) — Full endpoint documentation
+- [Guides](/docs/guides) — Step-by-step tutorials
+- [Examples](/docs/examples) — Sample projects and code snippets
+- [Changelog](/docs/changelog) — Latest updates and releases
