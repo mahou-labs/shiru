@@ -14,33 +14,44 @@ export const Route = createFileRoute("/_app/docs/")({
 function DocsOverview() {
   const queryClient = useQueryClient();
 
-  const siteQuery = useQuery(orpc.docs.siteSettings.get.queryOptions());
-  const site = siteQuery.data;
+  const {
+    data: site,
+    isLoading,
+    isError,
+    error,
+  } = useQuery(orpc.docs.getSiteSettings.queryOptions());
 
-  const publishMutation = useMutation({
-    ...orpc.docs.publish.trigger.mutationOptions(),
-    onSuccess: (data) => {
-      if (data.deduplicated) {
-        toastManager.add({ title: "A publish is already in progress" });
-      } else {
-        toastManager.add({
-          title: "Published successfully",
-          description: `Version ${data.version}`,
-        });
-        void queryClient.invalidateQueries({
-          queryKey: orpc.docs.siteSettings.get.queryOptions().queryKey,
-        });
-        void queryClient.invalidateQueries({
-          queryKey: orpc.docs.versionHistory.list.queryOptions({ limit: 20 }).queryKey,
-        });
-      }
-    },
-    onError: (error) => {
-      toastManager.add({ title: "Publish failed", description: error.message });
-    },
-  });
+  // const siteQuery = useQuery(orpc.docs.siteSettings.get.queryOptions());
+  // const site = siteQuery.data;
 
-  if (siteQuery.isLoading) {
+  const { mutate: publish, isPending: publishPending } = useMutation(
+    orpc.docs.publish.mutationOptions(),
+  );
+
+  // const publishMutation = useMutation({
+  //   ...orpc.docs.publish.trigger.mutationOptions(),
+  //   onSuccess: (data) => {
+  //     if (data.deduplicated) {
+  //       toastManager.add({ title: "A publish is already in progress" });
+  //     } else {
+  //       toastManager.add({
+  //         title: "Published successfully",
+  //         description: `Version ${data.version}`,
+  //       });
+  //       void queryClient.invalidateQueries({
+  //         queryKey: orpc.docs.siteSettings.get.queryOptions().queryKey,
+  //       });
+  //       void queryClient.invalidateQueries({
+  //         queryKey: orpc.docs.versionHistory.list.queryOptions({ limit: 20 }).queryKey,
+  //       });
+  //     }
+  //   },
+  //   onError: (e) => {
+  //     toastManager.add({ title: "Publish failed", description: e.message });
+  //   },
+  // });
+
+  if (isLoading) {
     return (
       <div className="space-y-4 pt-4">
         <Skeleton className="h-40 w-full rounded-lg" />
@@ -49,14 +60,14 @@ function DocsOverview() {
     );
   }
 
-  if (siteQuery.isError) {
+  if (isError) {
     return (
       <div className="pt-4">
         <Card>
           <CardHeader>
             <CardTitle>Docs not available</CardTitle>
             <CardDescription>
-              {siteQuery.error.message.includes("not found")
+              {error.message.includes("not found")
                 ? "Your docs site hasn't been set up yet. This usually happens automatically — try refreshing."
                 : "Something went wrong loading your docs settings."}
             </CardDescription>
@@ -79,14 +90,12 @@ function DocsOverview() {
               </CardDescription>
             </div>
             <Button
-              disabled={publishMutation.isPending}
+              disabled={publishPending}
               onClick={() => {
-                if (site?.id) {
-                  publishMutation.mutate({ docsSiteId: site.id });
-                }
+                if (site?.id) publish({ docsSiteId: site.id });
               }}
             >
-              {publishMutation.isPending ? "Publishing..." : "Publish"}
+              {publishPending ? "Publishing..." : "Publish"}
             </Button>
           </div>
         </CardHeader>
@@ -97,8 +106,8 @@ function DocsOverview() {
         <CardHeader>
           <CardTitle>Production</CardTitle>
           <CardDescription>
-            {site?.activeVersion
-              ? `Version ${site.activeVersion} is live`
+            {site?.activeCommitSha
+              ? `Version ${site.activeCommitSha} is live`
               : "No version deployed yet. Publish to make your docs live."}
           </CardDescription>
         </CardHeader>

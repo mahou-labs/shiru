@@ -1,4 +1,3 @@
-// import { Container } from "@cloudflare/containers";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ResponseHeadersPlugin } from "@orpc/server/plugins";
@@ -14,6 +13,8 @@ import { appRouter } from "./routers";
 import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
 import { log } from "./utils/logger";
+
+export { PublishDocsWorkflow } from "./routers/docs-router";
 
 const posthog = new PostHog(env.POSTHOG_PUBLIC_KEY, {
   host: "https://t.shiru.sh",

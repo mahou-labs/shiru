@@ -36,6 +36,17 @@
       "migrations_dir": "drizzle/migrations",
     },
   ],
+  "r2_buckets": [
+    { "binding": "DOCS_SOURCE", "bucket_name": "shiru-docs-source" },
+    { "binding": "DOCS_DIST", "bucket_name": "shiru-docs-dist" },
+  ],
+  "workflows": [
+    {
+      "name": "publish-docs-workflow",
+      "binding": "PUBLISH_DOCS",
+      "class_name": "PublishDocsWorkflow",
+    },
+  ],
   // "r2_buckets": [
   //   {
   //     "binding": "DOCS_ARTIFACTS",

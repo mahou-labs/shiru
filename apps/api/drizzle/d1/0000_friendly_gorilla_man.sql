@@ -90,7 +90,7 @@ CREATE TABLE `docs_sites` (
 	`github_owner` text,
 	`github_owner_type` text,
 	`github_repository` text,
-	`github_installation_id` text,
+	`github_installation_id` integer,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	CONSTRAINT `fk_docs_sites_organization_id_organizations_id_fk` FOREIGN KEY (`organization_id`) REFERENCES `organizations`(`id`) ON DELETE CASCADE
@@ -101,6 +101,7 @@ CREATE TABLE `docs_versions` (
 	`docs_site_id` text NOT NULL,
 	`version_ref` text NOT NULL,
 	`status` text DEFAULT 'building' NOT NULL,
+	`workflow_instance_id` text NOT NULL,
 	`requested_by_user_id` text,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	CONSTRAINT `fk_docs_versions_docs_site_id_docs_sites_id_fk` FOREIGN KEY (`docs_site_id`) REFERENCES `docs_sites`(`id`) ON DELETE CASCADE,
