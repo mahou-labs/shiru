@@ -27,7 +27,7 @@ function RouteComponent() {
     <SidebarProvider>
       <main className="flex h-full overflow-hidden bg-sidebar">
         <Sidebar />
-        <div className="flex-1 border border-border bg-background drop-shadow-xs lg:m-2 lg:ml-0 lg:rounded-xl">
+        <div className="flex-1 border border-border bg-background drop-shadow-xs lg:m-3 lg:ml-0 lg:rounded-xl">
           <Outlet />
         </div>
       </main>

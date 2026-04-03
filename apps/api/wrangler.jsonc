@@ -47,38 +47,26 @@
       "class_name": "PublishDocsWorkflow",
     },
   ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "DOCS_ARTIFACTS",
-  //     "bucket_name": "shiru-publish-artifacts-dev",
-  //   },
-  // ],
-  // "queues": {
-  //   "producers": [
-  //     {
-  //       "binding": "BUILD_QUEUE",
-  //       "queue": "docs-build",
-  //     },
-  //   ],
-  // },
-  // "containers": [
-  //   {
-  //     "class_name": "DocsBuilder",
-  //     "image": "./Dockerfile",
-  //   },
-  // ],
-  // "durable_objects": {
-  //   "bindings": [
-  //     {
-  //       "class_name": "DocsBuilder",
-  //       "name": "DOCS_BUILDER",
-  //     },
-  //   ],
-  // },
-  // "migrations": [
-  //   {
-  //     "tag": "v1",
-  //     "new_sqlite_classes": ["DocsBuilder"],
-  //   },
-  // ],
+  "containers": [
+    {
+      "class_name": "BuilderSandbox",
+      "image": "./Dockerfile",
+      "instance_type": "standard-1",
+      "max_instances": 10,
+    },
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "BuilderSandbox",
+        "name": "BUILDER_SANDBOX",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["BuilderSandbox"],
+    },
+  ],
 }

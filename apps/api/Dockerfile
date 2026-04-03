@@ -1,6 +1,8 @@
 FROM docker.io/cloudflare/sandbox:0.8.0
 
-WORKDIR /build
-EXPOSE 8080
+# RUN npm install -g astro @astrojs/starlight sharp
 
-CMD ["echo", "--- STARTO ---"]
+WORKDIR /workspace
+COPY ./starlight /workspace/starlight
+
+EXPOSE 8080

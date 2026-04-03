@@ -1,3 +1,4 @@
+import { getSandbox } from "@cloudflare/sandbox";
 import { ORPCError } from "@orpc/server";
 import { WorkflowEntrypoint, WorkflowStep, type WorkflowEvent, env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
@@ -7,6 +8,7 @@ import z from "zod";
 import { organizations } from "@/schema/auth";
 import { docsSites, docsVersions } from "@/schema/docs";
 import { db } from "@/utils/db";
+import { log } from "@/utils/logger";
 import { getInstallationOctokit } from "@/utils/oktokit";
 import { protectedProcedure } from "@/utils/orpc";
 import { tryCatch } from "@/utils/try-catch";
@@ -39,13 +41,19 @@ export const docsRouter = {
       }),
     )
     .handler(async ({ input, context: { session } }) => {
-      // 1. get files from github, move them to r2
-      // 2. trigger sandbox for building the app
-      // 3. success
-
       if (!session.activeOrganizationId) {
         throw new ORPCError("Organization not found");
       }
+
+      // const sandbox = getSandbox(env.BUILDER_SANDBOX, "builder-sandbox");
+      // const result = await sandbox.exec("cd starlight && bun --bun run build-docs");
+
+      // log.debug("Sandbox debug", {
+      //   output: result.stdout,
+      //   error: result.stderr,
+      //   exitCode: result.exitCode,
+      //   success: result.success,
+      // });
 
       const instanceId = uuidv7();
       const instance = await env.PUBLISH_DOCS.create({
@@ -56,8 +64,6 @@ export const docsRouter = {
           instanceId,
         },
       });
-
-      console.log({ instance });
 
       return { instanceId: instance.id };
     }),
@@ -164,7 +170,7 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, WorflowP
       return { docsSite: site, slug: org.slug };
     });
 
-    console.log({ docsSite, slug });
+    // console.log({ docsSite, slug });
 
     const { files, commitSha } = await step.do("fetch-github-files", async () => {
       const result = await getGithubFiles(docsSite);
@@ -174,27 +180,61 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, WorflowP
       return result;
     });
 
-    console.log({ files, commitSha });
-    console.log(`-- ${event.payload.instanceId} --`);
+    // console.log({ files, commitSha });
+    // console.log(`-- ${event.payload.instanceId} --`);
 
-    const debug = await step.do("save-version", async () => {
-      const { data, error } = await tryCatch(
-        db.insert(docsVersions).values({
-          docsSiteId: event.payload.docsSiteId,
-          workflowInstanceId: event.payload.instanceId,
-          versionRef: commitSha,
-        }),
-      );
+    await step.do("save-version", async () => {
+      const { error } = await db.insert(docsVersions).values({
+        docsSiteId: event.payload.docsSiteId,
+        workflowInstanceId: event.payload.instanceId,
+        versionRef: commitSha,
+      });
 
-      console.log({ data, error });
+      if (error) {
+        log.error("Failed to save version", error);
+      }
     });
 
-    console.log({ debug });
-
-    await step.do("upload-to-r2", async () => {
+    await step.do("upload-source-to-r2", async () => {
       await Promise.all(
-        files.map((file) => env.DOCS_SOURCE.put(`${slug}/${file.path}`, file.content)),
+        files.map((file) => env.DOCS_SOURCE.put(`${slug}/${commitSha}/${file.path}`, file.content)),
       );
+    });
+
+    const builtFiles = await step.do("build-in-sandbox", async () => {
+      const sandbox = getSandbox(env.BUILDER_SANDBOX, "builder-sandbox");
+      const result = await sandbox.exec("cd starlight && bun --bun run build-docs");
+
+      log.debug("Sandbox build", {
+        logs: result.stderr,
+        exitCode: result.exitCode,
+        success: result.success,
+      });
+
+      if (!result.success) {
+        throw new Error(`Sandbox build failed: ${result.stderr}`);
+      }
+
+      const { files: distFiles } = JSON.parse(result.stdout) as {
+        files: { path: string; content: string }[];
+      };
+
+      return distFiles;
+    });
+
+    await step.do("upload-dist-to-r2", async () => {
+      const BATCH_SIZE = 20;
+
+      for (let i = 0; i < builtFiles.length; i += BATCH_SIZE) {
+        const batch = builtFiles.slice(i, i + BATCH_SIZE);
+        // oxlint-disable-next-line no-await-in-loop
+        await Promise.all(
+          batch.map((file) => {
+            const bytes = Uint8Array.from(atob(file.content), (c) => c.charCodeAt(0));
+            return env.DOCS_DIST.put(`${slug}/${commitSha}/${file.path}`, bytes);
+          }),
+        );
+      }
     });
   }
 }

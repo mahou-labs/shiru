@@ -14,6 +14,7 @@ import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
 import { log } from "./utils/logger";
 
+export { Sandbox as BuilderSandbox } from "@cloudflare/sandbox";
 export { PublishDocsWorkflow } from "./routers/docs-router";
 
 const posthog = new PostHog(env.POSTHOG_PUBLIC_KEY, {
@@ -90,29 +91,5 @@ app.use("/rpc/*", async (c, next) => {
 
 app.route("/github", githubRoutes);
 
-// export class DocsBuilder extends Container<Env> {
-//   // Port the container listens on (default: 8080)
-//   defaultPort = 8080;
-//   // Time before container sleeps due to inactivity (default: 30s)
-//   sleepAfter = "2m";
-//   // Environment variables passed to the container
-//   envVars = {
-//     MESSAGE: "I was passed in via the container class!",
-//   };
-
-//   // Optional lifecycle hooks
-//   override onStart() {
-//     console.log("Container successfully started");
-//   }
-
-//   override onStop() {
-//     console.log("Container successfully shut down");
-//   }
-
-//   override onError(error: unknown) {
-//     console.log("Container error:", error);
-//   }
-// }
-
-export { app };
+// export { app };
 export default app;
