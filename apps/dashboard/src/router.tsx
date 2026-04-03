@@ -1,10 +1,12 @@
-import { createRouter } from "@tanstack/react-router";
-import Loader from "./components/loader";
-import "./index.css";
+import { toastManager } from "@shiru/ui/toast";
 import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+import "./index.css";
+import { createRouter } from "@tanstack/react-router";
+
+import Loader from "./components/loader";
 import { routeTree } from "./routeTree.gen";
 import { orpc } from "./utils/orpc-client";
-import { toastManager } from "@shiru/ui/toast";
 
 export const getRouter = () => {
   const queryClient = new QueryClient({

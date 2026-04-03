@@ -1,14 +1,6 @@
 import { Extension, type Editor, ReactRenderer } from "@tiptap/react";
 import Suggestion, { type SuggestionOptions, type SuggestionProps } from "@tiptap/suggestion";
 import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
-import {
   IconBlockquoteOutlineDuo18,
   IconCircleInfoOutlineDuo18,
   IconBulletListOutlineDuo18,
@@ -21,6 +13,14 @@ import {
   IconParagraphOutlineDuo18,
   IconSquareCodeOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 // ---------------------------------------------------------------------------
 // Command item types

@@ -2,15 +2,15 @@ import { checkout, polar, portal, usage, webhooks } from "@polar-sh/better-auth"
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { organization } from "better-auth/plugins";
+import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+
 import * as authSchema from "../schema/auth";
 import { db } from "./db";
-import { polarClient } from "./polar";
-
-import { env } from "cloudflare:workers";
 import { sendVerificationEmail } from "./email";
 import { log } from "./logger";
+import { polarClient } from "./polar";
 
 async function getActiveOrganization(userId: string) {
   try {

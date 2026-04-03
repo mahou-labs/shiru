@@ -1,3 +1,6 @@
+import { Avatar, AvatarFallback, AvatarImage } from "@shiru/ui/avatar";
+import { Menu, MenuItem, MenuPopup, MenuPortal, MenuSeparator, MenuTrigger } from "@shiru/ui/menu";
+import { Skeleton } from "@shiru/ui/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   IconCheckOutlineDuo18,
@@ -5,13 +8,12 @@ import {
   IconCirclePlusOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@shiru/ui/avatar";
-import { Menu, MenuItem, MenuPopup, MenuPortal, MenuSeparator, MenuTrigger } from "@shiru/ui/menu";
-import { Skeleton } from "@shiru/ui/skeleton";
+
 import { useSidebar } from "@/contexts/sidebar-context";
 import { cn } from "@/utils/cn";
 import { getInitials } from "@/utils/initials";
 import { orpc } from "@/utils/orpc-client";
+
 import { CreateOrgDialog } from "./create-org-dialog";
 
 export function OrgMenu({ collapsed }: { collapsed?: boolean }) {

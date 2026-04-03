@@ -10,6 +10,7 @@ import {
   Tailwind,
   Text,
 } from "@react-email/components";
+import { env } from "cloudflare:workers";
 
 type EmailVerificationProps = {
   name: string;
@@ -100,5 +101,5 @@ export default function EmailVerificationEmail({ name, verificationLink }: Email
 
 EmailVerificationEmail.PreviewProps = {
   name: "John Doe",
-  verificationLink: "https://app.mizuhr.com/auth/verify-email?token=abc123",
+  verificationLink: `${env.DASHBOARD_URL}/auth/verify-email?token=abc123`,
 };

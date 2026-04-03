@@ -1,6 +1,8 @@
-import type { ReactNode } from "react";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import type { ReactNode } from "react";
+
 import { useSidebar } from "@/contexts/sidebar-context";
+
 import { AppHeader } from "./app-header";
 import { MobileContextPanel } from "./mobile-context-panel";
 import { MobileSidebar } from "./mobile-sidebar";

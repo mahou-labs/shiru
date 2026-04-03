@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+
 import { AppShellLayout } from "@/components/app-shell-layout";
 import { Editor } from "@/components/editor/editor";
 import { EditorSecondarySidebar } from "@/components/editor/editor-secondary-sidebar";

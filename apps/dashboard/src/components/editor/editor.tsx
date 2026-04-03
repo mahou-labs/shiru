@@ -1,23 +1,23 @@
-import { useEditor, EditorContent, EditorContext } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+import { Button } from "@shiru/ui/button";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Highlight from "@tiptap/extension-highlight";
 import Link from "@tiptap/extension-link";
-import { Markdown } from "@tiptap/markdown";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import Typography from "@tiptap/extension-typography";
 import Underline from "@tiptap/extension-underline";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { Markdown } from "@tiptap/markdown";
+import { useEditor, EditorContent, EditorContext } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
 import { useState } from "react";
-
-import { Button } from "@shiru/ui/button";
-import { toStarlightMDX } from "./utils/mdx";
 
 import { EditorBubbleMenu } from "./editor-bubble-menu";
 import { Aside } from "./extensions/aside-extension";
 import { SlashCommand } from "./slash-command";
+import { toStarlightMDX } from "./utils/mdx";
+
 import "./editor.css";
 
 const lowlight = createLowlight(common);

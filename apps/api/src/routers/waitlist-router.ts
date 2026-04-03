@@ -1,8 +1,10 @@
 import { ORPCError } from "@orpc/server";
 import z from "zod";
-import { publicProcedure } from "../utils/orpc";
+
 import { resend } from "@/utils/email";
 import { log } from "@/utils/logger";
+
+import { publicProcedure } from "../utils/orpc";
 
 export const waitlistRouter = {
   addEmail: publicProcedure.input(z.object({ email: z.email() })).handler(async ({ input }) => {

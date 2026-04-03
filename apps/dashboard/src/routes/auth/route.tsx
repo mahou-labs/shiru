@@ -1,9 +1,10 @@
-import { LoadingScreen } from "@/components/loading-screen";
-import { orpc } from "@/utils/orpc-client";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { z } from "zod";
+
+import { LoadingScreen } from "@/components/loading-screen";
+import { orpc } from "@/utils/orpc-client";
 
 const authSearchSchema = z.object({
   redirect: z.string().optional(),

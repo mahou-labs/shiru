@@ -3,20 +3,15 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "astro dev --port=3003",
+    "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro",
-    "check": "astro sync && vp check"
+    "astro": "astro"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.38.2",
-    "astro": "catalog:",
-    "sharp": "^0.34.5",
-    "starlight-theme-rapide": "^0.5.2"
-  },
-  "devDependencies": {
-    "wrangler": "catalog:"
+    "astro": "^6.0.1",
+    "sharp": "^0.34.2"
   }
 }

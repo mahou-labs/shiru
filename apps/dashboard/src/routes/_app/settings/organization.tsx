@@ -1,17 +1,3 @@
-import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
-import {
-  IconCircleUserOutlineDuo18,
-  IconCopyOutlineDuo18,
-  IconDoorOpenOutlineDuo18,
-  IconGearOutlineDuo18,
-  IconLoaderOutlineDuo18,
-  IconTrashOutlineDuo18,
-  IconUserPlusOutlineDuo18,
-} from "nucleo-ui-outline-duo-18";
-import { useState } from "react";
-import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@shiru/ui/avatar";
 import { Button } from "@shiru/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shiru/ui/card";
@@ -29,9 +15,25 @@ import { Form } from "@shiru/ui/form";
 import { Input } from "@shiru/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectPopup, SelectItem } from "@shiru/ui/select";
 import { Skeleton } from "@shiru/ui/skeleton";
+import { toastManager } from "@shiru/ui/toast";
+import { useForm } from "@tanstack/react-form";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import {
+  IconCheckOutlineDuo18,
+  IconCircleUserOutlineDuo18,
+  IconCopyOutlineDuo18,
+  IconDoorOpenOutlineDuo18,
+  IconGearOutlineDuo18,
+  IconLoaderOutlineDuo18,
+  IconTrashOutlineDuo18,
+  IconUserPlusOutlineDuo18,
+} from "nucleo-ui-outline-duo-18";
+import { useRef, useState } from "react";
+import { z } from "zod";
+
 import { cn } from "@/utils/cn";
 import { orpc } from "@/utils/orpc-client";
-import { toastManager } from "@shiru/ui/toast";
 
 const inviteSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -49,6 +51,8 @@ function RouteComponent() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [slugCopied, setSlugCopied] = useState(false);
+  const slugCopiedTimer = useRef<ReturnType<typeof setTimeout>>(null);
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
   const [inviteIdBeingRevoked, setInviteIdBeingRevoked] = useState<string | null>(null);
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
@@ -74,11 +78,6 @@ function RouteComponent() {
 
   const isPending = isOrgPending || isMembersPending || isInvitesPending;
 
-  // Mutations
-  const { mutateAsync: updateOrg } = useMutation(orpc.organization.updateOrg.mutationOptions());
-  const { mutateAsync: updateOrgLogo } = useMutation(
-    orpc.organization.updateOrgLogo.mutationOptions(),
-  );
   const { mutateAsync: deleteOrg } = useMutation(orpc.organization.deleteOrg.mutationOptions());
   const { mutateAsync: removeMember } = useMutation(
     orpc.organization.removeMember.mutationOptions(),
@@ -93,7 +92,6 @@ function RouteComponent() {
   const isOwner = currentUser?.role === "owner";
   const canManageMembers = isOwner || currentUser?.role === "admin";
 
-  // Forms
   const inviteForm = useForm({
     defaultValues: { email: "" },
     validators: { onSubmit: inviteSchema },
@@ -109,40 +107,6 @@ function RouteComponent() {
         console.error(error);
         toastManager.add({
           title: error instanceof Error ? error.message : "Failed to invite member",
-          type: "error",
-        });
-      }
-    },
-  });
-
-  const orgForm = useForm({
-    defaultValues: {
-      name: "",
-      slug: "",
-      logo: "",
-    },
-    onSubmit: async ({ value }) => {
-      try {
-        // Update org name/slug if changed
-        if (value.name !== orgData?.name || value.slug !== orgData?.slug) {
-          await updateOrg({
-            ...(value.name !== orgData?.name && { name: value.name }),
-            ...(value.slug !== orgData?.slug && { slug: value.slug }),
-          });
-        }
-
-        // Update logo if changed (including clearing it)
-        if (value.logo !== (orgData?.logo || "")) {
-          await updateOrgLogo({ logo: value.logo });
-        }
-
-        await queryClient.invalidateQueries(orpc.organization.getFullOrg.queryOptions());
-        toastManager.add({ title: "Organization updated successfully", type: "success" });
-      } catch (error) {
-        // oxlint-disable-next-line no-console
-        console.error(error);
-        toastManager.add({
-          title: "Failed to update organization",
           type: "error",
         });
       }
@@ -170,13 +134,6 @@ function RouteComponent() {
       setIsDeleting(false);
     }
   };
-
-  // Update form defaults when org data loads
-  if (orgData && !orgForm.state.values.name && !orgForm.state.values.slug) {
-    orgForm.setFieldValue("name", orgData.name);
-    orgForm.setFieldValue("slug", orgData.slug);
-    orgForm.setFieldValue("logo", orgData.logo || "");
-  }
 
   // Handle member role update
   const handleRoleUpdate = async (memberId: string, newRole: "admin" | "member") => {
@@ -252,81 +209,22 @@ function RouteComponent() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isPending ? (
+          {isPending || !orgData ? (
             <div className="space-y-4">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
             </div>
           ) : (
-            <Form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                await orgForm.handleSubmit();
+            <OrgSettingsForm
+              key={orgData.id}
+              orgData={{
+                id: orgData.id,
+                name: orgData.name,
+                slug: orgData.slug,
+                logo: orgData.logo ?? null,
               }}
-            >
-              <div className="space-y-4">
-                <orgForm.Field name="name">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Organization Name</FieldLabel>
-                      <Input
-                        disabled={orgForm.state.isSubmitting}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Acme Corp"
-                        value={field.state.value}
-                      />
-                      {field.state.meta.errors.map((error) => (
-                        <FieldError key={String(error)}>{String(error)}</FieldError>
-                      ))}
-                    </Field>
-                  )}
-                </orgForm.Field>
-
-                <orgForm.Field name="slug">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Organization Slug</FieldLabel>
-                      <Input
-                        disabled={orgForm.state.isSubmitting}
-                        onChange={(e) => orgForm.setFieldValue("slug", e.target.value)}
-                        placeholder="acme-corp"
-                        value={field.state.value}
-                      />
-                      {field.state.meta.errors.map((error) => (
-                        <FieldError key={String(error)}>{String(error)}</FieldError>
-                      ))}
-                    </Field>
-                  )}
-                </orgForm.Field>
-
-                <orgForm.Field name="logo">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Logo URL (Optional)</FieldLabel>
-                      <Input
-                        disabled={orgForm.state.isSubmitting}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="https://example.com/logo.png"
-                        value={field.state.value}
-                      />
-                      {field.state.meta.errors.map((error) => (
-                        <FieldError key={String(error)}>{String(error)}</FieldError>
-                      ))}
-                    </Field>
-                  )}
-                </orgForm.Field>
-
-                <div className="flex justify-start">
-                  <Button
-                    disabled={!orgForm.state.canSubmit || orgForm.state.isSubmitting}
-                    type="submit"
-                  >
-                    {orgForm.state.isSubmitting ? "Saving..." : "Save Changes"}
-                  </Button>
-                </div>
-              </div>
-            </Form>
+            />
           )}
         </CardContent>
       </Card>
@@ -493,11 +391,17 @@ function RouteComponent() {
                 className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 font-mono text-sm font-medium text-foreground transition-colors hover:bg-muted/70 active:bg-muted/50"
                 onClick={() => {
                   void navigator.clipboard.writeText(orgData.slug);
-                  toastManager.add({ title: "Copied to clipboard", type: "success" });
+                  setSlugCopied(true);
+                  if (slugCopiedTimer.current) clearTimeout(slugCopiedTimer.current);
+                  slugCopiedTimer.current = setTimeout(() => setSlugCopied(false), 2000);
                 }}
               >
                 {orgData.slug}
-                <IconCopyOutlineDuo18 className="size-3.5 text-muted-foreground" />
+                {slugCopied ? (
+                  <IconCheckOutlineDuo18 className="size-3.5 text-emerald-500" />
+                ) : (
+                  <IconCopyOutlineDuo18 className="size-3.5 text-muted-foreground" />
+                )}
               </button>
             )}
             <Field>
@@ -563,6 +467,115 @@ function RouteComponent() {
         </DialogPopup>
       </Dialog>
     </div>
+  );
+}
+
+function OrgSettingsForm({
+  orgData,
+}: {
+  orgData: { id: string; name: string; slug: string; logo: string | null };
+}) {
+  const queryClient = useQueryClient();
+  const { mutateAsync: updateOrg } = useMutation(orpc.organization.updateOrg.mutationOptions());
+  const { mutateAsync: updateOrgLogo } = useMutation(
+    orpc.organization.updateOrgLogo.mutationOptions(),
+  );
+
+  const orgForm = useForm({
+    defaultValues: {
+      name: orgData.name,
+      slug: orgData.slug,
+      logo: orgData.logo || "",
+    },
+    onSubmit: async ({ value }) => {
+      try {
+        if (value.name !== orgData.name || value.slug !== orgData.slug) {
+          await updateOrg({
+            ...(value.name !== orgData.name && { name: value.name }),
+            ...(value.slug !== orgData.slug && { slug: value.slug }),
+          });
+        }
+
+        if (value.logo !== (orgData.logo || "")) {
+          await updateOrgLogo({ logo: value.logo });
+        }
+
+        await queryClient.invalidateQueries(orpc.organization.getFullOrg.queryOptions());
+        toastManager.add({ title: "Organization updated successfully", type: "success" });
+      } catch (error) {
+        // oxlint-disable-next-line no-console
+        console.error(error);
+        toastManager.add({ title: "Failed to update organization", type: "error" });
+      }
+    },
+  });
+
+  return (
+    <Form
+      onSubmit={async (e) => {
+        e.preventDefault();
+        await orgForm.handleSubmit();
+      }}
+    >
+      <div className="space-y-4">
+        <orgForm.Field name="name">
+          {(field) => (
+            <Field>
+              <FieldLabel>Organization Name</FieldLabel>
+              <Input
+                disabled={orgForm.state.isSubmitting}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="Acme Corp"
+                value={field.state.value}
+              />
+              {field.state.meta.errors.map((error) => (
+                <FieldError key={String(error)}>{String(error)}</FieldError>
+              ))}
+            </Field>
+          )}
+        </orgForm.Field>
+
+        <orgForm.Field name="slug">
+          {(field) => (
+            <Field>
+              <FieldLabel>Organization Slug</FieldLabel>
+              <Input
+                disabled={orgForm.state.isSubmitting}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="acme-corp"
+                value={field.state.value}
+              />
+              {field.state.meta.errors.map((error) => (
+                <FieldError key={String(error)}>{String(error)}</FieldError>
+              ))}
+            </Field>
+          )}
+        </orgForm.Field>
+
+        <orgForm.Field name="logo">
+          {(field) => (
+            <Field>
+              <FieldLabel>Logo URL (Optional)</FieldLabel>
+              <Input
+                disabled={orgForm.state.isSubmitting}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="https://example.com/logo.png"
+                value={field.state.value}
+              />
+              {field.state.meta.errors.map((error) => (
+                <FieldError key={String(error)}>{String(error)}</FieldError>
+              ))}
+            </Field>
+          )}
+        </orgForm.Field>
+
+        <div className="flex justify-start">
+          <Button disabled={!orgForm.state.canSubmit || orgForm.state.isSubmitting} type="submit">
+            {orgForm.state.isSubmitting ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </div>
+    </Form>
   );
 }
 

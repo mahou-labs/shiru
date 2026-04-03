@@ -1,10 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
+import { IconGithub } from "nucleo-social-media";
 import {
-  IconGlobe2OutlineDuo18,
   IconHouse2OutlineDuo18,
   IconSunOutlineDuo18,
   IconUsersOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
+
 import { cn } from "@/utils/cn";
 
 const settingsNavItems = [
@@ -16,18 +17,18 @@ const settingsNavItems = [
     matchPath: (pathname: string) => pathname === "/settings",
   },
   {
-    description: "Configure your docs domain and verification",
-    href: "/settings/domain",
-    icon: IconGlobe2OutlineDuo18,
-    label: "Domain",
-    matchPath: (pathname: string) => pathname.startsWith("/settings/domain"),
-  },
-  {
     description: "Manage members, roles, and organization details",
     href: "/settings/organization",
     icon: IconUsersOutlineDuo18,
     label: "Organization",
     matchPath: (pathname: string) => pathname.startsWith("/settings/organization"),
+  },
+  {
+    description: "Connect your GitHub App and select a repository",
+    href: "/settings/github",
+    icon: IconGithub,
+    label: "GitHub",
+    matchPath: (pathname: string) => pathname.startsWith("/settings/github"),
   },
   {
     description: "Personal preferences and appearance settings",

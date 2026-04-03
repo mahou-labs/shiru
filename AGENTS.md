@@ -15,21 +15,21 @@ TypeScript monorepo (Turborepo + pnpm) for an open-source documentation platform
 ## Build & Development Commands
 
 ```bash
-pnpm install                   # Install dependencies
-pnpm dev                       # Start all services (dashboard:3001, api:3000, db studio)
-pnpm dev:dashboard             # Start frontend only
-pnpm dev:dashboard-old         # Start legacy frontend only
-pnpm dev:api                   # Start API only
-pnpm lint                      # Run OxLint across all apps
-pnpm format                    # Run OxFmt across all apps
-pnpm typecheck                 # TypeScript type checking
-pnpm build                     # Build all apps for production
+bun install                    # Install dependencies
+bun dev                        # Start all services (dashboard:3001, api:3000, db studio)
+bun dev:dashboard              # Start frontend only
+bun dev:dashboard-old          # Start legacy frontend only
+bun dev:api                    # Start API only
+bun lint                       # Run OxLint across all apps
+bun format                     # Run OxFmt across all apps
+bun typecheck                  # TypeScript type checking
+bun build                      # Build all apps for production
 
 # Database
-pnpm db:push                   # Push schema changes (development)
-pnpm db:generate               # Generate migrations
-pnpm db:migrate                # Run migrations (production)
-pnpm db:studio                 # Open Drizzle Studio
+bun db:push                    # Push schema changes (development)
+bun db:generate                # Generate migrations
+bun db:migrate                 # Run migrations (production)
+bun db:studio                  # Open Drizzle Studio
 
 # Run commands in specific apps
 turbo -F api <command>         # Run in API app
