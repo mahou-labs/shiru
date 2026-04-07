@@ -1,8 +1,7 @@
 import { Button } from "@shiru/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@shiru/ui/card";
 import { Skeleton } from "@shiru/ui/skeleton";
-import { toastManager } from "@shiru/ui/toast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { orpc } from "@/utils/orpc-client";
@@ -12,8 +11,6 @@ export const Route = createFileRoute("/_app/docs/")({
 });
 
 function DocsOverview() {
-  const queryClient = useQueryClient();
-
   const {
     data: site,
     isLoading,
@@ -21,35 +18,9 @@ function DocsOverview() {
     error,
   } = useQuery(orpc.docs.getSiteSettings.queryOptions());
 
-  // const siteQuery = useQuery(orpc.docs.siteSettings.get.queryOptions());
-  // const site = siteQuery.data;
-
   const { mutate: publish, isPending: publishPending } = useMutation(
     orpc.docs.publish.mutationOptions(),
   );
-
-  // const publishMutation = useMutation({
-  //   ...orpc.docs.publish.trigger.mutationOptions(),
-  //   onSuccess: (data) => {
-  //     if (data.deduplicated) {
-  //       toastManager.add({ title: "A publish is already in progress" });
-  //     } else {
-  //       toastManager.add({
-  //         title: "Published successfully",
-  //         description: `Version ${data.version}`,
-  //       });
-  //       void queryClient.invalidateQueries({
-  //         queryKey: orpc.docs.siteSettings.get.queryOptions().queryKey,
-  //       });
-  //       void queryClient.invalidateQueries({
-  //         queryKey: orpc.docs.versionHistory.list.queryOptions({ limit: 20 }).queryKey,
-  //       });
-  //     }
-  //   },
-  //   onError: (e) => {
-  //     toastManager.add({ title: "Publish failed", description: e.message });
-  //   },
-  // });
 
   if (isLoading) {
     return (
@@ -121,16 +92,9 @@ function DocsOverview() {
         >
           <div>
             <p className="text-sm font-medium">Version History</p>
-            <p className="mt-0.5 text-sm text-muted-foreground">View all versions and rollback</p>
-          </div>
-        </Link>
-        <Link
-          to="/docs/source"
-          className="flex items-start gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent"
-        >
-          <div>
-            <p className="text-sm font-medium">Source Configuration</p>
-            <p className="mt-0.5 text-sm text-muted-foreground">Repository and branch settings</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              View published versions and build status
+            </p>
           </div>
         </Link>
       </div>

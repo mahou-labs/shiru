@@ -34,6 +34,44 @@ export const docsRouter = {
     return { id, activeCommitSha };
   }),
 
+  listVersions: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().int().min(1).max(100).default(20),
+      }),
+    )
+    .handler(async ({ input, context: { session } }) => {
+      if (!session.activeOrganizationId) {
+        throw new ORPCError("Organization not found");
+      }
+
+      const [site] = await db
+        .select({ id: docsSites.id, activeCommitSha: docsSites.activeCommitSha })
+        .from(docsSites)
+        .where(eq(docsSites.organizationId, session.activeOrganizationId));
+
+      if (!site) {
+        throw new ORPCError("Docs site not found");
+      }
+
+      const versions = await db
+        .select({
+          id: docsVersions.id,
+          versionRef: docsVersions.versionRef,
+          status: docsVersions.status,
+          createdAt: docsVersions.createdAt,
+        })
+        .from(docsVersions)
+        .where(eq(docsVersions.docsSiteId, site.id))
+        .orderBy(desc(docsVersions.createdAt))
+        .limit(input.limit);
+
+      return {
+        activeCommitSha: site.activeCommitSha,
+        versions,
+      };
+    }),
+
   publish: protectedProcedure
     .input(
       z.object({

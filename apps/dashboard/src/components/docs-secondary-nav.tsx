@@ -1,33 +1,22 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import {
-  IconHouse2OutlineDuo18,
-  IconGearOutlineDuo18,
-  IconBookOpen2OutlineDuo18,
-} from "nucleo-ui-outline-duo-18";
+import { IconBookOpen2OutlineDuo18, IconHouse2OutlineDuo18 } from "nucleo-ui-outline-duo-18";
 
 import { cn } from "@/utils/cn";
 
 const docsNavItems = [
   {
-    description: "Production status, publish, and recent builds",
+    description: "Live status and one-click publish",
     href: "/docs",
     icon: IconHouse2OutlineDuo18,
     label: "Overview",
     matchPath: (pathname: string) => pathname === "/docs",
   },
   {
-    description: "Version history with status and rollback",
+    description: "Past publishes and their status",
     href: "/docs/history",
     icon: IconBookOpen2OutlineDuo18,
     label: "History",
     matchPath: (pathname: string) => pathname.startsWith("/docs/history"),
-  },
-  {
-    description: "Repository, branch, and content settings",
-    href: "/docs/source",
-    icon: IconGearOutlineDuo18,
-    label: "Source",
-    matchPath: (pathname: string) => pathname.startsWith("/docs/source"),
   },
 ];
 

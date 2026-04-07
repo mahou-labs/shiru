@@ -73,7 +73,7 @@ function ConnectionCard({
   connected: boolean;
   githubOwner: string | null;
   githubOwnerType: string | null;
-  githubInstallationId: string | null;
+  githubInstallationId: number | null;
   installUrl: string | null;
 }) {
   const manageUrl = githubInstallationId

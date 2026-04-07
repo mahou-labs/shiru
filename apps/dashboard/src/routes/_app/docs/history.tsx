@@ -1,19 +1,11 @@
+import { Badge } from "@shiru/ui/badge";
 import { Button } from "@shiru/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@shiru/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogFooter,
-  DialogHeader,
-  DialogPanel,
-  DialogPopup,
-  DialogTitle,
-} from "@shiru/ui/dialog";
+import { Card, CardHeader } from "@shiru/ui/card";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@shiru/ui/empty";
 import { Skeleton } from "@shiru/ui/skeleton";
-import { toastManager } from "@shiru/ui/toast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { IconAlertWarningOutlineDuo18, IconBookOpen2OutlineDuo18 } from "nucleo-ui-outline-duo-18";
 
 import { cn } from "@/utils/cn";
 import { orpc } from "@/utils/orpc-client";
@@ -22,28 +14,52 @@ export const Route = createFileRoute("/_app/docs/history")({
   component: HistoryPage,
 });
 
-const STATUS_COLORS: Record<string, string> = {
-  publishing: "bg-cyan-100 text-cyan-800",
-  published: "bg-emerald-100 text-emerald-800",
-  failed: "bg-red-100 text-red-800",
+type VersionStatus = "building" | "published" | "failed";
+
+type Version = {
+  id: string;
+  versionRef: string;
+  status: VersionStatus;
+  createdAt: Date;
 };
 
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-        STATUS_COLORS[status] ?? "bg-neutral-100 text-neutral-600",
-      )}
-    >
-      {status}
-    </span>
-  );
+const STATUS_LABEL: Record<VersionStatus, string> = {
+  building: "Publishing",
+  published: "Published",
+  failed: "Failed",
+};
+
+const STATUS_VARIANT: Record<VersionStatus, "info" | "success" | "error"> = {
+  building: "info",
+  published: "success",
+  failed: "error",
+};
+
+const RELATIVE_TIME = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+const RELATIVE_THRESHOLDS: { limit: number; divisor: number; unit: Intl.RelativeTimeFormatUnit }[] =
+  [
+    { limit: 60, divisor: 1, unit: "second" },
+    { limit: 60 * 60, divisor: 60, unit: "minute" },
+    { limit: 60 * 60 * 24, divisor: 60 * 60, unit: "hour" },
+    { limit: 60 * 60 * 24 * 7, divisor: 60 * 60 * 24, unit: "day" },
+    { limit: 60 * 60 * 24 * 30, divisor: 60 * 60 * 24 * 7, unit: "week" },
+    { limit: 60 * 60 * 24 * 365, divisor: 60 * 60 * 24 * 30, unit: "month" },
+  ];
+
+function formatRelativeTime(date: Date): string {
+  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
+  const absSeconds = Math.abs(diffSeconds);
+  for (const { limit, divisor, unit } of RELATIVE_THRESHOLDS) {
+    if (absSeconds < limit) {
+      return RELATIVE_TIME.format(Math.round(diffSeconds / divisor), unit);
+    }
+  }
+  return RELATIVE_TIME.format(Math.round(diffSeconds / (60 * 60 * 24 * 365)), "year");
 }
 
-function formatDate(iso: string | null | undefined) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString(undefined, {
+function formatAbsoluteTime(date: Date): string {
+  return date.toLocaleString(undefined, {
+    year: "numeric",
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -51,139 +67,163 @@ function formatDate(iso: string | null | undefined) {
   });
 }
 
+function shortSha(versionRef: string): string {
+  return versionRef.slice(0, 7);
+}
+
+function PageLayout({ children }: { children: React.ReactNode }) {
+  return <div className="mx-auto w-full max-w-4xl">{children}</div>;
+}
+
+function PageHeading() {
+  return <h2 className="font-heading text-xl">Publish history</h2>;
+}
+
+function LoadingState() {
+  return (
+    <PageLayout>
+      <PageHeading />
+      <Card className="mt-6">
+        <CardHeader className="gap-3">
+          <Skeleton className="h-5 w-24 rounded-sm" />
+          <Skeleton className="h-9 w-40 rounded-md" />
+          <Skeleton className="h-4 w-64 rounded-sm" />
+        </CardHeader>
+      </Card>
+      <ul className="mt-10 divide-y divide-border">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <li key={i} className="flex items-center gap-4 py-3.5">
+            <Skeleton className="h-4 w-16 rounded-sm" />
+            <div className="flex-1" />
+            <Skeleton className="h-5 w-20 rounded-sm" />
+            <Skeleton className="hidden h-3 w-20 rounded-sm sm:block" />
+          </li>
+        ))}
+      </ul>
+    </PageLayout>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  const description = message.trim() || "Try refreshing the page or come back in a moment.";
+  return (
+    <PageLayout>
+      <PageHeading />
+      <div className="mt-6">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <IconAlertWarningOutlineDuo18 />
+            </EmptyMedia>
+            <EmptyTitle>Couldn't load publish history</EmptyTitle>
+            <EmptyDescription>{description}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
+    </PageLayout>
+  );
+}
+
+function EmptyHistoryState() {
+  return (
+    <PageLayout>
+      <PageHeading />
+      <div className="mt-6">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <IconBookOpen2OutlineDuo18 />
+            </EmptyMedia>
+            <EmptyTitle>No publishes yet</EmptyTitle>
+            <EmptyDescription>
+              Publish your docs from the overview to see them appear here.
+            </EmptyDescription>
+          </EmptyHeader>
+          <Button render={<Link to="/docs" />}>Go to overview</Button>
+        </Empty>
+      </div>
+    </PageLayout>
+  );
+}
+
+function LiveVersionCard({ version }: { version: Version }) {
+  return (
+    <Card className="border-success/40">
+      <CardHeader className="gap-3">
+        <Badge variant="success" className="w-fit">
+          Currently live
+        </Badge>
+        <p className="font-mono font-semibold text-3xl tracking-tight">
+          {shortSha(version.versionRef)}
+        </p>
+        <p className="text-muted-foreground text-sm">
+          Published {formatRelativeTime(version.createdAt)} ·{" "}
+          <time dateTime={version.createdAt.toISOString()}>
+            {formatAbsoluteTime(version.createdAt)}
+          </time>
+        </p>
+      </CardHeader>
+    </Card>
+  );
+}
+
+function HistoryRow({ version }: { version: Version }) {
+  return (
+    <li className="flex items-center gap-4 py-3.5">
+      <span className="flex-1 font-mono text-sm tracking-tight">
+        {shortSha(version.versionRef)}
+      </span>
+      <Badge variant={STATUS_VARIANT[version.status]}>{STATUS_LABEL[version.status]}</Badge>
+      <time
+        className="hidden w-24 text-right text-muted-foreground text-xs tabular-nums sm:inline-block"
+        dateTime={version.createdAt.toISOString()}
+        title={formatAbsoluteTime(version.createdAt)}
+      >
+        {formatRelativeTime(version.createdAt)}
+      </time>
+    </li>
+  );
+}
+
 function HistoryPage() {
-  const queryClient = useQueryClient();
-  const [rollbackTarget, setRollbackTarget] = useState<{
-    version: number;
-    createdAt: string;
-  } | null>(null);
-
-  const siteQuery = useQuery(orpc.docs.siteSettings.get.queryOptions());
-  const site = siteQuery.data;
-
-  const historyQuery = useQuery(orpc.docs.versionHistory.list.queryOptions({ limit: 20 }));
-  const versions = historyQuery.data?.versions ?? [];
-
-  const rollbackMutation = useMutation({
-    ...orpc.docs.rollback.trigger.mutationOptions(),
-    onSuccess: () => {
-      toastManager.add({ title: "Rolled back successfully" });
-      setRollbackTarget(null);
-      void queryClient.invalidateQueries({
-        queryKey: orpc.docs.siteSettings.get.queryOptions().queryKey,
-      });
-      void queryClient.invalidateQueries({
-        queryKey: orpc.docs.versionHistory.list.queryOptions({ limit: 20 }).queryKey,
-      });
-    },
-    onError: (error) => {
-      toastManager.add({ title: "Rollback failed", description: error.message });
-    },
-  });
+  const historyQuery = useQuery(orpc.docs.listVersions.queryOptions({ input: { limit: 20 } }));
 
   if (historyQuery.isLoading) {
-    return (
-      <div className="space-y-3 pt-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={`skeleton-${i}`} className="h-16 w-full rounded-lg" />
-        ))}
-      </div>
-    );
+    return <LoadingState />;
   }
+
+  if (historyQuery.isError) {
+    return <ErrorState message={historyQuery.error.message} />;
+  }
+
+  const versions = historyQuery.data?.versions ?? [];
+  const activeRef = historyQuery.data?.activeCommitSha ?? null;
 
   if (versions.length === 0) {
-    return (
-      <div className="pt-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>No versions yet</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Publish your docs to create your first version.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <EmptyHistoryState />;
   }
 
+  const liveVersion = activeRef
+    ? versions.find((v) => v.versionRef === activeRef && v.status === "published")
+    : undefined;
+
+  const earlierPublishes = liveVersion ? versions.filter((v) => v.id !== liveVersion.id) : versions;
+
   return (
-    <div className="space-y-3 pt-4">
-      {versions.map((version) => {
-        const isActive = site?.activeVersion === version.version;
-        const canRollback = !isActive && version.status === "published";
-
-        return (
-          <div
-            key={version.id}
-            className={cn(
-              "flex items-center justify-between rounded-lg border border-border p-4",
-              isActive && "border-emerald-200 bg-emerald-50/50",
-            )}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <StatusBadge status={version.status} />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium">v{version.version}</p>
-                  {isActive && <span className="text-xs font-medium text-emerald-700">Live</span>}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {formatDate(version.createdAt)}
-                  {version.fileCount ? ` · ${version.fileCount} files` : ""}
-                  {version.sourceRef ? ` · ${version.sourceRef.slice(0, 7)}` : ""}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {version.status === "failed" && version.failureCode && (
-                <span className="text-xs text-red-600">{version.failureCode}</span>
-              )}
-              {canRollback && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setRollbackTarget({ version: version.version, createdAt: version.createdAt })
-                  }
-                >
-                  Rollback
-                </Button>
-              )}
-            </div>
-          </div>
-        );
-      })}
-
-      <Dialog open={!!rollbackTarget} onOpenChange={(open) => !open && setRollbackTarget(null)}>
-        <DialogPopup>
-          <DialogPanel>
-            <DialogHeader>
-              <DialogTitle>Roll back to version {rollbackTarget?.version}?</DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground py-4">
-              This will instantly switch your live docs to the version from{" "}
-              {rollbackTarget ? formatDate(rollbackTarget.createdAt) : ""}. Your current version
-              will remain available if you need to switch back.
-            </p>
-            <DialogFooter>
-              <DialogClose render={<Button variant="outline">Cancel</Button>} />
-              <Button
-                disabled={rollbackMutation.isPending}
-                onClick={() => {
-                  if (rollbackTarget) {
-                    rollbackMutation.mutate({ targetVersion: rollbackTarget.version });
-                  }
-                }}
-              >
-                {rollbackMutation.isPending ? "Rolling back..." : "Roll back"}
-              </Button>
-            </DialogFooter>
-          </DialogPanel>
-        </DialogPopup>
-      </Dialog>
-    </div>
+    <PageLayout>
+      <PageHeading />
+      {liveVersion && (
+        <div className="mt-6">
+          <LiveVersionCard version={liveVersion} />
+        </div>
+      )}
+      {earlierPublishes.length > 0 && (
+        <ul className={cn("divide-y divide-border", liveVersion ? "mt-10" : "mt-6")}>
+          {earlierPublishes.map((version) => (
+            <HistoryRow key={version.id} version={version} />
+          ))}
+        </ul>
+      )}
+    </PageLayout>
   );
 }

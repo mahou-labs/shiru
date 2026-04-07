@@ -28,7 +28,6 @@ import { Route as AppDocsIndexRouteImport } from './routes/_app/docs/index'
 import { Route as AppSettingsOrganizationRouteImport } from './routes/_app/settings/organization'
 import { Route as AppSettingsGithubRouteImport } from './routes/_app/settings/github'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
-import { Route as AppDocsSourceRouteImport } from './routes/_app/docs/source'
 import { Route as AppDocsHistoryRouteImport } from './routes/_app/docs/history'
 
 const SuccessRoute = SuccessRouteImport.update({
@@ -125,11 +124,6 @@ const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AppSettingsRouteRoute,
 } as any)
-const AppDocsSourceRoute = AppDocsSourceRouteImport.update({
-  id: '/source',
-  path: '/source',
-  getParentRoute: () => AppDocsRouteRoute,
-} as any)
 const AppDocsHistoryRoute = AppDocsHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -151,7 +145,6 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/docs/history': typeof AppDocsHistoryRoute
-  '/docs/source': typeof AppDocsSourceRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/github': typeof AppSettingsGithubRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
@@ -171,7 +164,6 @@ export interface FileRoutesByTo {
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/': typeof AppIndexRoute
   '/docs/history': typeof AppDocsHistoryRoute
-  '/docs/source': typeof AppDocsSourceRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/github': typeof AppSettingsGithubRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
@@ -195,7 +187,6 @@ export interface FileRoutesById {
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/_app/': typeof AppIndexRoute
   '/_app/docs/history': typeof AppDocsHistoryRoute
-  '/_app/docs/source': typeof AppDocsSourceRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
   '/_app/settings/github': typeof AppSettingsGithubRoute
   '/_app/settings/organization': typeof AppSettingsOrganizationRoute
@@ -219,7 +210,6 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/verify-email'
     | '/docs/history'
-    | '/docs/source'
     | '/settings/account'
     | '/settings/github'
     | '/settings/organization'
@@ -239,7 +229,6 @@ export interface FileRouteTypes {
     | '/auth/verify-email'
     | '/'
     | '/docs/history'
-    | '/docs/source'
     | '/settings/account'
     | '/settings/github'
     | '/settings/organization'
@@ -262,7 +251,6 @@ export interface FileRouteTypes {
     | '/auth/verify-email'
     | '/_app/'
     | '/_app/docs/history'
-    | '/_app/docs/source'
     | '/_app/settings/account'
     | '/_app/settings/github'
     | '/_app/settings/organization'
@@ -413,13 +401,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsAccountRouteImport
       parentRoute: typeof AppSettingsRouteRoute
     }
-    '/_app/docs/source': {
-      id: '/_app/docs/source'
-      path: '/source'
-      fullPath: '/docs/source'
-      preLoaderRoute: typeof AppDocsSourceRouteImport
-      parentRoute: typeof AppDocsRouteRoute
-    }
     '/_app/docs/history': {
       id: '/_app/docs/history'
       path: '/history'
@@ -432,13 +413,11 @@ declare module '@tanstack/react-router' {
 
 interface AppDocsRouteRouteChildren {
   AppDocsHistoryRoute: typeof AppDocsHistoryRoute
-  AppDocsSourceRoute: typeof AppDocsSourceRoute
   AppDocsIndexRoute: typeof AppDocsIndexRoute
 }
 
 const AppDocsRouteRouteChildren: AppDocsRouteRouteChildren = {
   AppDocsHistoryRoute: AppDocsHistoryRoute,
-  AppDocsSourceRoute: AppDocsSourceRoute,
   AppDocsIndexRoute: AppDocsIndexRoute,
 }
 
