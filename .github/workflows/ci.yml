@@ -17,27 +17,35 @@ jobs:
   check:
     name: Check
     runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    env:
+      NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
         with:
           node-version-file: package.json
-
-      - name: Install dependencies
-        run: bun ci
-        env:
-          NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+          cache: true
 
       - name: Check
         run: bun run check
+
+  test:
+    name: Test
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    env:
+      NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
 
       - name: Test
         run: bun run test

@@ -40,26 +40,19 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404-arm
     needs: changes
     if: needs.changes.outputs.docs == 'true'
+    env:
+      NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
     outputs:
       url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
         with:
           node-version-file: package.json
-
-      - name: Install dependencies
-        run: bun ci
-        env:
-          NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+          cache: true
 
       - name: Build docs
         run: bun run build
@@ -79,26 +72,19 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404-arm
     needs: changes
     if: needs.changes.outputs.site == 'true'
+    env:
+      NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
     outputs:
       url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
         with:
           node-version-file: package.json
-
-      - name: Install dependencies
-        run: bun ci
-        env:
-          NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+          cache: true
 
       - name: Build site
         run: bun run build
