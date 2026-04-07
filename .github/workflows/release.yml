@@ -145,7 +145,7 @@ jobs:
           cache: true
 
       - name: Build dashboard
-        run: bun run build
+        run: vp run build
         working-directory: apps/dashboard
         env:
           VITE_API_URL: ${{ vars.API_URL }}
@@ -181,7 +181,7 @@ jobs:
           cache: true
 
       - name: Build API
-        run: bun run build
+        run: vp run build
         working-directory: apps/api
 
       - name: Apply D1 migrations

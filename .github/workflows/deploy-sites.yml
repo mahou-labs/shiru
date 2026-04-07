@@ -59,7 +59,7 @@ jobs:
           cache: true
 
       - name: Build docs
-        run: bun run build
+        run: vp run build
         working-directory: apps/docs
 
       - name: Deploy to Cloudflare Workers
@@ -91,7 +91,7 @@ jobs:
           cache: true
 
       - name: Build site
-        run: bun run build
+        run: vp run build
         working-directory: apps/site
         env:
           PUBLIC_API_URL: ${{ vars.API_URL }}

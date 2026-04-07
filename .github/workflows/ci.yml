@@ -30,7 +30,7 @@ jobs:
           cache: true
 
       - name: Check
-        run: bun run check
+        run: vp run check
 
   test:
     name: Test
@@ -48,4 +48,4 @@ jobs:
           cache: true
 
       - name: Test
-        run: bun run test
+        run: vp run test
