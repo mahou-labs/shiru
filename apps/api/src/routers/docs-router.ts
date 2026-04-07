@@ -157,11 +157,7 @@ const getGithubFilesAtCommit = async (
   docsSite: typeof docsSites.$inferSelect,
   commitSha: string,
 ): Promise<{ path: string; content: Uint8Array }[]> => {
-  if (
-    !docsSite.githubInstallationId ||
-    !docsSite.githubOwner ||
-    !docsSite.githubRepository
-  ) {
+  if (!docsSite.githubInstallationId || !docsSite.githubOwner || !docsSite.githubRepository) {
     throw new NonRetryableError("Docs site is not connected to a GitHub repository");
   }
 
@@ -219,7 +215,7 @@ const getGithubFilesAtCommit = async (
           bytes[j] = binary.charCodeAt(j);
         }
 
-        return { path: entry.path!, content: bytes };
+        return { path: entry.path, content: bytes };
       }),
     );
 

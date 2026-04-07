@@ -2,9 +2,7 @@
   "version": "7",
   "dialect": "sqlite",
   "id": "8b843db8-9a9f-43b8-b4ed-f4f8850139fc",
-  "prevIds": [
-    "00000000-0000-0000-0000-000000000000"
-  ],
+  "prevIds": ["00000000-0000-0000-0000-000000000000"],
   "ddl": [
     {
       "name": "accounts",
@@ -837,13 +835,9 @@
       "table": "subscriptions"
     },
     {
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -852,13 +846,9 @@
       "table": "accounts"
     },
     {
-      "columns": [
-        "organization_id"
-      ],
+      "columns": ["organization_id"],
       "tableTo": "organizations",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -867,13 +857,9 @@
       "table": "invitations"
     },
     {
-      "columns": [
-        "inviter_id"
-      ],
+      "columns": ["inviter_id"],
       "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -882,13 +868,9 @@
       "table": "invitations"
     },
     {
-      "columns": [
-        "organization_id"
-      ],
+      "columns": ["organization_id"],
       "tableTo": "organizations",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -897,13 +879,9 @@
       "table": "members"
     },
     {
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -912,13 +890,9 @@
       "table": "members"
     },
     {
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -927,13 +901,9 @@
       "table": "sessions"
     },
     {
-      "columns": [
-        "organization_id"
-      ],
+      "columns": ["organization_id"],
       "tableTo": "organizations",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -942,13 +912,9 @@
       "table": "docs_sites"
     },
     {
-      "columns": [
-        "docs_site_id"
-      ],
+      "columns": ["docs_site_id"],
       "tableTo": "docs_sites",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -957,13 +923,9 @@
       "table": "docs_versions"
     },
     {
-      "columns": [
-        "requested_by_user_id"
-      ],
+      "columns": ["requested_by_user_id"],
       "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
@@ -972,13 +934,9 @@
       "table": "docs_versions"
     },
     {
-      "columns": [
-        "organization_id"
-      ],
+      "columns": ["organization_id"],
       "tableTo": "organizations",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -987,90 +945,70 @@
       "table": "subscriptions"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "accounts_pk",
       "table": "accounts",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "invitations_pk",
       "table": "invitations",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "members_pk",
       "table": "members",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "organizations_pk",
       "table": "organizations",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "sessions_pk",
       "table": "sessions",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "users_pk",
       "table": "users",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "verifications_pk",
       "table": "verifications",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "docs_sites_pk",
       "table": "docs_sites",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "docs_versions_pk",
       "table": "docs_versions",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "subscriptions_pk",
       "table": "subscriptions",
@@ -1235,27 +1173,21 @@
       "table": "subscriptions"
     },
     {
-      "columns": [
-        "token"
-      ],
+      "columns": ["token"],
       "nameExplicit": false,
       "name": "sessions_token_unique",
       "entityType": "uniques",
       "table": "sessions"
     },
     {
-      "columns": [
-        "email"
-      ],
+      "columns": ["email"],
       "nameExplicit": false,
       "name": "users_email_unique",
       "entityType": "uniques",
       "table": "users"
     },
     {
-      "columns": [
-        "polar_subscription_id"
-      ],
+      "columns": ["polar_subscription_id"],
       "nameExplicit": false,
       "name": "subscriptions_polar_subscription_id_unique",
       "entityType": "uniques",

@@ -10,7 +10,10 @@ async function build() {
   log("Dependencies installed.");
 
   log("Running astro build...");
-  const buildResult = await $`bun run build`.cwd(import.meta.dir).quiet().nothrow();
+  const buildResult = await $`bun run build`
+    .cwd(import.meta.dir)
+    .quiet()
+    .nothrow();
   if (buildResult.exitCode !== 0) {
     log(`Astro build stderr: ${buildResult.stderr.toString()}`);
     log(`Astro build stdout: ${buildResult.stdout.toString()}`);
