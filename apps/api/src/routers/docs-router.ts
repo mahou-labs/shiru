@@ -1,7 +1,7 @@
 import { getSandbox } from "@cloudflare/sandbox";
 import { ORPCError } from "@orpc/server";
 import { WorkflowEntrypoint, WorkflowStep, type WorkflowEvent, env } from "cloudflare:workers";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import z from "zod";
 
@@ -45,17 +45,14 @@ export const docsRouter = {
         throw new ORPCError("Organization not found");
       }
 
-      // const sandbox = getSandbox(env.BUILDER_SANDBOX, "builder-sandbox");
-      // const result = await sandbox.exec("cd starlight && bun --bun run build-docs");
-
-      // log.debug("Sandbox debug", {
-      //   output: result.stdout,
-      //   error: result.stderr,
-      //   exitCode: result.exitCode,
-      //   success: result.success,
-      // });
-
       const instanceId = uuidv7();
+
+      log.info("Creating publish workflow", {
+        instanceId,
+        docsSiteId: input.docsSiteId,
+        organizationId: session.activeOrganizationId,
+      });
+
       const instance = await env.PUBLISH_DOCS.create({
         id: instanceId,
         params: {
@@ -64,6 +61,9 @@ export const docsRouter = {
           instanceId,
         },
       });
+
+      const status = await instance.status();
+      log.info("Workflow instance created", { instanceId: instance.id, status });
 
       return { instanceId: instance.id };
     }),
@@ -152,6 +152,8 @@ type WorflowPayload = { docsSiteId: string; organizationId: string; instanceId: 
 
 export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, WorflowPayload> {
   async run(event: WorkflowEvent<WorflowPayload>, step: WorkflowStep) {
+    log.info("Workflow started", { payload: event.payload });
+
     const { docsSite, slug } = await step.do("fetch-site-and-org", async () => {
       const [site] = await db
         .select()
@@ -164,67 +166,148 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, WorflowP
         .where(eq(organizations.id, event.payload.organizationId));
 
       if (!site || !org) {
+        log.error("publish.fetch_site_failed", {
+          docsSiteId: event.payload.docsSiteId,
+          organizationId: event.payload.organizationId,
+          siteFound: !!site,
+          orgFound: !!org,
+        });
         throw new Error("Docs site or organization not found");
       }
 
+      log.info("publish.site_fetched", { siteId: site.id, slug: org.slug });
       return { docsSite: site, slug: org.slug };
     });
 
-    // console.log({ docsSite, slug });
-
     const { files, commitSha } = await step.do("fetch-github-files", async () => {
+      log.info("publish.fetching_github_files", {
+        owner: docsSite.githubOwner,
+        repo: docsSite.githubRepository,
+        branch: docsSite.publishableBranch,
+      });
+
       const result = await getGithubFiles(docsSite);
       if (!result) {
+        log.error("publish.no_github_files", { docsSiteId: docsSite.id });
         throw new Error("No files found");
       }
+
+      log.info("publish.github_files_fetched", {
+        fileCount: result.files.length,
+        commitSha: result.commitSha.slice(0, 7),
+      });
       return result;
     });
 
-    // console.log({ files, commitSha });
-    // console.log(`-- ${event.payload.instanceId} --`);
+    const alreadyExists = await step.do("check-existing-version", async () => {
+      const [existing] = await db
+        .select({ id: docsVersions.id })
+        .from(docsVersions)
+        .where(
+          and(
+            eq(docsVersions.docsSiteId, event.payload.docsSiteId),
+            eq(docsVersions.versionRef, commitSha),
+          ),
+        );
+
+      if (existing) {
+        log.info("publish.version_already_exists", { versionRef: commitSha.slice(0, 7) });
+        return true;
+      }
+
+      return false;
+    });
+
+    if (alreadyExists) {
+      return;
+    }
 
     await step.do("save-version", async () => {
-      const { error } = await db.insert(docsVersions).values({
+      await db.insert(docsVersions).values({
         docsSiteId: event.payload.docsSiteId,
         workflowInstanceId: event.payload.instanceId,
         versionRef: commitSha,
       });
 
-      if (error) {
-        log.error("Failed to save version", error);
-      }
+      log.info("publish.version_saved", { versionRef: commitSha.slice(0, 7) });
     });
 
     await step.do("upload-source-to-r2", async () => {
+      log.info("publish.uploading_source", {
+        fileCount: files.length,
+        prefix: `${slug}/${commitSha.slice(0, 7)}`,
+      });
+
       await Promise.all(
         files.map((file) => env.DOCS_SOURCE.put(`${slug}/${commitSha}/${file.path}`, file.content)),
       );
+
+      log.info("publish.source_uploaded", { fileCount: files.length });
     });
 
     const builtFiles = await step.do("build-in-sandbox", async () => {
       const sandbox = getSandbox(env.BUILDER_SANDBOX, "builder-sandbox");
-      const result = await sandbox.exec("cd starlight && bun --bun run build-docs");
 
-      log.debug("Sandbox build", {
-        logs: result.stderr,
-        exitCode: result.exitCode,
-        success: result.success,
-      });
+      try {
+        // Write source files into the sandbox
+        await sandbox.exec("mkdir -p /workspace/starlight/src/content/docs");
 
-      if (!result.success) {
-        throw new Error(`Sandbox build failed: ${result.stderr}`);
+        log.info("publish.writing_files_to_sandbox", { fileCount: files.length });
+
+        const BATCH_SIZE = 10;
+        for (let i = 0; i < files.length; i += BATCH_SIZE) {
+          const batch = files.slice(i, i + BATCH_SIZE);
+          // oxlint-disable-next-line no-await-in-loop
+          await Promise.all(
+            batch.map(async (file) => {
+              const dir = `/workspace/starlight/src/content/docs/${file.path}`.replace(
+                /\/[^/]+$/,
+                "",
+              );
+              await sandbox.exec(`mkdir -p ${dir}`);
+              const b64 = btoa(String.fromCharCode(...new Uint8Array(file.content)));
+              await sandbox.writeFile(`/workspace/starlight/src/content/docs/${file.path}`, b64, {
+                encoding: "base64",
+              });
+            }),
+          );
+        }
+
+        log.info("publish.sandbox_files_written", { fileCount: files.length });
+
+        const result = await sandbox.exec("cd /workspace/starlight && bun --bun run build-docs");
+
+        if (!result.success) {
+          log.error("publish.sandbox_build_failed", {
+            exitCode: result.exitCode,
+            stderr: result.stderr,
+          });
+          throw new Error(`Sandbox build failed: ${result.stderr}`);
+        }
+
+        log.info("publish.sandbox_build_complete", {
+          buildLogs: result.stderr,
+          exitCode: result.exitCode,
+        });
+
+        const { files: distFiles } = JSON.parse(result.stdout) as {
+          files: { path: string; content: string }[];
+        };
+
+        log.info("publish.dist_collected", { distFileCount: distFiles.length });
+        return distFiles;
+      } finally {
+        await sandbox.destroy();
       }
-
-      const { files: distFiles } = JSON.parse(result.stdout) as {
-        files: { path: string; content: string }[];
-      };
-
-      return distFiles;
     });
 
     await step.do("upload-dist-to-r2", async () => {
-      const BATCH_SIZE = 20;
+      log.info("publish.uploading_dist", {
+        fileCount: builtFiles.length,
+        prefix: `${slug}/${commitSha.slice(0, 7)}`,
+      });
 
+      const BATCH_SIZE = 20;
       for (let i = 0; i < builtFiles.length; i += BATCH_SIZE) {
         const batch = builtFiles.slice(i, i + BATCH_SIZE);
         // oxlint-disable-next-line no-await-in-loop
@@ -235,6 +318,8 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, WorflowP
           }),
         );
       }
+
+      log.info("publish.dist_uploaded", { fileCount: builtFiles.length });
     });
   }
 }
