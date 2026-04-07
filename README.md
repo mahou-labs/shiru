@@ -35,13 +35,13 @@ Shiru is an open-source alternative to [Mintlify](https://mintlify.com) for buil
 ```bash
 git clone https://github.com/mahou-labs/shiru.git
 cd shiru
-bun install
+vp install
 ```
 
 2. Start the PostgreSQL database:
 
 ```bash
-bun db:start
+vp run db:start
 ```
 
 3. Copy the environment files and configure them:
@@ -54,13 +54,13 @@ cp apps/dashboard/.env.example apps/dashboard/.env
 4. Push the database schema:
 
 ```bash
-bun db:push
+vp run db:push
 ```
 
 5. Start the development servers:
 
 ```bash
-bun dev
+vp run dev
 ```
 
 | App       | URL                                            |
@@ -72,13 +72,13 @@ bun dev
 
 ### Useful Commands
 
-| Command         | Description            |
-| --------------- | ---------------------- |
-| `bun dev`       | Start all services     |
-| `bun build`     | Build for production   |
-| `bun lint`      | Run linter             |
-| `bun typecheck` | Check TypeScript types |
-| `bun db:studio` | Open Drizzle Studio    |
+| Command           | Description                          |
+| ----------------- | ------------------------------------ |
+| `vp run dev`      | Start all services                   |
+| `vp run build`    | Build for production                 |
+| `vp run check`    | Run format, lint, and type checks    |
+| `vp run test`     | Run the test suite                   |
+| `vp run db:studio`| Open Drizzle Studio                  |
 
 ## Contributors
 

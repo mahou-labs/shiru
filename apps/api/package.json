@@ -4,10 +4,10 @@
   "scripts": {
     "dev": "vp dev --port=3000",
     "build": "vp build",
-    "preview": "bun run build && vp preview",
+    "preview": "vp build && vp preview",
     "cf:typegen": "wrangler types --env-interface CloudflareBindings",
     "db:studio": "drizzle-kit studio",
-    "db:generate": "drizzle-kit generate && bun run db:sync",
+    "db:generate": "drizzle-kit generate && vp run db:sync",
     "db:push": "drizzle-kit push",
     "db:sync": "node scripts/sync-d1-migrations.mjs",
     "check": "vp check",
