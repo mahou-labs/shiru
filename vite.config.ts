@@ -7,7 +7,7 @@ export default defineConfig({
       typeCheck: true,
       typeAware: true,
     },
-    ignorePatterns: ["**/*.gen.ts", "**/posthog.astro"],
+    ignorePatterns: ["**/*.gen.ts", "**/posthog.astro", "**/starlight/**"],
     categories: {
       correctness: "error",
       suspicious: "warn",
