@@ -157,28 +157,30 @@ const getGithubFilesAtCommit = async (
   docsSite: typeof docsSites.$inferSelect,
   commitSha: string,
 ): Promise<{ path: string; content: Uint8Array }[]> => {
-  if (!docsSite.githubInstallationId || !docsSite.githubOwner || !docsSite.githubRepository) {
+  const { githubInstallationId, githubOwner, githubRepository, contentPath } = docsSite;
+
+  if (!githubInstallationId || !githubOwner || !githubRepository) {
     throw new NonRetryableError("Docs site is not connected to a GitHub repository");
   }
 
-  const octokit = getInstallationOctokit(docsSite.githubInstallationId);
+  const octokit = getInstallationOctokit(githubInstallationId);
   let treeSha = commitSha;
 
-  if (docsSite.contentPath !== "" && docsSite.contentPath !== "/") {
-    const segments = docsSite.contentPath.replace(/^\//, "").replace(/\/$/, "").split("/");
+  if (contentPath !== "" && contentPath !== "/") {
+    const segments = contentPath.replace(/^\//, "").replace(/\/$/, "").split("/");
 
     for (const segment of segments) {
       // oxlint-disable-next-line no-await-in-loop
       const { data: parentTree } = await octokit.rest.git.getTree({
-        owner: docsSite.githubOwner,
-        repo: docsSite.githubRepository,
+        owner: githubOwner,
+        repo: githubRepository,
         tree_sha: treeSha,
       });
 
       const entry = parentTree.tree.find((e) => e.path === segment && e.type === "tree");
 
       if (!entry?.sha) {
-        throw new NonRetryableError(`Path "${docsSite.contentPath}" not found in repository`);
+        throw new NonRetryableError(`Path "${contentPath}" not found in repository`);
       }
 
       treeSha = entry.sha;
@@ -186,8 +188,8 @@ const getGithubFilesAtCommit = async (
   }
 
   const { data: tree } = await octokit.rest.git.getTree({
-    owner: docsSite.githubOwner,
-    repo: docsSite.githubRepository,
+    owner: githubOwner,
+    repo: githubRepository,
     tree_sha: treeSha,
     recursive: "1",
   });
@@ -204,8 +206,8 @@ const getGithubFilesAtCommit = async (
     const results = await Promise.all(
       batch.map(async (entry) => {
         const { data: blob } = await octokit.rest.git.getBlob({
-          owner: docsSite.githubOwner!,
-          repo: docsSite.githubRepository!,
+          owner: githubOwner,
+          repo: githubRepository,
           file_sha: entry.sha,
         });
 
@@ -449,9 +451,10 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
               exitCode: result.exitCode,
             });
 
-            const { files: distFiles } = JSON.parse(result.stdout) as {
-              files: { path: string; content: string }[];
-            };
+            const buildOutputSchema = z.object({
+              files: z.array(z.object({ path: z.string(), content: z.string() })),
+            });
+            const { files: distFiles } = buildOutputSchema.parse(JSON.parse(result.stdout));
 
             log.info("publish.dist_collected", { distFileCount: distFiles.length });
             return distFiles;

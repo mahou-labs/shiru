@@ -26,8 +26,8 @@ github.post("/webhook", async (c) => {
   const payload = JSON.parse(rawBody);
 
   if (event === "installation" && payload.action === "deleted") {
-    const installationId = String(payload.installation?.id);
-    if (!installationId) return c.json({ ok: true });
+    const installationId = Number(payload.installation?.id);
+    if (!installationId || Number.isNaN(installationId)) return c.json({ ok: true });
 
     await db
       .update(docsSites)
@@ -43,9 +43,9 @@ github.post("/webhook", async (c) => {
   }
 
   if (event === "push") {
-    const installationId = String(payload.installation?.id);
+    const installationId = Number(payload.installation?.id);
     const branch = payload.ref?.replace("refs/heads/", "");
-    if (!installationId || !branch) return c.json({ ok: true });
+    if (!installationId || Number.isNaN(installationId) || !branch) return c.json({ ok: true });
 
     const [site] = await db
       .select()
@@ -102,7 +102,7 @@ github.get("/setup", async (c) => {
     .values({
       id: uuidv7(),
       organizationId: orgId,
-      githubInstallationId: String(installationId),
+      githubInstallationId: Number(installationId),
       githubOwner: githubOwner,
       githubOwnerType: githubOwnerType,
       sourceMode: "github",
@@ -110,7 +110,7 @@ github.get("/setup", async (c) => {
     .onConflictDoUpdate({
       target: docsSites.organizationId,
       set: {
-        githubInstallationId: String(installationId),
+        githubInstallationId: Number(installationId),
         githubOwner: githubOwner,
         githubOwnerType: githubOwnerType,
         sourceMode: "github",

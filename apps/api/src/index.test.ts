@@ -40,17 +40,13 @@ vi.mock("hono-rate-limiter", () => ({
 
 import type { RouterRoute } from "hono/types";
 
-import worker, { app } from "./index";
+import app from "./index";
 import type { Env } from "./index";
 
 describe("Hono app", () => {
-  it("exports a Worker with fetch handler as default", () => {
-    expect(worker).toBeDefined();
-    expect(worker.fetch).toBeInstanceOf(Function);
-  });
-
-  it("exports Hono app as named export", () => {
+  it("exports a Hono app with fetch handler as default", () => {
     expect(app).toBeDefined();
+    expect(app.fetch).toBeInstanceOf(Function);
     expect(app.request).toBeInstanceOf(Function);
   });
 
