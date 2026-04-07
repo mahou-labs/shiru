@@ -33,6 +33,13 @@ vi.mock("@/utils/db", () => {
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
+    // insert(...).values(...) is used by createOrg to bootstrap a docsSites row.
+    // The chain returns a real resolved promise so the tryCatch wrapper can await
+    // it without falling into the proxy's `then` trap (which is reserved for
+    // select/from/where/limit awaits configured per-test via mockDbThen).
+    insert: vi.fn(() => ({
+      values: vi.fn().mockResolvedValue(undefined),
+    })),
   };
   const db = new Proxy(base, {
     get(target, prop) {
@@ -91,26 +98,25 @@ describe("createOrg", () => {
     expect(mockAuthApi.setActiveOrganization).toHaveBeenCalled();
   });
 
-  it("updates logo when provided", async () => {
+  it("forwards logo to createOrganization when provided", async () => {
     mockAuthApi.createOrganization.mockResolvedValue({
       id: "new-org",
     });
     mockAuthApi.setActiveOrganization.mockResolvedValue({
       headers: new Headers(),
     });
-    mockAuthApi.updateOrganization.mockResolvedValue({});
 
     const client = createClient(createMockContext());
     await client.createOrg({ name: "Org", slug: "org", logo: "https://example.com/logo.png" });
 
-    expect(mockAuthApi.updateOrganization).toHaveBeenCalledWith(
+    expect(mockAuthApi.createOrganization).toHaveBeenCalledWith(
       expect.objectContaining({
-        body: { data: { logo: "https://example.com/logo.png" }, organizationId: "new-org" },
+        body: { name: "Org", slug: "org", logo: "https://example.com/logo.png" },
       }),
     );
   });
 
-  it("skips logo update when no logo", async () => {
+  it("omits logo from createOrganization when not provided", async () => {
     mockAuthApi.createOrganization.mockResolvedValue({
       id: "new-org",
     });
@@ -121,6 +127,11 @@ describe("createOrg", () => {
     const client = createClient(createMockContext());
     await client.createOrg({ name: "Org", slug: "org" });
 
+    expect(mockAuthApi.createOrganization).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: { name: "Org", slug: "org", logo: undefined },
+      }),
+    );
     expect(mockAuthApi.updateOrganization).not.toHaveBeenCalled();
   });
 });

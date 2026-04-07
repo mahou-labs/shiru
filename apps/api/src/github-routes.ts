@@ -23,7 +23,12 @@ github.post("/webhook", async (c) => {
   }
 
   const event = c.req.header("x-github-event");
-  const payload = JSON.parse(rawBody);
+  let payload: { action?: string; installation?: { id?: number | string }; ref?: string };
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return c.text("Invalid payload", 400);
+  }
 
   if (event === "installation" && payload.action === "deleted") {
     const installationId = Number(payload.installation?.id);

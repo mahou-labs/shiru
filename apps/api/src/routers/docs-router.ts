@@ -19,7 +19,7 @@ export const docsRouter = {
       throw new ORPCError("Organization not found");
     }
 
-    const [{ id, activeCommitSha }] = await db
+    const [row] = await db
       .select({
         id: docsSites.id,
         activeCommitSha: docsSites.activeCommitSha,
@@ -27,11 +27,11 @@ export const docsRouter = {
       .from(docsSites)
       .where(eq(docsSites.organizationId, session.activeOrganizationId));
 
-    if (!id) {
+    if (!row) {
       throw new ORPCError("Docs site not found");
     }
 
-    return { id, activeCommitSha };
+    return { id: row.id, activeCommitSha: row.activeCommitSha };
   }),
 
   listVersions: protectedProcedure
@@ -132,7 +132,7 @@ export const docsRouter = {
 // GitHub repository and are written into the build sandbox.
 const SAFE_PATH_SEGMENT = /^[A-Za-z0-9._-]+$/;
 
-const validateDocsFilePath = (path: string): void => {
+export const validateDocsFilePath = (path: string): void => {
   if (!path || path.length > 1024) {
     throw new NonRetryableError(`Invalid docs file path: empty or too long`);
   }
@@ -159,7 +159,7 @@ const ALIVE_WORKFLOW_STATUSES = new Set([
   "waitingForPause",
 ]);
 
-const isWorkflowAlive = async (instanceId: string): Promise<boolean> => {
+export const isWorkflowAlive = async (instanceId: string): Promise<boolean> => {
   try {
     const instance = await env.PUBLISH_DOCS.get(instanceId);
     const status = await instance.status();
@@ -171,7 +171,9 @@ const isWorkflowAlive = async (instanceId: string): Promise<boolean> => {
   }
 };
 
-const resolveCommitSha = async (docsSite: typeof docsSites.$inferSelect): Promise<string> => {
+export const resolveCommitSha = async (
+  docsSite: typeof docsSites.$inferSelect,
+): Promise<string> => {
   if (
     !docsSite.githubInstallationId ||
     !docsSite.githubOwner ||
@@ -191,7 +193,7 @@ const resolveCommitSha = async (docsSite: typeof docsSites.$inferSelect): Promis
   return ref.object.sha;
 };
 
-const getGithubFilesAtCommit = async (
+export const getGithubFilesAtCommit = async (
   docsSite: typeof docsSites.$inferSelect,
   commitSha: string,
 ): Promise<{ path: string; content: Uint8Array }[]> => {
@@ -597,23 +599,33 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
 
       // Best-effort cleanup of any partial source/dist artifacts uploaded for
       // this commit so failed publishes don't accumulate in R2 indefinitely.
+      // Errors during cleanup are logged and swallowed so they cannot mask the
+      // original build error that triggered the catch block.
       await step.do("cleanup-failed-artifacts", async () => {
         const prefix = `${slug}/${commitSha}/`;
         let totalDeleted = 0;
 
         for (const bucket of [env.DOCS_SOURCE, env.DOCS_DIST]) {
-          let cursor: string | undefined;
-          do {
-            // oxlint-disable-next-line no-await-in-loop
-            const list = await bucket.list({ prefix, cursor });
-            if (list.objects.length > 0) {
-              const keys = list.objects.map((o) => o.key);
+          try {
+            let cursor: string | undefined;
+            do {
               // oxlint-disable-next-line no-await-in-loop
-              await bucket.delete(keys);
-              totalDeleted += keys.length;
-            }
-            cursor = list.truncated ? list.cursor : undefined;
-          } while (cursor);
+              const list = await bucket.list({ prefix, cursor });
+              if (list.objects.length > 0) {
+                const keys = list.objects.map((o) => o.key);
+                // oxlint-disable-next-line no-await-in-loop
+                await bucket.delete(keys);
+                totalDeleted += keys.length;
+              }
+              cursor = list.truncated ? list.cursor : undefined;
+            } while (cursor);
+          } catch (cleanupError) {
+            log.error("publish.cleanup_bucket_failed", {
+              versionRef: commitSha.slice(0, 7),
+              errorMessage:
+                cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+            });
+          }
         }
 
         log.info("publish.cleanup_failed_artifacts", {
