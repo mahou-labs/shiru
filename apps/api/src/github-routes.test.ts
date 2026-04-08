@@ -86,10 +86,7 @@ function primeDbResolves(...sequences: Record<string, unknown>[][]) {
   });
 }
 
-function buildWebhookRequest(
-  body: string,
-  headers: Record<string, string> = {},
-): Request {
+function buildWebhookRequest(body: string, headers: Record<string, string> = {}): Request {
   return new Request("http://test.local/webhook", {
     method: "POST",
     body,
@@ -122,9 +119,7 @@ describe("POST /webhook — signature gate", () => {
   it("does not call db when the signature is invalid", async () => {
     mockVerifyWebhookSignature.mockResolvedValue(false);
 
-    await githubRoutes.request(
-      buildWebhookRequest("{}", { "x-hub-signature-256": "sha256=bad" }),
-    );
+    await githubRoutes.request(buildWebhookRequest("{}", { "x-hub-signature-256": "sha256=bad" }));
 
     expect(dbSpies.select).not.toHaveBeenCalled();
     expect(dbSpies.update).not.toHaveBeenCalled();
@@ -238,9 +233,7 @@ describe("POST /webhook — installation.deleted", () => {
 describe("POST /webhook — push", () => {
   it("logs github.push_matched when the ref matches the site's publishableBranch", async () => {
     mockVerifyWebhookSignature.mockResolvedValue(true);
-    primeDbResolves([
-      { id: "site-1", githubInstallationId: 42, publishableBranch: "main" },
-    ]);
+    primeDbResolves([{ id: "site-1", githubInstallationId: 42, publishableBranch: "main" }]);
 
     const body = JSON.stringify({ installation: { id: 42 }, ref: "refs/heads/main" });
     await githubRoutes.request(
@@ -259,9 +252,7 @@ describe("POST /webhook — push", () => {
 
   it("does not log push_matched when the ref branch differs from publishableBranch", async () => {
     mockVerifyWebhookSignature.mockResolvedValue(true);
-    primeDbResolves([
-      { id: "site-1", githubInstallationId: 42, publishableBranch: "main" },
-    ]);
+    primeDbResolves([{ id: "site-1", githubInstallationId: 42, publishableBranch: "main" }]);
 
     const body = JSON.stringify({ installation: { id: 42 }, ref: "refs/heads/feature-x" });
     await githubRoutes.request(
@@ -320,9 +311,7 @@ describe("POST /webhook — push", () => {
 
   it("strips the refs/heads/ prefix before comparing branches", async () => {
     mockVerifyWebhookSignature.mockResolvedValue(true);
-    primeDbResolves([
-      { id: "site-1", githubInstallationId: 42, publishableBranch: "develop" },
-    ]);
+    primeDbResolves([{ id: "site-1", githubInstallationId: 42, publishableBranch: "develop" }]);
 
     const body = JSON.stringify({ installation: { id: 42 }, ref: "refs/heads/develop" });
     await githubRoutes.request(
@@ -388,9 +377,7 @@ describe("GET /setup", () => {
       data: { account: { login: "acme", type: "Organization" } },
     });
 
-    await githubRoutes.request(
-      buildSetupRequest({ installation_id: "99", state: "org-1" }),
-    );
+    await githubRoutes.request(buildSetupRequest({ installation_id: "99", state: "org-1" }));
 
     expect(mockGetInstallationOctokit).toHaveBeenCalledWith(99);
     expect(mockGetInstallationOctokit).not.toHaveBeenCalledWith("99");
@@ -405,9 +392,7 @@ describe("GET /setup", () => {
       data: { account: { login: "acme", type: "Organization" } },
     });
 
-    await githubRoutes.request(
-      buildSetupRequest({ installation_id: "42", state: "org-1" }),
-    );
+    await githubRoutes.request(buildSetupRequest({ installation_id: "42", state: "org-1" }));
 
     expect(dbSpies.values).toHaveBeenCalledWith(
       expect.objectContaining({ githubOwner: "acme", githubOwnerType: "Organization" }),
@@ -429,13 +414,9 @@ describe("GET /setup", () => {
       data: { account: { type: "Organization" } },
     });
 
-    await githubRoutes.request(
-      buildSetupRequest({ installation_id: "42", state: "org-1" }),
-    );
+    await githubRoutes.request(buildSetupRequest({ installation_id: "42", state: "org-1" }));
 
-    expect(dbSpies.values).toHaveBeenCalledWith(
-      expect.objectContaining({ githubOwner: null }),
-    );
+    expect(dbSpies.values).toHaveBeenCalledWith(expect.objectContaining({ githubOwner: null }));
   });
 
   it("stores githubOwnerType as null when the account type is not User or Organization", async () => {
@@ -445,13 +426,9 @@ describe("GET /setup", () => {
       data: { account: { login: "bot", type: "Bot" } },
     });
 
-    await githubRoutes.request(
-      buildSetupRequest({ installation_id: "42", state: "org-1" }),
-    );
+    await githubRoutes.request(buildSetupRequest({ installation_id: "42", state: "org-1" }));
 
-    expect(dbSpies.values).toHaveBeenCalledWith(
-      expect.objectContaining({ githubOwnerType: null }),
-    );
+    expect(dbSpies.values).toHaveBeenCalledWith(expect.objectContaining({ githubOwnerType: null }));
   });
 
   it("stores githubOwner and githubOwnerType as null when the installation account is null", async () => {
@@ -461,9 +438,7 @@ describe("GET /setup", () => {
       data: { account: null },
     });
 
-    await githubRoutes.request(
-      buildSetupRequest({ installation_id: "42", state: "org-1" }),
-    );
+    await githubRoutes.request(buildSetupRequest({ installation_id: "42", state: "org-1" }));
 
     expect(dbSpies.values).toHaveBeenCalledWith(
       expect.objectContaining({ githubOwner: null, githubOwnerType: null }),
@@ -477,9 +452,7 @@ describe("GET /setup", () => {
       data: { account: { login: "octocat", type: "User" } },
     });
 
-    await githubRoutes.request(
-      buildSetupRequest({ installation_id: "42", state: "org-1" }),
-    );
+    await githubRoutes.request(buildSetupRequest({ installation_id: "42", state: "org-1" }));
 
     expect(dbSpies.values).toHaveBeenCalledWith(
       expect.objectContaining({ githubOwnerType: "User" }),

@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/unbound-method -- vi.mocked/expect patterns in tests reference method properties on mocked objects; the mocks are already detached vi.fn() instances, so `this` binding is not a concern here. */
 import { createRouterClient } from "@orpc/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -298,7 +299,7 @@ function buildDocsSite(
     githubInstallationId: number | null;
     githubOwner: string | null;
     githubRepository: string | null;
-    publishableBranch: string | null;
+    publishableBranch: string;
     contentPath: string;
   }> = {},
 ): Parameters<typeof resolveCommitSha>[0] {
@@ -409,16 +410,16 @@ describe("isWorkflowAlive", () => {
 
 describe("resolveCommitSha", () => {
   it("throws NonRetryableError when githubInstallationId is missing (compound guard)", async () => {
-    await expect(
-      resolveCommitSha(buildDocsSite({ githubInstallationId: null })),
-    ).rejects.toThrow("Docs site is not connected to a GitHub repository");
+    await expect(resolveCommitSha(buildDocsSite({ githubInstallationId: null }))).rejects.toThrow(
+      "Docs site is not connected to a GitHub repository",
+    );
   });
 
   it("throws NonRetryableError when publishableBranch is an empty string", async () => {
     // Distinct from null check — verifies the guard handles the empty-string case.
-    await expect(
-      resolveCommitSha(buildDocsSite({ publishableBranch: "" })),
-    ).rejects.toThrow("Docs site is not connected to a GitHub repository");
+    await expect(resolveCommitSha(buildDocsSite({ publishableBranch: "" }))).rejects.toThrow(
+      "Docs site is not connected to a GitHub repository",
+    );
   });
 
   it("returns the commit SHA when octokit getRef succeeds", async () => {
@@ -568,17 +569,13 @@ describe("getGithubFilesAtCommit", () => {
       .mockResolvedValueOnce({ data: { content: btoa("a") } })
       .mockRejectedValueOnce(new Error("blob 500"));
 
-    await expect(getGithubFilesAtCommit(buildDocsSite(), "commit-sha")).rejects.toThrow(
-      "blob 500",
-    );
+    await expect(getGithubFilesAtCommit(buildDocsSite(), "commit-sha")).rejects.toThrow("blob 500");
   });
 
   it("propagates errors when getTree rejects", async () => {
     mockGetTree.mockRejectedValue(new Error("tree 403"));
 
-    await expect(getGithubFilesAtCommit(buildDocsSite(), "commit-sha")).rejects.toThrow(
-      "tree 403",
-    );
+    await expect(getGithubFilesAtCommit(buildDocsSite(), "commit-sha")).rejects.toThrow("tree 403");
   });
 });
 
@@ -588,10 +585,8 @@ describe("getGithubFilesAtCommit", () => {
 
 type StepDoFn = (
   name: string,
-  optsOrFn:
-    | (() => unknown | Promise<unknown>)
-    | { retries?: { limit: number; delay: string; backoff: string } },
-  maybeFn?: () => unknown | Promise<unknown>,
+  optsOrFn: (() => unknown) | { retries?: { limit: number; delay: string; backoff: string } },
+  maybeFn?: () => unknown,
 ) => Promise<unknown>;
 
 function makeFakeStep() {
@@ -1178,15 +1173,7 @@ describe("PublishDocsWorkflow — mark-published step", () => {
     //   4: mark-published → update docsVersions (status: published)
     //   5: mark-published → select newest published version
     //   6: mark-published → update docsSites (activeCommitSha) — only if newest
-    primeDbRaw(
-      [SITE_ROW],
-      [ORG_ROW],
-      [],
-      [],
-      [],
-      opts.newest ? [opts.newest] : [],
-      [],
-    );
+    primeDbRaw([SITE_ROW], [ORG_ROW], [], [], [], opts.newest ? [opts.newest] : [], []);
     await setupHappyPathSandbox();
   }
 

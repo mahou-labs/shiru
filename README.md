@@ -72,13 +72,13 @@ vp run dev
 
 ### Useful Commands
 
-| Command           | Description                          |
-| ----------------- | ------------------------------------ |
-| `vp run dev`      | Start all services                   |
-| `vp run build`    | Build for production                 |
-| `vp run check`    | Run format, lint, and type checks    |
-| `vp run test`     | Run the test suite                   |
-| `vp run db:studio`| Open Drizzle Studio                  |
+| Command            | Description                       |
+| ------------------ | --------------------------------- |
+| `vp run dev`       | Start all services                |
+| `vp run build`     | Build for production              |
+| `vp run check`     | Run format, lint, and type checks |
+| `vp run test`      | Run the test suite                |
+| `vp run db:studio` | Open Drizzle Studio               |
 
 ## Contributors
 
