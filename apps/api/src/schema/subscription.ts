@@ -1,5 +1,6 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { v7 as uuidv7 } from "uuid";
+
 import { organizations } from "./auth";
 
 export const subscriptions = sqliteTable(

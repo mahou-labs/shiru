@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SuccessRouteImport } from './routes/success'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
@@ -18,18 +20,29 @@ import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/auth/signin'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
-import { Route as AppOnboardingRouteImport } from './routes/_app/onboarding'
-import { Route as AppInviteRouteImport } from './routes/_app/invite'
 import { Route as AppEditorRouteImport } from './routes/_app/editor'
 import { Route as AppSettingsRouteRouteImport } from './routes/_app/settings/route'
+import { Route as AppDocsRouteRouteImport } from './routes/_app/docs/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
+import { Route as AppDocsIndexRouteImport } from './routes/_app/docs/index'
 import { Route as AppSettingsOrganizationRouteImport } from './routes/_app/settings/organization'
-import { Route as AppSettingsDomainRouteImport } from './routes/_app/settings/domain'
+import { Route as AppSettingsGithubRouteImport } from './routes/_app/settings/github'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
+import { Route as AppDocsHistoryRouteImport } from './routes/_app/docs/history'
 
 const SuccessRoute = SuccessRouteImport.update({
   id: '/success',
   path: '/success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRouteRoute = AuthRouteRouteImport.update({
@@ -71,16 +84,6 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => AuthRouteRoute,
 } as any)
-const AppOnboardingRoute = AppOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppInviteRoute = AppInviteRouteImport.update({
-  id: '/invite',
-  path: '/invite',
-  getParentRoute: () => AppRouteRoute,
-} as any)
 const AppEditorRoute = AppEditorRouteImport.update({
   id: '/editor',
   path: '/editor',
@@ -91,19 +94,29 @@ const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppDocsRouteRoute = AppDocsRouteRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppSettingsRouteRoute,
+} as any)
+const AppDocsIndexRoute = AppDocsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppDocsRouteRoute,
 } as any)
 const AppSettingsOrganizationRoute = AppSettingsOrganizationRouteImport.update({
   id: '/organization',
   path: '/organization',
   getParentRoute: () => AppSettingsRouteRoute,
 } as any)
-const AppSettingsDomainRoute = AppSettingsDomainRouteImport.update({
-  id: '/domain',
-  path: '/domain',
+const AppSettingsGithubRoute = AppSettingsGithubRouteImport.update({
+  id: '/github',
+  path: '/github',
   getParentRoute: () => AppSettingsRouteRoute,
 } as any)
 const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
@@ -111,60 +124,73 @@ const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AppSettingsRouteRoute,
 } as any)
+const AppDocsHistoryRoute = AppDocsHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AppDocsRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/auth': typeof AuthRouteRouteWithChildren
+  '/invite': typeof InviteRoute
+  '/onboarding': typeof OnboardingRoute
   '/success': typeof SuccessRoute
+  '/docs': typeof AppDocsRouteRouteWithChildren
   '/settings': typeof AppSettingsRouteRouteWithChildren
   '/editor': typeof AppEditorRoute
-  '/invite': typeof AppInviteRoute
-  '/onboarding': typeof AppOnboardingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/docs/history': typeof AppDocsHistoryRoute
   '/settings/account': typeof AppSettingsAccountRoute
-  '/settings/domain': typeof AppSettingsDomainRoute
+  '/settings/github': typeof AppSettingsGithubRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
+  '/docs/': typeof AppDocsIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
+  '/invite': typeof InviteRoute
+  '/onboarding': typeof OnboardingRoute
   '/success': typeof SuccessRoute
   '/editor': typeof AppEditorRoute
-  '/invite': typeof AppInviteRoute
-  '/onboarding': typeof AppOnboardingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/': typeof AppIndexRoute
+  '/docs/history': typeof AppDocsHistoryRoute
   '/settings/account': typeof AppSettingsAccountRoute
-  '/settings/domain': typeof AppSettingsDomainRoute
+  '/settings/github': typeof AppSettingsGithubRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
+  '/docs': typeof AppDocsIndexRoute
   '/settings': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
   '/auth': typeof AuthRouteRouteWithChildren
+  '/invite': typeof InviteRoute
+  '/onboarding': typeof OnboardingRoute
   '/success': typeof SuccessRoute
+  '/_app/docs': typeof AppDocsRouteRouteWithChildren
   '/_app/settings': typeof AppSettingsRouteRouteWithChildren
   '/_app/editor': typeof AppEditorRoute
-  '/_app/invite': typeof AppInviteRoute
-  '/_app/onboarding': typeof AppOnboardingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/docs/history': typeof AppDocsHistoryRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
-  '/_app/settings/domain': typeof AppSettingsDomainRoute
+  '/_app/settings/github': typeof AppSettingsGithubRoute
   '/_app/settings/organization': typeof AppSettingsOrganizationRoute
+  '/_app/docs/': typeof AppDocsIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -172,61 +198,71 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/success'
-    | '/settings'
-    | '/editor'
     | '/invite'
     | '/onboarding'
+    | '/success'
+    | '/docs'
+    | '/settings'
+    | '/editor'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
+    | '/docs/history'
     | '/settings/account'
-    | '/settings/domain'
+    | '/settings/github'
     | '/settings/organization'
+    | '/docs/'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
-    | '/success'
-    | '/editor'
     | '/invite'
     | '/onboarding'
+    | '/success'
+    | '/editor'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
     | '/'
+    | '/docs/history'
     | '/settings/account'
-    | '/settings/domain'
+    | '/settings/github'
     | '/settings/organization'
+    | '/docs'
     | '/settings'
   id:
     | '__root__'
     | '/_app'
     | '/auth'
+    | '/invite'
+    | '/onboarding'
     | '/success'
+    | '/_app/docs'
     | '/_app/settings'
     | '/_app/editor'
-    | '/_app/invite'
-    | '/_app/onboarding'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
     | '/_app/'
+    | '/_app/docs/history'
     | '/_app/settings/account'
-    | '/_app/settings/domain'
+    | '/_app/settings/github'
     | '/_app/settings/organization'
+    | '/_app/docs/'
     | '/_app/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  InviteRoute: typeof InviteRoute
+  OnboardingRoute: typeof OnboardingRoute
   SuccessRoute: typeof SuccessRoute
 }
 
@@ -237,6 +273,20 @@ declare module '@tanstack/react-router' {
       path: '/success'
       fullPath: '/success'
       preLoaderRoute: typeof SuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -295,20 +345,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/_app/onboarding': {
-      id: '/_app/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AppOnboardingRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/_app/invite': {
-      id: '/_app/invite'
-      path: '/invite'
-      fullPath: '/invite'
-      preLoaderRoute: typeof AppInviteRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
     '/_app/editor': {
       id: '/_app/editor'
       path: '/editor'
@@ -323,12 +359,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/docs': {
+      id: '/_app/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof AppDocsRouteRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/settings/': {
       id: '/_app/settings/'
       path: '/'
       fullPath: '/settings/'
       preLoaderRoute: typeof AppSettingsIndexRouteImport
       parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/_app/docs/': {
+      id: '/_app/docs/'
+      path: '/'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof AppDocsIndexRouteImport
+      parentRoute: typeof AppDocsRouteRoute
     }
     '/_app/settings/organization': {
       id: '/_app/settings/organization'
@@ -337,11 +387,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsOrganizationRouteImport
       parentRoute: typeof AppSettingsRouteRoute
     }
-    '/_app/settings/domain': {
-      id: '/_app/settings/domain'
-      path: '/domain'
-      fullPath: '/settings/domain'
-      preLoaderRoute: typeof AppSettingsDomainRouteImport
+    '/_app/settings/github': {
+      id: '/_app/settings/github'
+      path: '/github'
+      fullPath: '/settings/github'
+      preLoaderRoute: typeof AppSettingsGithubRouteImport
       parentRoute: typeof AppSettingsRouteRoute
     }
     '/_app/settings/account': {
@@ -351,19 +401,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsAccountRouteImport
       parentRoute: typeof AppSettingsRouteRoute
     }
+    '/_app/docs/history': {
+      id: '/_app/docs/history'
+      path: '/history'
+      fullPath: '/docs/history'
+      preLoaderRoute: typeof AppDocsHistoryRouteImport
+      parentRoute: typeof AppDocsRouteRoute
+    }
   }
 }
 
+interface AppDocsRouteRouteChildren {
+  AppDocsHistoryRoute: typeof AppDocsHistoryRoute
+  AppDocsIndexRoute: typeof AppDocsIndexRoute
+}
+
+const AppDocsRouteRouteChildren: AppDocsRouteRouteChildren = {
+  AppDocsHistoryRoute: AppDocsHistoryRoute,
+  AppDocsIndexRoute: AppDocsIndexRoute,
+}
+
+const AppDocsRouteRouteWithChildren = AppDocsRouteRoute._addFileChildren(
+  AppDocsRouteRouteChildren,
+)
+
 interface AppSettingsRouteRouteChildren {
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
-  AppSettingsDomainRoute: typeof AppSettingsDomainRoute
+  AppSettingsGithubRoute: typeof AppSettingsGithubRoute
   AppSettingsOrganizationRoute: typeof AppSettingsOrganizationRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
 }
 
 const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
   AppSettingsAccountRoute: AppSettingsAccountRoute,
-  AppSettingsDomainRoute: AppSettingsDomainRoute,
+  AppSettingsGithubRoute: AppSettingsGithubRoute,
   AppSettingsOrganizationRoute: AppSettingsOrganizationRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
 }
@@ -372,18 +443,16 @@ const AppSettingsRouteRouteWithChildren =
   AppSettingsRouteRoute._addFileChildren(AppSettingsRouteRouteChildren)
 
 interface AppRouteRouteChildren {
+  AppDocsRouteRoute: typeof AppDocsRouteRouteWithChildren
   AppSettingsRouteRoute: typeof AppSettingsRouteRouteWithChildren
   AppEditorRoute: typeof AppEditorRoute
-  AppInviteRoute: typeof AppInviteRoute
-  AppOnboardingRoute: typeof AppOnboardingRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppDocsRouteRoute: AppDocsRouteRouteWithChildren,
   AppSettingsRouteRoute: AppSettingsRouteRouteWithChildren,
   AppEditorRoute: AppEditorRoute,
-  AppInviteRoute: AppInviteRoute,
-  AppOnboardingRoute: AppOnboardingRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
@@ -414,6 +483,8 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   AuthRouteRoute: AuthRouteRouteWithChildren,
+  InviteRoute: InviteRoute,
+  OnboardingRoute: OnboardingRoute,
   SuccessRoute: SuccessRoute,
 }
 export const routeTree = rootRouteImport

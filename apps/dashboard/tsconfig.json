@@ -2,10 +2,10 @@
   "include": ["**/*.ts", "**/*.tsx"],
   "references": [{ "path": "../api" }],
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2025",
     "jsx": "react-jsx",
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2025", "DOM", "DOM.Iterable"],
 
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": true,

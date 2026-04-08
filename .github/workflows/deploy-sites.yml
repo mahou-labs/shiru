@@ -1,0 +1,105 @@
+name: Deploy Sites
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-main-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    secrets:
+      NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+
+  changes:
+    name: Detect Changes
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+      site: ${{ steps.filter.outputs.site }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            docs:
+              - 'apps/docs/**'
+              - 'bun.lock'
+            site:
+              - 'apps/site/**'
+              - 'bun.lock'
+
+  deploy-docs:
+    name: Deploy Docs (Production)
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: [ci, changes]
+    if: needs.changes.outputs.docs == 'true'
+    environment:
+      name: production
+      url: ${{ vars.DOCS_URL }}
+    env:
+      NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+
+      - name: Build docs
+        run: vp run build
+        working-directory: apps/docs
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/docs
+          command: deploy
+
+  deploy-site:
+    name: Deploy Site (Production)
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: [ci, changes]
+    if: needs.changes.outputs.site == 'true'
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL }}
+    env:
+      NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+
+      - name: Build site
+        run: vp run build
+        working-directory: apps/site
+        env:
+          PUBLIC_API_URL: ${{ vars.API_URL }}
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/site
+          command: deploy

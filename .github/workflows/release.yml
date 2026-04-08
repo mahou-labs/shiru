@@ -1,0 +1,201 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine next version
+        id: tag
+        run: |
+          BUMP="${{ inputs.bump }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            NEXT="v0.1.0"
+          else
+            VERSION="${PREV_TAG#v}"
+            MAJOR=$(echo "$VERSION" | cut -d. -f1)
+            MINOR=$(echo "$VERSION" | cut -d. -f2)
+            PATCH=$(echo "$VERSION" | cut -d. -f3)
+            case "$BUMP" in
+              major) NEXT="v$((MAJOR + 1)).0.0" ;;
+              minor) NEXT="v${MAJOR}.$((MINOR + 1)).0" ;;
+              patch) NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+            esac
+          fi
+          echo "tag=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+          echo "Creating release $NEXT (previous: ${PREV_TAG:-none})"
+
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.tag.outputs.tag }}" \
+            --target main \
+            --generate-notes \
+            --title "${{ steps.tag.outputs.tag }}"
+
+  ci:
+    name: CI
+    needs: create-release
+    uses: ./.github/workflows/ci.yml
+    secrets:
+      NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+
+  changes:
+    name: Detect Changes
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: create-release
+    outputs:
+      dashboard: ${{ steps.resolve.outputs.dashboard }}
+      api: ${{ steps.resolve.outputs.api }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.create-release.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Get previous release tag
+        id: prev_tag
+        run: |
+          CURRENT_TAG="${{ needs.create-release.outputs.tag }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 "$CURRENT_TAG^" 2>/dev/null || true)
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found, will deploy all release apps"
+            echo "prev_tag=" >> $GITHUB_OUTPUT
+          else
+            echo "Previous tag: $PREV_TAG"
+            echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect changed paths
+        if: steps.prev_tag.outputs.prev_tag != ''
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          base: ${{ steps.prev_tag.outputs.prev_tag }}
+          filters: |
+            dashboard:
+              - 'apps/dashboard/**'
+              - 'packages/ui/**'
+              - 'bun.lock'
+            api:
+              - 'apps/api/**'
+              - 'bun.lock'
+
+      - name: Resolve change flags
+        id: resolve
+        run: |
+          if [ -z "${{ steps.prev_tag.outputs.prev_tag }}" ]; then
+            echo "dashboard=true" >> "$GITHUB_OUTPUT"
+            echo "api=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dashboard=${{ steps.filter.outputs.dashboard }}" >> "$GITHUB_OUTPUT"
+            echo "api=${{ steps.filter.outputs.api }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy-dashboard:
+    name: Deploy Dashboard (Production)
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: [ci, changes, create-release]
+    if: needs.changes.outputs.dashboard == 'true'
+    environment:
+      name: production
+      url: ${{ vars.DASHBOARD_URL }}
+    env:
+      NUCLEO_LICENSE_KEY: ${{ secrets.NUCLEO_LICENSE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.create-release.outputs.tag }}
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+
+      - name: Build dashboard
+        run: vp run build
+        working-directory: apps/dashboard
+        env:
+          VITE_API_URL: ${{ vars.API_URL }}
+          VITE_POSTHOG_KEY: ${{ vars.POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/dashboard
+          command: deploy --name shiru-dashboard-prod
+
+  deploy-api:
+    name: Deploy API (Production)
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    needs: [ci, changes, create-release]
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.api == ''
+    environment:
+      name: production
+      url: ${{ vars.API_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.create-release.outputs.tag }}
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+
+      - name: Build API
+        run: vp run build
+        working-directory: apps/api
+
+      - name: Apply D1 migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/api
+          command: d1 migrations apply shiru-db
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/api
+          command: deploy -c wrangler.jsonc

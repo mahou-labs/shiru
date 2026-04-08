@@ -1,5 +1,3 @@
-import { useSidebar } from "@/contexts/sidebar-context";
-import { cn } from "@/utils/cn";
 import { Separator } from "@shiru/ui/separator";
 import { TooltipProvider } from "@shiru/ui/tooltip";
 import {
@@ -9,6 +7,10 @@ import {
   IconHouse2OutlineDuo18,
   IconSidebarLeftOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
+
+import { useSidebar } from "@/contexts/sidebar-context";
+import { cn } from "@/utils/cn";
+
 import { OrgMenu } from "./org-menu";
 import { SidebarItem } from "./sidebar-item";
 
@@ -38,6 +40,13 @@ export function Sidebar() {
             label="Editor"
             href="/editor"
             matchPath={(pathname) => pathname.startsWith("/editor")}
+          />
+          <SidebarItem
+            type="link"
+            icon={IconBookOpen2OutlineDuo18}
+            label="Docs"
+            href="/docs"
+            matchPath={(pathname) => pathname.startsWith("/docs")}
           />
 
           <div className="mt-auto" />

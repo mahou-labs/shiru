@@ -3,18 +3,18 @@ type Success<T> = {
   error: null;
 };
 
-type Failure<E> = {
+type Failure = {
   data: null;
-  error: E;
+  error: unknown;
 };
 
-type Result<T, E = Error> = Success<T> | Failure<E>;
+type Result<T> = Success<T> | Failure;
 
-export async function tryCatch<T, E = Error>(promise: Promise<T>): Promise<Result<T, E>> {
+export async function tryCatch<T>(promise: Promise<T>): Promise<Result<T>> {
   try {
     const data = await promise;
     return { data, error: null };
   } catch (error: unknown) {
-    return { data: null, error: error as E }; // oxlint-disable-line no-unsafe-type-assertion
+    return { data: null, error };
   }
 }

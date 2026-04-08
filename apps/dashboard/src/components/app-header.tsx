@@ -7,7 +7,9 @@ import {
   IconGearOutlineDuo18,
   IconMenuBarsOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
+
 import { useSidebar } from "@/contexts/sidebar-context";
+
 import type { AppShellSecondarySidebar } from "./app-shell-layout";
 import { NotificationsButton } from "./notifications-button";
 import { SearchBar } from "./search-bar";

@@ -1,5 +1,5 @@
-import posthog from "posthog-js";
 import { PostHogProvider as BasePostHogProvider } from "@posthog/react";
+import posthog from "posthog-js";
 import type { ReactNode } from "react";
 
 if (typeof window !== "undefined" && import.meta.env.VITE_POSTHOG_KEY && !import.meta.env.DEV) {

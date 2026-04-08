@@ -1,4 +1,3 @@
-import { useSidebar } from "@/contexts/sidebar-context";
 import { Separator } from "@shiru/ui/separator";
 import { Sheet, SheetPopup } from "@shiru/ui/sheet";
 import {
@@ -6,6 +5,9 @@ import {
   IconGearOutlineDuo18,
   IconHouse2OutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
+
+import { useSidebar } from "@/contexts/sidebar-context";
+
 import type { AppShellSecondarySidebar } from "./app-shell-layout";
 import { OrgMenu } from "./org-menu";
 import { MobileNavItem } from "./sidebar-item";

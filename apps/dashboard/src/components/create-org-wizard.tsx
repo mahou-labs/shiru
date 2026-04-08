@@ -1,30 +1,23 @@
-import { useEffect, useRef, useState } from "react";
-import { useForm, useStore } from "@tanstack/react-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "@tanstack/react-router";
-import { useDebounce } from "@uidotdev/usehooks";
-import { AnimatePresence, motion } from "motion/react";
-import {
-  IconCheckOutlineDuo18,
-  IconCloudUploadOutlineDuo18,
-  IconCodeBranchOutlineDuo18,
-  IconGlobe2OutlineDuo18,
-  IconXmarkOutlineDuo18,
-} from "nucleo-ui-outline-duo-18";
-import { z } from "zod";
-
 import { Button } from "@shiru/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@shiru/ui/field";
 import { Form } from "@shiru/ui/form";
 import { Input } from "@shiru/ui/input";
 import { Spinner } from "@shiru/ui/spinner";
 import { toastManager } from "@shiru/ui/toast";
+import { useForm, useStore } from "@tanstack/react-form";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
+import { useDebounce } from "@uidotdev/usehooks";
+import { AnimatePresence, motion } from "motion/react";
+import { IconCheckOutlineDuo18, IconXmarkOutlineDuo18 } from "nucleo-ui-outline-duo-18";
+import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 
-import { cn } from "@/utils/cn";
 import { orpc } from "@/utils/orpc-client";
+
 import { StepIndicator } from "./step-indicator";
 
-const STEPS = ["Website", "Details", "Hosting", "Domain"] as const;
+const STEPS = ["Website", "Details"] as const;
 
 const slugSchema = z
   .string()
@@ -38,15 +31,11 @@ const slugSchema = z
     message: "Slug cannot contain consecutive hyphens.",
   });
 
-const HOSTNAME_REGEX = /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
-
 type WizardData = {
   websiteUrl: string;
   name: string;
   slug: string;
   logo: string | null;
-  hostingMode: "managed" | "github";
-  hostname: string;
 };
 
 type CreateOrgWizardProps = {
@@ -65,8 +54,6 @@ export function CreateOrgWizard({ onSuccess, onCancel }: CreateOrgWizardProps) {
     name: "",
     slug: "",
     logo: null,
-    hostingMode: "managed",
-    hostname: "",
   });
 
   const goForward = () => {
@@ -93,8 +80,6 @@ export function CreateOrgWizard({ onSuccess, onCancel }: CreateOrgWizardProps) {
         name: wizardData.name.trim(),
         slug: wizardData.slug.trim(),
         logo: wizardData.logo ?? undefined,
-        hostingMode: wizardData.hostingMode,
-        hostname: wizardData.hostname.trim() || undefined,
       });
 
       if (org) {
@@ -189,33 +174,8 @@ export function CreateOrgWizard({ onSuccess, onCancel }: CreateOrgWizardProps) {
             {currentStep === 1 && (
               <StepDetails
                 data={wizardData}
-                onBack={goBack}
-                onNext={(data) => {
-                  updateData(data);
-                  goForward();
-                }}
-              />
-            )}
-            {currentStep === 2 && (
-              <StepHosting
-                data={wizardData}
-                onBack={goBack}
-                onNext={(mode) => {
-                  updateData({ hostingMode: mode });
-                  goForward();
-                }}
-              />
-            )}
-            {currentStep === 3 && (
-              <StepDomain
-                data={wizardData}
                 isCreating={isCreating}
                 onBack={goBack}
-                onChange={(hostname) => updateData({ hostname })}
-                onSkip={() => {
-                  updateData({ hostname: "" });
-                  void handleFinalSubmit();
-                }}
                 onSubmit={() => void handleFinalSubmit()}
               />
             )}
@@ -328,12 +288,14 @@ function StepWebsite({
 
 function StepDetails({
   data,
+  isCreating,
   onBack,
-  onNext,
+  onSubmit,
 }: {
   data: WizardData;
+  isCreating: boolean;
   onBack: () => void;
-  onNext: (partial: Partial<WizardData>) => void;
+  onSubmit: () => void;
 }) {
   const detailsSchema = z.object({
     name: z.string().min(1, "Organization name is required"),
@@ -343,8 +305,8 @@ function StepDetails({
   const form = useForm({
     defaultValues: { name: data.name, slug: data.slug },
     validators: { onSubmit: detailsSchema },
-    onSubmit: ({ value }) => {
-      onNext({ name: value.name, slug: value.slug });
+    onSubmit: () => {
+      onSubmit();
     },
   });
 
@@ -433,182 +395,18 @@ function StepDetails({
         </form.Field>
 
         <div className="flex items-center justify-between pt-2">
-          <Button onClick={onBack} type="button" variant="ghost">
+          <Button disabled={isCreating} onClick={onBack} type="button" variant="ghost">
             Back
           </Button>
           <Button
             disabled={
+              isCreating ||
               !form.state.canSubmit ||
               slug !== debouncedSlug ||
               (debouncedSlug.length >= 4 && isLoading) ||
               !slugAvailable
             }
             type="submit"
-          >
-            Continue
-          </Button>
-        </div>
-      </div>
-    </Form>
-  );
-}
-
-function StepHosting({
-  data,
-  onBack,
-  onNext,
-}: {
-  data: WizardData;
-  onBack: () => void;
-  onNext: (mode: "managed" | "github") => void;
-}) {
-  const [selected, setSelected] = useState<"managed" | "github">(data.hostingMode);
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="space-y-1">
-        <h3 className="text-base font-semibold">How do you want to host your docs?</h3>
-        <p className="text-sm text-muted-foreground">
-          Choose how your documentation will be deployed.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <HostingCard
-          description="We handle deployment, hosting, and updates for you."
-          icon={<IconCloudUploadOutlineDuo18 className="size-5" />}
-          isSelected={selected === "managed"}
-          onClick={() => setSelected("managed")}
-          title="Managed Hosting"
-        />
-        <HostingCard
-          description="Connect a GitHub repo and deploy on your own infrastructure."
-          icon={<IconCodeBranchOutlineDuo18 className="size-5" />}
-          isSelected={selected === "github"}
-          onClick={() => setSelected("github")}
-          title="Self-hosted via GitHub"
-        />
-      </div>
-
-      <p className="text-xs text-muted-foreground">You can change this later in Settings.</p>
-
-      <div className="flex items-center justify-between pt-2">
-        <Button onClick={onBack} type="button" variant="ghost">
-          Back
-        </Button>
-        <Button onClick={() => onNext(selected)} type="button">
-          Continue
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function HostingCard({
-  description,
-  icon,
-  isSelected,
-  onClick,
-  title,
-}: {
-  description: string;
-  icon: React.ReactNode;
-  isSelected: boolean;
-  onClick: () => void;
-  title: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex cursor-pointer flex-col gap-2 rounded-lg border p-4 text-left transition-all duration-150",
-        isSelected
-          ? "border-primary bg-primary/[0.04] ring-1 ring-primary/30"
-          : "border-border hover:border-muted-foreground/30 hover:bg-muted/30",
-      )}
-    >
-      <div
-        className={cn(
-          "flex size-9 items-center justify-center rounded-md",
-          isSelected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
-        )}
-      >
-        {icon}
-      </div>
-      <div>
-        <p className="text-sm font-medium">{title}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-      </div>
-    </button>
-  );
-}
-
-function StepDomain({
-  data,
-  isCreating,
-  onBack,
-  onChange,
-  onSkip,
-  onSubmit,
-}: {
-  data: WizardData;
-  isCreating: boolean;
-  onBack: () => void;
-  onChange: (hostname: string) => void;
-  onSkip: () => void;
-  onSubmit: () => void;
-}) {
-  const [hostname, setHostname] = useState(data.hostname);
-  const isHostnameValid = hostname.trim() === "" || HOSTNAME_REGEX.test(hostname.trim());
-  const hasHostname = hostname.trim().length > 0 && HOSTNAME_REGEX.test(hostname.trim());
-
-  const handleHostnameChange = (value: string) => {
-    setHostname(value);
-    onChange(value);
-  };
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="space-y-1">
-        <h3 className="text-base font-semibold">Set up a custom domain</h3>
-        <p className="text-sm text-muted-foreground">
-          Connect a custom domain to serve your documentation at your own URL.
-        </p>
-      </div>
-
-      <Field>
-        <FieldLabel>
-          <IconGlobe2OutlineDuo18 className="mr-1 inline size-4" />
-          Hostname
-        </FieldLabel>
-        <Input
-          disabled={isCreating}
-          onChange={(e) => handleHostnameChange(e.target.value)}
-          placeholder="docs.example.com"
-          value={hostname}
-        />
-        {hostname.trim() && !isHostnameValid && (
-          <FieldError>Enter a valid hostname like docs.example.com</FieldError>
-        )}
-      </Field>
-
-      <p className="text-xs text-muted-foreground">
-        This step is optional. You can set up a custom domain later in Settings.
-      </p>
-
-      <div className="flex items-center justify-between pt-2">
-        <Button disabled={isCreating} onClick={onBack} type="button" variant="ghost">
-          Back
-        </Button>
-        <div className="flex gap-2">
-          <Button disabled={isCreating} onClick={onSkip} type="button" variant="outline">
-            Skip
-          </Button>
-          <Button
-            disabled={isCreating || (hostname.trim().length > 0 && !hasHostname)}
-            onClick={onSubmit}
-            type="button"
           >
             {isCreating ? (
               <>
@@ -621,6 +419,6 @@ function StepDomain({
           </Button>
         </div>
       </div>
-    </div>
+    </Form>
   );
 }

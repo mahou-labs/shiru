@@ -1,10 +1,11 @@
-import { Resend } from "resend";
-// import ApplicationReceivedEmail from "@/emails/application-received";
-import EmailVerificationEmail from "@/emails/email-verification";
 // import OrgInviteEmail from "@/emails/org-invite";
 // import PasswordResetEmail from "@/emails/password-reset";
 // import { env } from "./env";
 import { env } from "cloudflare:workers";
+import { Resend } from "resend";
+
+// import ApplicationReceivedEmail from "@/emails/application-received";
+import EmailVerificationEmail from "@/emails/email-verification";
 
 export const resend = new Resend(env.RESEND_API_KEY);
 

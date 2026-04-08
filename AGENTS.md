@@ -14,22 +14,25 @@ TypeScript monorepo (Turborepo + pnpm) for an open-source documentation platform
 
 ## Build & Development Commands
 
+This project uses [Vite+](https://viteplus.dev) (`vp`) as the unified toolchain.
+Use `vp run <script>` to invoke any script defined in `package.json` and `vp <command>`
+for built-in Vite+ commands. Avoid `bun run` — see CLAUDE.md for the full Vite+ workflow.
+
 ```bash
-pnpm install                   # Install dependencies
-pnpm dev                       # Start all services (dashboard:3001, api:3000, db studio)
-pnpm dev:dashboard             # Start frontend only
-pnpm dev:dashboard-old         # Start legacy frontend only
-pnpm dev:api                   # Start API only
-pnpm lint                      # Run OxLint across all apps
-pnpm format                    # Run OxFmt across all apps
-pnpm typecheck                 # TypeScript type checking
-pnpm build                     # Build all apps for production
+vp install                     # Install dependencies
+vp run dev                     # Start all services (dashboard:3001, api:3000, db studio)
+vp run dev:dashboard           # Start frontend only
+vp run dev:dashboard-old       # Start legacy frontend only
+vp run dev:api                 # Start API only
+vp run check                   # Format, lint, and type-check across all apps
+vp run test                    # Run all tests
+vp run build                   # Build all apps for production
 
 # Database
-pnpm db:push                   # Push schema changes (development)
-pnpm db:generate               # Generate migrations
-pnpm db:migrate                # Run migrations (production)
-pnpm db:studio                 # Open Drizzle Studio
+vp run db:push                 # Push schema changes (development)
+vp run db:generate             # Generate migrations
+vp run db:migrate              # Run migrations (production)
+vp run db:studio               # Open Drizzle Studio
 
 # Run commands in specific apps
 turbo -F api <command>         # Run in API app

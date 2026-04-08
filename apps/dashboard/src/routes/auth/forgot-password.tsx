@@ -1,13 +1,14 @@
+import { Button } from "@shiru/ui/button";
+import { Field, FieldError, FieldLabel } from "@shiru/ui/field";
+import { Input } from "@shiru/ui/input";
+import { toastManager } from "@shiru/ui/toast";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { IconEnvelopeCheckOutlineDuo18 } from "nucleo-ui-outline-duo-18";
 import { useState } from "react";
 import z from "zod";
-import { Button } from "@shiru/ui/button";
-import { Field, FieldError, FieldLabel } from "@shiru/ui/field";
-import { Input } from "@shiru/ui/input";
+
 import { authClient } from "@/utils/auth-client";
-import { toastManager } from "@shiru/ui/toast";
 
 export const Route = createFileRoute("/auth/forgot-password")({
   component: ForgotPasswordRoute,

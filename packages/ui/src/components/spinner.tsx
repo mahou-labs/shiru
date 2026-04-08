@@ -1,5 +1,6 @@
 import { IconLoaderOutlineDuo18 } from "nucleo-ui-outline-duo-18";
 import type { ComponentProps } from "react";
+
 import { cn } from "../utils/cn";
 
 type IconProps = ComponentProps<typeof IconLoaderOutlineDuo18>;

@@ -7,10 +7,15 @@ import { rateLimiter } from "hono-rate-limiter";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { PostHog } from "posthog-node";
+
+import { githubRoutes } from "./github-routes";
 import { appRouter } from "./routers";
 import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
 import { log } from "./utils/logger";
+
+export { Sandbox as BuilderSandbox } from "@cloudflare/sandbox";
+export { PublishDocsWorkflow } from "./routers/docs-router";
 
 const posthog = new PostHog(env.POSTHOG_PUBLIC_KEY, {
   host: "https://t.shiru.sh",
@@ -36,7 +41,8 @@ const handler = new RPCHandler(appRouter, {
 });
 
 app.onError(async (err, c) => {
-  await handleError(err, "", "hono");
+  const context = await createContext(c);
+  await handleError(err, context.user?.id || "", "hono");
   return c.text("Internal Server Error", 500);
 });
 
@@ -83,4 +89,7 @@ app.use("/rpc/*", async (c, next) => {
   await next();
 });
 
+app.route("/github", githubRoutes);
+
+// export { app };
 export default app;
