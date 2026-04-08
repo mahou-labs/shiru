@@ -33,7 +33,7 @@
       "binding": "DB",
       "database_name": "shiru-db",
       "database_id": "e510a3f8-0538-496f-a3fe-b277f1e6fedc",
-      "migrations_dir": "drizzle/migrations",
+      "migrations_dir": "drizzle/d1",
     },
   ],
   "r2_buckets": [
