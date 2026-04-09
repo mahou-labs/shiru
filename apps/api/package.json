@@ -3,15 +3,12 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev --port=3000",
-    "build": "vp build",
-    "preview": "vp build && vp preview",
     "cf:typegen": "wrangler types --env-interface CloudflareBindings",
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate && vp run db:sync",
     "db:push": "drizzle-kit push",
     "db:sync": "node scripts/sync-d1-migrations.mjs",
-    "check": "vp check",
-    "test": "vp test"
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@cloudflare/sandbox": "^0.8.4",

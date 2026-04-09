@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_app/settings/github")({
   component: GitHubSettingsPage,
 });
 
-const GITHUB_APP_SLUG = "shiru-docs-local-dev";
+const GITHUB_APP_SLUG = import.meta.env.DEV ? "shiru-docs-local-dev" : "shiru-docs";
 
 function GitHubSettingsPage() {
   const queryClient = useQueryClient();

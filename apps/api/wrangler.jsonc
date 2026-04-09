@@ -12,11 +12,12 @@
     },
   },
   "vars": {
-    "ENVIRONMENT": "production",
-    "DASHBOARD_URL": "https://dashboard.shiru.sh",
-    "SITE_URL": "https://shiru.sh",
     "BETTER_AUTH_URL": "https://api.shiru.sh",
+    "DASHBOARD_URL": "https://app.shiru.sh",
+    "ENVIRONMENT": "production",
+    "GITHUB_APP_ID": "3316735",
     "POSTHOG_PUBLIC_KEY": "phc_hdbwwJWoeHfDnlt0Jgv7GB8UhAPVvTLaz6hg0DKXZyR",
+    "SITE_URL": "https://shiru.sh",
   },
   "ratelimits": [
     {

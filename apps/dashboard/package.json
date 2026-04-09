@@ -3,12 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "vp build",
-    "serve": "vp preview",
     "dev": "vp dev --port=3001",
-    "check": "vp check",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@orpc/client": "catalog:",
