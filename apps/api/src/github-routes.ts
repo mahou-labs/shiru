@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { v7 as uuidv7 } from "uuid";
 
-import { members } from "./schema/auth";
+import { members, organizations } from "./schema/auth";
 import { docsSites } from "./schema/docs";
 import { auth } from "./utils/auth";
 import { db } from "./utils/db";
@@ -92,6 +92,15 @@ github.get("/setup", async (c) => {
     return c.text("Not a member of this organization", 403);
   }
 
+  const [organization] = await db
+    .select({ slug: organizations.slug })
+    .from(organizations)
+    .where(eq(organizations.id, orgId));
+
+  if (!organization) {
+    return c.text("Organization not found", 404);
+  }
+
   const octokit = getInstallationOctokit(Number(installationId));
   const { data: installation } = await octokit.rest.apps.getInstallation({
     installation_id: Number(installationId),
@@ -107,6 +116,7 @@ github.get("/setup", async (c) => {
     .values({
       id: uuidv7(),
       organizationId: orgId,
+      storagePrefix: organization.slug,
       githubInstallationId: Number(installationId),
       githubOwner: githubOwner,
       githubOwnerType: githubOwnerType,

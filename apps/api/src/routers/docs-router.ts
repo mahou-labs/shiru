@@ -1,3 +1,5 @@
+import { extname } from "node:path";
+
 import { getSandbox } from "@cloudflare/sandbox";
 import { ORPCError } from "@orpc/server";
 import { WorkflowEntrypoint, WorkflowStep, type WorkflowEvent, env } from "cloudflare:workers";
@@ -9,6 +11,7 @@ import z from "zod";
 import { organizations } from "@/schema/auth";
 import { docsSites, docsVersions } from "@/schema/docs";
 import { db } from "@/utils/db";
+import { syncDocsSiteKv } from "@/utils/docs-site-kv";
 import { log } from "@/utils/logger";
 import { getInstallationOctokit } from "@/utils/oktokit";
 import { protectedProcedure } from "@/utils/orpc";
@@ -150,6 +153,39 @@ export const validateDocsFilePath = (path: string): void => {
     }
   }
 };
+
+const htmlCacheControl = "public, max-age=0, must-revalidate";
+const assetCacheControl = "public, max-age=31536000, immutable";
+
+const contentTypes: Record<string, string> = {
+  ".css": "text/css; charset=utf-8",
+  ".gif": "image/gif",
+  ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+  ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".map": "application/json; charset=utf-8",
+  ".md": "text/markdown; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".txt": "text/plain; charset=utf-8",
+  ".webp": "image/webp",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".xml": "application/xml; charset=utf-8",
+};
+
+function getR2HttpMetadata(path: string): R2HTTPMetadata {
+  const extension = extname(path).toLowerCase();
+  const contentType = contentTypes[extension] ?? "application/octet-stream";
+
+  return {
+    contentType,
+    cacheControl: extension === ".html" ? htmlCacheControl : assetCacheControl,
+  };
+}
 
 const ALIVE_WORKFLOW_STATUSES = new Set([
   "queued",
@@ -426,12 +462,15 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
       await step.do("upload-source-to-r2", async () => {
         log.info("publish.uploading_source", {
           fileCount: files.length,
-          prefix: `${slug}/${commitSha.slice(0, 7)}`,
+          prefix: `${docsSite.storagePrefix}/${commitSha.slice(0, 7)}`,
         });
 
         await Promise.all(
           files.map((file) =>
-            env.DOCS_SOURCE.put(`${slug}/${commitSha}/${file.path}`, file.content),
+            env.DOCS_SOURCE.put(
+              `${docsSite.storagePrefix}/${commitSha}/${file.path}`,
+              file.content,
+            ),
           ),
         );
 
@@ -515,7 +554,7 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
       await step.do("upload-dist-to-r2", async () => {
         log.info("publish.uploading_dist", {
           fileCount: builtFiles.length,
-          prefix: `${slug}/${commitSha.slice(0, 7)}`,
+          prefix: `${docsSite.storagePrefix}/${commitSha.slice(0, 7)}`,
         });
 
         const BATCH_SIZE = 20;
@@ -525,7 +564,13 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
           await Promise.all(
             batch.map((file) => {
               const bytes = Uint8Array.from(atob(file.content), (c) => c.charCodeAt(0));
-              return env.DOCS_DIST.put(`${slug}/${commitSha}/${file.path}`, bytes);
+              return env.DOCS_DIST.put(
+                `${docsSite.storagePrefix}/${commitSha}/${file.path}`,
+                bytes,
+                {
+                  httpMetadata: getR2HttpMetadata(file.path),
+                },
+              );
             }),
           );
         }
@@ -566,6 +611,11 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
             .update(docsSites)
             .set({ activeCommitSha: newest.versionRef })
             .where(eq(docsSites.id, event.payload.docsSiteId));
+
+          await syncDocsSiteKv(slug, {
+            activeCommitSha: newest.versionRef,
+            storagePrefix: docsSite.storagePrefix,
+          });
         }
 
         log.info("publish.marked_published", {
@@ -602,7 +652,7 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
       // Errors during cleanup are logged and swallowed so they cannot mask the
       // original build error that triggered the catch block.
       await step.do("cleanup-failed-artifacts", async () => {
-        const prefix = `${slug}/${commitSha}/`;
+        const prefix = `${docsSite.storagePrefix}/${commitSha}/`;
         let totalDeleted = 0;
 
         for (const bucket of [env.DOCS_SOURCE, env.DOCS_DIST]) {

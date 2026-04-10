@@ -372,7 +372,7 @@ describe("GET /setup", () => {
     // string is always a string — without the cast, the GitHub App auth flow
     // would receive "99" instead of 99 and silently break.
     mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
-    primeDbResolves([{ id: "member-1" }], []);
+    primeDbResolves([{ id: "member-1" }], [{ slug: "acme-org" }]);
     mockGetInstallation.mockResolvedValue({
       data: { account: { login: "acme", type: "Organization" } },
     });
@@ -387,7 +387,7 @@ describe("GET /setup", () => {
     // Asserts the *logic-derived* fields only — id/orgId/sourceMode are
     // passthrough literals from input and would be theater to assert.
     mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
-    primeDbResolves([{ id: "member-1" }], []);
+    primeDbResolves([{ id: "member-1" }], [{ slug: "acme-org" }]);
     mockGetInstallation.mockResolvedValue({
       data: { account: { login: "acme", type: "Organization" } },
     });
@@ -395,7 +395,11 @@ describe("GET /setup", () => {
     await githubRoutes.request(buildSetupRequest({ installation_id: "42", state: "org-1" }));
 
     expect(dbSpies.values).toHaveBeenCalledWith(
-      expect.objectContaining({ githubOwner: "acme", githubOwnerType: "Organization" }),
+      expect.objectContaining({
+        githubOwner: "acme",
+        githubOwnerType: "Organization",
+        storagePrefix: "acme-org",
+      }),
     );
     expect(dbSpies.onConflictDoUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -409,7 +413,7 @@ describe("GET /setup", () => {
 
   it("stores githubOwner as null when the account has no login field", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
-    primeDbResolves([{ id: "member-1" }], []);
+    primeDbResolves([{ id: "member-1" }], [{ slug: "acme-org" }]);
     mockGetInstallation.mockResolvedValue({
       data: { account: { type: "Organization" } },
     });
@@ -421,7 +425,7 @@ describe("GET /setup", () => {
 
   it("stores githubOwnerType as null when the account type is not User or Organization", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
-    primeDbResolves([{ id: "member-1" }], []);
+    primeDbResolves([{ id: "member-1" }], [{ slug: "acme-org" }]);
     mockGetInstallation.mockResolvedValue({
       data: { account: { login: "bot", type: "Bot" } },
     });
@@ -433,7 +437,7 @@ describe("GET /setup", () => {
 
   it("stores githubOwner and githubOwnerType as null when the installation account is null", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
-    primeDbResolves([{ id: "member-1" }], []);
+    primeDbResolves([{ id: "member-1" }], [{ slug: "acme-org" }]);
     mockGetInstallation.mockResolvedValue({
       data: { account: null },
     });
@@ -447,7 +451,7 @@ describe("GET /setup", () => {
 
   it("accepts githubOwnerType 'User' when account.type is 'User'", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
-    primeDbResolves([{ id: "member-1" }], []);
+    primeDbResolves([{ id: "member-1" }], [{ slug: "acme-org" }]);
     mockGetInstallation.mockResolvedValue({
       data: { account: { login: "octocat", type: "User" } },
     });
@@ -461,7 +465,7 @@ describe("GET /setup", () => {
 
   it("redirects to ${DASHBOARD_URL}/settings on successful setup", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
-    primeDbResolves([{ id: "member-1" }], []);
+    primeDbResolves([{ id: "member-1" }], [{ slug: "acme-org" }]);
     mockGetInstallation.mockResolvedValue({
       data: { account: { login: "acme", type: "Organization" } },
     });

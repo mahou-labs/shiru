@@ -119,6 +119,13 @@
         "sharp": "^0.34.2",
       },
     },
+    "apps/docs-edge": {
+      "name": "docs-edge",
+      "devDependencies": {
+        "@cloudflare/vite-plugin": "catalog:",
+        "wrangler": "catalog:",
+      },
+    },
     "apps/site": {
       "name": "site",
       "version": "0.0.1",
@@ -1523,6 +1530,8 @@
     "dlv": ["dlv@1.1.3", "", {}, "sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA=="],
 
     "docs": ["docs@workspace:apps/docs"],
+
+    "docs-edge": ["docs-edge@workspace:apps/docs-edge"],
 
     "dom-serializer": ["dom-serializer@2.0.0", "", { "dependencies": { "domelementtype": "^2.3.0", "domhandler": "^5.0.2", "entities": "^4.2.0" } }, "sha512-wIkAryiqt/nV5EQKqQpo3SToSOV9J0DnbJqwK7Wv/Trc92zIAYZ4FlMu+JPFW1DfGFt81ZTCGgDEabffXeLyJg=="],
 

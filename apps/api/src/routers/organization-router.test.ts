@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/unbound-method -- test assertions intentionally inspect vi.fn method mocks on env stubs. */
 import { createRouterClient } from "@orpc/server";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -25,7 +26,10 @@ vi.mock("../utils/auth", () => ({
   auth: { api: mockAuthApi },
 }));
 
-const { mockDbThen } = vi.hoisted(() => ({ mockDbThen: vi.fn() }));
+const { mockDbThen, insertValues } = vi.hoisted(() => ({
+  mockDbThen: vi.fn(),
+  insertValues: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock("@/utils/db", () => {
   const base: Record<string, ReturnType<typeof vi.fn>> = {
@@ -38,7 +42,7 @@ vi.mock("@/utils/db", () => {
     // it without falling into the proxy's `then` trap (which is reserved for
     // select/from/where/limit awaits configured per-test via mockDbThen).
     insert: vi.fn(() => ({
-      values: vi.fn().mockResolvedValue(undefined),
+      values: insertValues,
     })),
   };
   const db = new Proxy(base, {
@@ -67,10 +71,17 @@ type DbRow = { currentPeriodEnd?: Date; createdAt?: Date; [key: string]: unknown
 type DbCallback = (rows: DbRow[]) => unknown;
 
 // Helper: make subscription check pass in protectedProcedure middleware
-function mockSubscriptionPass() {
-  mockDbThen.mockImplementation((cb: DbCallback) =>
-    Promise.resolve(cb([{ currentPeriodEnd: new Date(Date.now() + 86400000) }])),
-  );
+function mockSubscriptionPass(...handlerResponses: DbRow[][]) {
+  const responses: DbRow[][] = [
+    [{ currentPeriodEnd: new Date(Date.now() + 86400000) }],
+    ...handlerResponses,
+  ];
+  let callCount = 0;
+  mockDbThen.mockImplementation((cb: DbCallback) => {
+    const rows = responses[callCount] ?? [];
+    callCount++;
+    return Promise.resolve(cb(rows));
+  });
 }
 
 function createClient(context: RpcContext) {
@@ -96,6 +107,9 @@ describe("createOrg", () => {
     expect(result).toEqual({ id: "new-org", name: "New Org" });
     expect(mockAuthApi.createOrganization).toHaveBeenCalled();
     expect(mockAuthApi.setActiveOrganization).toHaveBeenCalled();
+    expect(insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: "new-org", storagePrefix: "new-org" }),
+    );
   });
 
   it("forwards logo to createOrganization when provided", async () => {
@@ -205,7 +219,7 @@ describe("getSubscription", () => {
 
 describe("deleteOrg", () => {
   it("deletes and resolves next active org", async () => {
-    mockSubscriptionPass();
+    mockSubscriptionPass([{ slug: "org-1" }]);
     mockAuthApi.deleteOrganization.mockResolvedValue(undefined);
     mockAuthApi.listOrganizations.mockResolvedValue([{ id: "org-2" }]);
     mockAuthApi.setActiveOrganization.mockResolvedValue({
@@ -215,10 +229,13 @@ describe("deleteOrg", () => {
     const client = createClient(createMockContext());
     const result = await client.deleteOrg();
     expect(result).toEqual({ hasRemainingOrgs: true });
+
+    const { env } = await import("cloudflare:workers");
+    expect(env.DOCS_KV.delete).toHaveBeenCalledWith("docs:site:org-1");
   });
 
   it("returns hasRemainingOrgs false when no orgs remain", async () => {
-    mockSubscriptionPass();
+    mockSubscriptionPass([{ slug: "org-1" }]);
     mockAuthApi.deleteOrganization.mockResolvedValue(undefined);
     mockAuthApi.listOrganizations.mockResolvedValue([]);
     mockAuthApi.setActiveOrganization.mockResolvedValue({
@@ -258,6 +275,27 @@ describe("updateOrg", () => {
     mockSubscriptionPass();
     const client = createClient(createMockContext());
     await expect(client.updateOrg({})).rejects.toThrow();
+  });
+
+  it("refreshes DOCS_KV when the organization slug changes", async () => {
+    mockSubscriptionPass(
+      [{ slug: "old-org" }],
+      [{ activeCommitSha: "sha-live", storagePrefix: "docs-old-org" }],
+    );
+    mockAuthApi.updateOrganization.mockResolvedValue({ id: "org-001", slug: "new-org" });
+
+    const client = createClient(createMockContext());
+    await client.updateOrg({ slug: "new-org" });
+
+    const { env } = await import("cloudflare:workers");
+    expect(env.DOCS_KV.delete).toHaveBeenCalledWith("docs:site:old-org");
+    expect(env.DOCS_KV.put).toHaveBeenCalledWith(
+      "docs:site:new-org",
+      JSON.stringify({
+        activeCommitSha: "sha-live",
+        storagePrefix: "docs-old-org",
+      }),
+    );
   });
 });
 

@@ -1,17 +1,14 @@
 {
   "name": "docs",
-  "version": "0.0.1",
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "dev": "vp dev --port=3005",
+    "deploy": "wrangler deploy",
+    "cf:typegen": "wrangler types --env-interface CloudflareBindings"
   },
-  "dependencies": {
-    "@astrojs/starlight": "^0.38.2",
-    "astro": "^6.1.3",
-    "sharp": "^0.34.2"
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "catalog:",
+    "wrangler": "catalog:"
   }
 }

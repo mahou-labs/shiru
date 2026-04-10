@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "shiru-docs",
+  "main": "./src/index.ts",
+  "compatibility_date": "2026-04-08",
+  "observability": {
+    "enabled": true,
+  },
+  "vars": {
+    "DOCS_ROOT_DOMAIN": "shiru.sh",
+    "RESERVED_SUBDOMAINS": "api,app,www",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "shiru-db",
+      "database_id": "e510a3f8-0538-496f-a3fe-b277f1e6fedc",
+      "migrations_dir": "../api/drizzle/d1",
+    },
+  ],
+  "r2_buckets": [{ "binding": "DOCS_DIST", "bucket_name": "shiru-docs-dist" }],
+  "kv_namespaces": [
+    {
+      "binding": "DOCS_KV",
+      "id": "56d9abb7d5994c54a03dc3cc91614311",
+      "preview_id": "56d9abb7d5994c54a03dc3cc91614311",
+    },
+  ],
+}

@@ -306,6 +306,7 @@ function buildDocsSite(
   return {
     id: "site-1",
     organizationId: "org-1",
+    storagePrefix: "docs-acme",
     activeCommitSha: null,
     sourceMode: "github" as const,
     publishableBranch: "main",
@@ -615,6 +616,7 @@ function buildEvent() {
 const SITE_ROW = {
   id: "site-1",
   organizationId: "org-1",
+  storagePrefix: "docs-acme",
   activeCommitSha: null,
   sourceMode: "github",
   publishableBranch: "main",
@@ -1010,7 +1012,7 @@ describe("PublishDocsWorkflow — upload-source-to-r2 step", () => {
     mockGetRef.mockResolvedValue({ data: { object: { sha: "commit-sha-abc" } } });
   });
 
-  it("calls DOCS_SOURCE.put with the {slug}/{commitSha}/{path} key for each file", async () => {
+  it("calls DOCS_SOURCE.put with the {storagePrefix}/{commitSha}/{path} key for each file", async () => {
     primeDbRaw([SITE_ROW], [ORG_ROW], [], [], []);
 
     mockGetTree.mockResolvedValue({
@@ -1031,11 +1033,11 @@ describe("PublishDocsWorkflow — upload-source-to-r2 step", () => {
     const { env } = await import("cloudflare:workers");
     expect(env.DOCS_SOURCE.put).toHaveBeenCalledTimes(2);
     expect(env.DOCS_SOURCE.put).toHaveBeenCalledWith(
-      "acme/commit-sha-abc/a.md",
+      "docs-acme/commit-sha-abc/a.md",
       expect.any(Uint8Array),
     );
     expect(env.DOCS_SOURCE.put).toHaveBeenCalledWith(
-      "acme/commit-sha-abc/b.md",
+      "docs-acme/commit-sha-abc/b.md",
       expect.any(Uint8Array),
     );
   });
@@ -1188,9 +1190,18 @@ describe("PublishDocsWorkflow — mark-published step", () => {
     const fakeStep = makeFakeStep();
     await workflow.run(buildEvent(), fakeStep as never);
 
+    const { env } = await import("cloudflare:workers");
+
     const setCalls = dbSpies.set.mock.calls.map((c) => c[0]);
     expect(setCalls).toContainEqual({ status: "published" });
     expect(setCalls).toContainEqual({ activeCommitSha: "newest-sha" });
+    expect(env.DOCS_KV.put).toHaveBeenCalledWith(
+      "docs:site:acme",
+      JSON.stringify({
+        activeCommitSha: "newest-sha",
+        storagePrefix: "docs-acme",
+      }),
+    );
   });
 
   it("does not update docsSites.activeCommitSha when no newest published version is found", async () => {
@@ -1269,7 +1280,7 @@ describe("PublishDocsWorkflow — cleanup-failed-artifacts step", () => {
     mockGetTree.mockRejectedValue(new Error("trigger failure path"));
   }
 
-  it("lists DOCS_SOURCE and DOCS_DIST with the {slug}/{commitSha}/ prefix", async () => {
+  it("lists DOCS_SOURCE and DOCS_DIST with the {storagePrefix}/{commitSha}/ prefix", async () => {
     await setupForCleanup();
     const { env } = await import("cloudflare:workers");
     vi.mocked(env.DOCS_SOURCE.list).mockResolvedValue({
@@ -1283,11 +1294,11 @@ describe("PublishDocsWorkflow — cleanup-failed-artifacts step", () => {
     await expect(workflow.run(buildEvent(), fakeStep as never)).rejects.toThrow();
 
     expect(env.DOCS_SOURCE.list).toHaveBeenCalledWith({
-      prefix: "acme/commit-sha-abc/",
+      prefix: "docs-acme/commit-sha-abc/",
       cursor: undefined,
     });
     expect(env.DOCS_DIST.list).toHaveBeenCalledWith({
-      prefix: "acme/commit-sha-abc/",
+      prefix: "docs-acme/commit-sha-abc/",
       cursor: undefined,
     });
   });
@@ -1296,7 +1307,7 @@ describe("PublishDocsWorkflow — cleanup-failed-artifacts step", () => {
     await setupForCleanup();
     const { env } = await import("cloudflare:workers");
     vi.mocked(env.DOCS_SOURCE.list).mockResolvedValue({
-      objects: [{ key: "acme/commit-sha-abc/a.md" }, { key: "acme/commit-sha-abc/b.md" }],
+      objects: [{ key: "docs-acme/commit-sha-abc/a.md" }, { key: "docs-acme/commit-sha-abc/b.md" }],
       truncated: false,
     } as never);
     vi.mocked(env.DOCS_DIST.list).mockResolvedValue({ objects: [], truncated: false } as never);
@@ -1306,8 +1317,8 @@ describe("PublishDocsWorkflow — cleanup-failed-artifacts step", () => {
     await expect(workflow.run(buildEvent(), fakeStep as never)).rejects.toThrow();
 
     expect(env.DOCS_SOURCE.delete).toHaveBeenCalledWith([
-      "acme/commit-sha-abc/a.md",
-      "acme/commit-sha-abc/b.md",
+      "docs-acme/commit-sha-abc/a.md",
+      "docs-acme/commit-sha-abc/b.md",
     ]);
   });
 

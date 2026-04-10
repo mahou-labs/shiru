@@ -3,9 +3,11 @@ import { eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import * as z from "zod";
 
+import { organizations } from "@/schema/auth";
 import { docsSites } from "@/schema/docs";
 import { subscriptions } from "@/schema/subscription";
 import { db } from "@/utils/db";
+import { syncDocsSiteKv } from "@/utils/docs-site-kv";
 import { log } from "@/utils/logger";
 import { tryCatch } from "@/utils/try-catch";
 
@@ -45,6 +47,7 @@ export const organizationRouter = {
           db.insert(docsSites).values({
             id: uuidv7(),
             organizationId: organization.id,
+            storagePrefix: input.slug,
             sourceMode: "managed",
           }),
         );
@@ -140,13 +143,54 @@ export const organizationRouter = {
           message: "At least one of name or slug is required",
         }),
     )
-    .handler(async ({ context: { headers }, input }) => {
-      return await auth.api.updateOrganization({
+    .handler(async ({ context: { headers, session }, input }) => {
+      const activeOrganizationId = session.activeOrganizationId;
+      const shouldSyncSlug = !!input.slug && !!activeOrganizationId;
+
+      let currentSlug: string | null = null;
+      let docsSite:
+        | {
+            activeCommitSha: string | null;
+            storagePrefix: string;
+          }
+        | undefined;
+
+      if (shouldSyncSlug && activeOrganizationId) {
+        const [org] = await db
+          .select({ slug: organizations.slug })
+          .from(organizations)
+          .where(eq(organizations.id, activeOrganizationId));
+
+        currentSlug = org?.slug ?? null;
+
+        [docsSite] = await db
+          .select({
+            activeCommitSha: docsSites.activeCommitSha,
+            storagePrefix: docsSites.storagePrefix,
+          })
+          .from(docsSites)
+          .where(eq(docsSites.organizationId, activeOrganizationId));
+      }
+
+      const updatedOrganization = await auth.api.updateOrganization({
         headers,
         body: {
           data: input,
         },
       });
+
+      if (input.slug && currentSlug && input.slug !== currentSlug) {
+        await syncDocsSiteKv(currentSlug, null);
+
+        if (docsSite?.activeCommitSha) {
+          await syncDocsSiteKv(input.slug, {
+            activeCommitSha: docsSite.activeCommitSha,
+            storagePrefix: docsSite.storagePrefix,
+          });
+        }
+      }
+
+      return updatedOrganization;
     }),
 
   updateOrgLogo: protectedProcedure
@@ -165,12 +209,21 @@ export const organizationRouter = {
       throw new ORPCError("Organization not found");
     }
 
+    const [org] = await db
+      .select({ slug: organizations.slug })
+      .from(organizations)
+      .where(eq(organizations.id, session.activeOrganizationId));
+
     await auth.api.deleteOrganization({
       headers,
       body: {
         organizationId: session.activeOrganizationId,
       },
     });
+
+    if (org?.slug) {
+      await syncDocsSiteKv(org.slug, null);
+    }
 
     const nextOrgId = await resolveActiveOrganization(headers, resHeaders);
 

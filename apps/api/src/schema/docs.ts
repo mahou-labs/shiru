@@ -14,6 +14,7 @@ export const docsSites = sqliteTable(
       .notNull()
       .unique()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    storagePrefix: text("storage_prefix").notNull(),
     activeCommitSha: text("active_commit_sha"),
     sourceMode: text("source_mode", { enum: ["managed", "github"] })
       .notNull()

@@ -37,6 +37,13 @@
       "migrations_dir": "drizzle/d1",
     },
   ],
+  "kv_namespaces": [
+    {
+      "binding": "DOCS_KV",
+      "id": "56d9abb7d5994c54a03dc3cc91614311",
+      "preview_id": "56d9abb7d5994c54a03dc3cc91614311",
+    },
+  ],
   "r2_buckets": [
     { "binding": "DOCS_SOURCE", "bucket_name": "shiru-docs-source" },
     { "binding": "DOCS_DIST", "bucket_name": "shiru-docs-dist" },
