@@ -11,7 +11,7 @@ import z from "zod";
 import { organizations } from "@/schema/auth";
 import { docsSites, docsVersions } from "@/schema/docs";
 import { db } from "@/utils/db";
-import { syncDocsSiteKv } from "@/utils/docs-site-kv";
+import { resolveDocsSiteStoragePrefix, syncDocsSiteKv } from "@/utils/docs-site-kv";
 import { log } from "@/utils/logger";
 import { getInstallationOctokit } from "@/utils/oktokit";
 import { protectedProcedure } from "@/utils/orpc";
@@ -346,6 +346,27 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
       return { docsSite: site, slug: org.slug };
     });
 
+    const storagePrefix = await step.do("resolve-storage-prefix", async () => {
+      const nextStoragePrefix = resolveDocsSiteStoragePrefix(docsSite.storagePrefix, slug);
+
+      if (nextStoragePrefix === docsSite.storagePrefix) {
+        return nextStoragePrefix;
+      }
+
+      await db
+        .update(docsSites)
+        .set({ storagePrefix: nextStoragePrefix })
+        .where(eq(docsSites.id, docsSite.id));
+
+      log.warn("publish.storage_prefix_repaired", {
+        docsSiteId: docsSite.id,
+        from: docsSite.storagePrefix,
+        to: nextStoragePrefix,
+      });
+
+      return nextStoragePrefix;
+    });
+
     // Resolve the commit SHA up front (cheap, single API call) so we can
     // reconcile the version row before paying for the full tree+blob fetch.
     const commitSha = await step.do("resolve-commit-sha", async () => {
@@ -462,15 +483,12 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
       await step.do("upload-source-to-r2", async () => {
         log.info("publish.uploading_source", {
           fileCount: files.length,
-          prefix: `${docsSite.storagePrefix}/${commitSha.slice(0, 7)}`,
+          prefix: `${storagePrefix}/${commitSha.slice(0, 7)}`,
         });
 
         await Promise.all(
           files.map((file) =>
-            env.DOCS_SOURCE.put(
-              `${docsSite.storagePrefix}/${commitSha}/${file.path}`,
-              file.content,
-            ),
+            env.DOCS_SOURCE.put(`${storagePrefix}/${commitSha}/${file.path}`, file.content),
           ),
         );
 
@@ -554,7 +572,7 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
       await step.do("upload-dist-to-r2", async () => {
         log.info("publish.uploading_dist", {
           fileCount: builtFiles.length,
-          prefix: `${docsSite.storagePrefix}/${commitSha.slice(0, 7)}`,
+          prefix: `${storagePrefix}/${commitSha.slice(0, 7)}`,
         });
 
         const BATCH_SIZE = 20;
@@ -565,7 +583,7 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
             batch.map((file) => {
               const bytes = Uint8Array.from(atob(file.content), (c) => c.charCodeAt(0));
               return env.DOCS_DIST.put(
-                `${docsSite.storagePrefix}/${commitSha}/${file.path}`,
+                `${storagePrefix}/${commitSha}/${file.path}`,
                 bytes,
                 {
                   httpMetadata: getR2HttpMetadata(file.path),
@@ -614,7 +632,7 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
 
           await syncDocsSiteKv(slug, {
             activeCommitSha: newest.versionRef,
-            storagePrefix: docsSite.storagePrefix,
+            storagePrefix,
           });
         }
 
@@ -652,7 +670,7 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
       // Errors during cleanup are logged and swallowed so they cannot mask the
       // original build error that triggered the catch block.
       await step.do("cleanup-failed-artifacts", async () => {
-        const prefix = `${docsSite.storagePrefix}/${commitSha}/`;
+        const prefix = `${storagePrefix}/${commitSha}/`;
         let totalDeleted = 0;
 
         for (const bucket of [env.DOCS_SOURCE, env.DOCS_DIST]) {

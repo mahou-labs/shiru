@@ -7,7 +7,7 @@ import { organizations } from "@/schema/auth";
 import { docsSites } from "@/schema/docs";
 import { subscriptions } from "@/schema/subscription";
 import { db } from "@/utils/db";
-import { syncDocsSiteKv } from "@/utils/docs-site-kv";
+import { resolveDocsSiteStoragePrefix, syncDocsSiteKv } from "@/utils/docs-site-kv";
 import { log } from "@/utils/logger";
 import { tryCatch } from "@/utils/try-catch";
 
@@ -182,11 +182,22 @@ export const organizationRouter = {
       if (input.slug && currentSlug && input.slug !== currentSlug) {
         await syncDocsSiteKv(currentSlug, null);
 
-        if (docsSite?.activeCommitSha) {
-          await syncDocsSiteKv(input.slug, {
-            activeCommitSha: docsSite.activeCommitSha,
-            storagePrefix: docsSite.storagePrefix,
-          });
+        if (docsSite) {
+          const storagePrefix = resolveDocsSiteStoragePrefix(docsSite.storagePrefix, currentSlug);
+
+          if (storagePrefix !== docsSite.storagePrefix) {
+            await db
+              .update(docsSites)
+              .set({ storagePrefix })
+              .where(eq(docsSites.organizationId, activeOrganizationId));
+          }
+
+          if (docsSite.activeCommitSha) {
+            await syncDocsSiteKv(input.slug, {
+              activeCommitSha: docsSite.activeCommitSha,
+              storagePrefix,
+            });
+          }
         }
       }
 

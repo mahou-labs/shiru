@@ -37,6 +37,8 @@ vi.mock("@/utils/db", () => {
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
     // insert(...).values(...) is used by createOrg to bootstrap a docsSites row.
     // The chain returns a real resolved promise so the tryCatch wrapper can await
     // it without falling into the proxy's `then` trap (which is reserved for
@@ -294,6 +296,27 @@ describe("updateOrg", () => {
       JSON.stringify({
         activeCommitSha: "sha-live",
         storagePrefix: "docs-old-org",
+      }),
+    );
+  });
+
+  it("repairs a placeholder storagePrefix before warming DOCS_KV for the new slug", async () => {
+    mockSubscriptionPass(
+      [{ slug: "old-org" }],
+      [{ activeCommitSha: "sha-live", storagePrefix: "storage_prefix" }],
+      [],
+    );
+    mockAuthApi.updateOrganization.mockResolvedValue({ id: "org-001", slug: "new-org" });
+
+    const client = createClient(createMockContext());
+    await client.updateOrg({ slug: "new-org" });
+
+    const { env } = await import("cloudflare:workers");
+    expect(env.DOCS_KV.put).toHaveBeenCalledWith(
+      "docs:site:new-org",
+      JSON.stringify({
+        activeCommitSha: "sha-live",
+        storagePrefix: "old-org",
       }),
     );
   });

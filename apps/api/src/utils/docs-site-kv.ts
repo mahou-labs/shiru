@@ -7,8 +7,18 @@ export type DocsSiteKvRecord = {
   storagePrefix: string;
 };
 
+const placeholderStoragePrefix = "storage_prefix";
+
 export function getDocsSiteKvKey(slug: string) {
   return `docs:site:${slug}`;
+}
+
+export function resolveDocsSiteStoragePrefix(storagePrefix: string | null | undefined, slug: string) {
+  if (!storagePrefix || storagePrefix === placeholderStoragePrefix) {
+    return slug;
+  }
+
+  return storagePrefix;
 }
 
 export async function syncDocsSiteKv(slug: string, record: DocsSiteKvRecord | null) {

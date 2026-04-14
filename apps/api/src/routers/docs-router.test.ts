@@ -1041,6 +1041,66 @@ describe("PublishDocsWorkflow — upload-source-to-r2 step", () => {
       expect.any(Uint8Array),
     );
   });
+
+  it("repairs a placeholder storagePrefix and uses the org slug for future writes", async () => {
+    primeDbRaw(
+      [{ ...SITE_ROW, storagePrefix: "storage_prefix" }],
+      [ORG_ROW],
+      [],
+      [],
+      [],
+      [],
+      [{ versionRef: "commit-sha-abc" }],
+      [],
+    );
+
+    mockGetTree.mockResolvedValue({
+      data: {
+        tree: [{ path: "a.md", type: "blob", sha: "sha-a" }],
+      },
+    });
+    mockGetBlob.mockResolvedValue({ data: { content: btoa("content") } });
+
+    const { getSandbox } = await import("@cloudflare/sandbox");
+    vi.mocked(getSandbox).mockReturnValue({
+      mkdir: vi.fn().mockResolvedValue(undefined),
+      writeFile: vi.fn().mockResolvedValue(undefined),
+      exec: vi.fn().mockResolvedValue({
+        success: true,
+        exitCode: 0,
+        stderr: "",
+        stdout: JSON.stringify({
+          files: [{ path: "index.html", content: btoa("<h1>ok</h1>") }],
+        }),
+      }),
+      destroy: vi.fn().mockResolvedValue(undefined),
+    } as never);
+
+    const { env } = await import("cloudflare:workers");
+    vi.mocked(env.DOCS_SOURCE.put).mockResolvedValue(undefined as never);
+    vi.mocked(env.DOCS_DIST.put).mockResolvedValue(undefined as never);
+
+    const workflow = instantiate();
+    const fakeStep = makeFakeStep();
+    await workflow.run(buildEvent(), fakeStep as never);
+
+    expect(env.DOCS_SOURCE.put).toHaveBeenCalledWith(
+      "acme/commit-sha-abc/a.md",
+      expect.any(Uint8Array),
+    );
+    expect(env.DOCS_DIST.put).toHaveBeenCalledWith(
+      "acme/commit-sha-abc/index.html",
+      expect.any(Uint8Array),
+      expect.objectContaining({
+        httpMetadata: expect.objectContaining({ contentType: "text/html; charset=utf-8" }),
+      }),
+    );
+    expect(dbSpies.set.mock.calls.map((call) => call[0])).toContainEqual({ storagePrefix: "acme" });
+    expect(env.DOCS_KV.put).toHaveBeenCalledWith(
+      "docs:site:acme",
+      JSON.stringify({ activeCommitSha: "commit-sha-abc", storagePrefix: "acme" }),
+    );
+  });
 });
 
 describe("PublishDocsWorkflow — build-in-sandbox step", () => {
