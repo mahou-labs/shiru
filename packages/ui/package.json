@@ -17,7 +17,7 @@
     "check": "vp check"
   },
   "dependencies": {
-    "@base-ui/react": "^1.2.0",
+    "@base-ui/react": "^1.4.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "catalog:",
     "nucleo-ui-outline-18": "catalog:",

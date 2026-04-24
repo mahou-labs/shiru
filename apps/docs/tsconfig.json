@@ -1,6 +1,7 @@
 {
   "include": ["**/*.ts"],
   "compilerOptions": {
+    "types": ["vite-plus/client"],
     "target": "ES6",
     "module": "ESNext",
     "moduleResolution": "bundler",

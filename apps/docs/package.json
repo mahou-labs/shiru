@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vp dev --port=3005",
+    "dev": "node ../../run-vp-dev.mjs --port=3005",
     "deploy": "wrangler deploy",
     "cf:typegen": "wrangler types --env-interface CloudflareBindings"
   },

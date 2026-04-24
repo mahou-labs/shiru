@@ -10,7 +10,7 @@
     "check": "astro sync && vp check"
   },
   "dependencies": {
-    "@astrojs/react": "^5.0.1",
+    "@astrojs/react": "^5.0.3",
     "@orpc/client": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@types/react": "catalog:",
