@@ -1,22 +1,24 @@
 import { createRouterClient } from "@orpc/server";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-const { mockContactsCreate } = vi.hoisted(() => ({ mockContactsCreate: vi.fn() }));
-
-vi.mock("@/utils/email", () => ({
-  resend: {
-    contacts: { create: mockContactsCreate },
-    emails: { send: vi.fn() },
-  },
-  sendVerificationEmail: vi.fn(),
-}));
-
 vi.mock("@/utils/logger", () => ({
   log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
 vi.mock("../utils/auth", () => ({
   auth: { api: {} },
+}));
+
+const { insertValues } = vi.hoisted(() => ({
+  insertValues: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/utils/db", () => ({
+  db: {
+    insert: vi.fn(() => ({
+      values: insertValues,
+    })),
+  },
 }));
 
 import { log } from "@/utils/logger";
@@ -39,41 +41,23 @@ describe("waitlist.addEmail", () => {
     await expect(client.addEmail({ email: "not-an-email" })).rejects.toThrow();
   });
 
-  it("calls resend.contacts.create with correct params", async () => {
-    mockContactsCreate.mockResolvedValue({ data: {}, error: null });
-
-    const client = createClient();
-    await client.addEmail({ email: "user@example.com" });
-
-    expect(mockContactsCreate).toHaveBeenCalledWith({
-      email: "user@example.com",
-      segments: [{ id: "5aea1008-77ea-4724-9f15-8ca5cb55516a" }],
-    });
-  });
-
-  it("returns { success: true } on success", async () => {
-    mockContactsCreate.mockResolvedValue({ data: {}, error: null });
+  it("inserts email into waitlist and returns { success: true }", async () => {
+    insertValues.mockResolvedValueOnce(undefined);
 
     const client = createClient();
     const result = await client.addEmail({ email: "user@example.com" });
     expect(result).toEqual({ success: true });
   });
 
-  it("throws ORPCError on Resend failure", async () => {
-    mockContactsCreate.mockResolvedValue({
-      data: null,
-      error: { message: "Rate limited" },
-    });
+  it("throws ORPCError on database failure", async () => {
+    insertValues.mockRejectedValueOnce(new Error("DB error"));
 
     const client = createClient();
     await expect(client.addEmail({ email: "user@example.com" })).rejects.toThrow();
   });
 
   it("logs error with email context on failure", async () => {
-    mockContactsCreate.mockResolvedValue({
-      data: null,
-      error: { message: "Fail" },
-    });
+    insertValues.mockRejectedValueOnce(new Error("DB error"));
 
     const client = createClient();
     try {

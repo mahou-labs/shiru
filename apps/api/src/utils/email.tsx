@@ -1,13 +1,11 @@
+import { render } from "@react-email/components";
 // import OrgInviteEmail from "@/emails/org-invite";
 // import PasswordResetEmail from "@/emails/password-reset";
 // import { env } from "./env";
 import { env } from "cloudflare:workers";
-import { Resend } from "resend";
 
 // import ApplicationReceivedEmail from "@/emails/application-received";
 import EmailVerificationEmail from "@/emails/email-verification";
-
-export const resend = new Resend(env.RESEND_API_KEY);
 
 // export const sendPasswordResetEmail = async ({
 //   email,
@@ -35,12 +33,24 @@ export const sendVerificationEmail = async ({
   name: string;
   verificationLink: string;
 }) => {
-  await resend.emails.send({
-    from: "Shiru <no-reply@mail.shiru.sh>",
+  const htmlString = await render(
+    <EmailVerificationEmail name={name} verificationLink={verificationLink} />,
+  );
+
+  const textString = await render(
+    <EmailVerificationEmail name={name} verificationLink={verificationLink} />,
+    { plainText: true },
+  );
+
+  const { messageId } = await env.EMAIL.send({
+    from: "Shiru <no-reply@shiru.sh>",
     to,
     subject: "Verify your email address",
-    react: <EmailVerificationEmail name={name} verificationLink={verificationLink} />,
+    html: htmlString,
+    text: textString,
   });
+
+  console.log({ htmlString, textString, messageId });
 };
 
 // export const sendApplicationReceivedEmail = async ({

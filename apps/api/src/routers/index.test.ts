@@ -20,7 +20,6 @@ vi.mock("@/utils/logger", () => ({
 }));
 
 vi.mock("@/utils/email", () => ({
-  resend: { contacts: { create: vi.fn() }, emails: { send: vi.fn() } },
   sendVerificationEmail: vi.fn(),
 }));
 

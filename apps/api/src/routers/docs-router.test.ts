@@ -677,6 +677,7 @@ describe("PublishDocsWorkflow.run — orchestration", () => {
 
     expect(fakeStep.do.mock.calls.map((c) => c[0])).toEqual([
       "fetch-site-and-org",
+      "resolve-storage-prefix",
       "resolve-commit-sha",
       "reconcile-version",
       "fetch-github-files",
@@ -700,6 +701,7 @@ describe("PublishDocsWorkflow.run — orchestration", () => {
 
     expect(fakeStep.do.mock.calls.map((c) => c[0])).toEqual([
       "fetch-site-and-org",
+      "resolve-storage-prefix",
       "resolve-commit-sha",
       "reconcile-version",
     ]);

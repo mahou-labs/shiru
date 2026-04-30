@@ -19,6 +19,12 @@
     "POSTHOG_PUBLIC_KEY": "phc_hdbwwJWoeHfDnlt0Jgv7GB8UhAPVvTLaz6hg0DKXZyR",
     "SITE_URL": "https://shiru.sh",
   },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "remote": true,
+    },
+  ],
   "ratelimits": [
     {
       "name": "RATE_LIMITER",

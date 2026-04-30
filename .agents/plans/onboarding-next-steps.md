@@ -96,7 +96,7 @@ Proactively detect and alert on domain issues before users notice.
 - For each active custom domain, call `GET /zones/{zone_id}/custom_hostnames/{id}` to check status
 - If SSL cert is expiring within 7 days, or domain becomes unresolvable, or verification lapses:
   - Update `custom_domains.status` in DB
-  - Send email notification to org owner via Resend
+  - Send email notification to org owner via Cloudflare Email
   - Show a warning banner in the dashboard
 - Add a `last_checked_at` column to `custom_domains` to track polling
 
