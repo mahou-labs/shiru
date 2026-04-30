@@ -2,4 +2,10 @@
 # Only install package versions published at least 3 days ago
 minimumReleaseAge = 259200
 
-minimumReleaseAgeExcludes = ["@cloudflare/vite-plugin", "wrangler", "miniflare", "workerd"]
+minimumReleaseAgeExcludes = [
+  "@cloudflare/vite-plugin",
+  "wrangler",
+  "miniflare",
+  "workerd",
+  "@cloudflare/kv-asset-handler",
+]
