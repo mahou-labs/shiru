@@ -1,6 +1,6 @@
 # Workflows Integration
 
-Fetch `docs/workflows.md` from `https://github.com/cloudflare/agents/tree/main/docs` for complete documentation.
+Fetch https://developers.cloudflare.com/agents/api-reference/run-workflows/ for complete documentation.
 
 ## Overview
 
@@ -10,13 +10,13 @@ Agents handle real-time communication; Workflows handle durable execution. Toget
 - Human-in-the-loop approval flows
 - Multi-step pipelines that survive failures
 
-| Use Case                     | Recommendation   |
-| ---------------------------- | ---------------- |
-| Chat/messaging               | Agent only       |
-| Quick API calls (<30s)       | Agent only       |
-| Background processing (<30s) | Agent `queue()`  |
-| Long-running tasks (>30s)    | Agent + Workflow |
-| Human approval flows         | Agent + Workflow |
+| Use Case | Recommendation |
+|----------|----------------|
+| Chat/messaging | Agent only |
+| Quick API calls (<30s) | Agent only |
+| Background processing (<30s) | Agent `queue()` |
+| Long-running tasks (>30s) | Agent + Workflow |
+| Human approval flows | Agent + Workflow |
 
 ## AgentWorkflow Base Class
 
@@ -57,16 +57,12 @@ export class ProcessingWorkflow extends AgentWorkflow<MyAgent, TaskParams> {
 ```jsonc
 {
   "workflows": [
-    {
-      "name": "processing-workflow",
-      "binding": "PROCESSING_WORKFLOW",
-      "class_name": "ProcessingWorkflow",
-    },
+    { "name": "processing-workflow", "binding": "PROCESSING_WORKFLOW", "class_name": "ProcessingWorkflow" }
   ],
   "durable_objects": {
-    "bindings": [{ "name": "MyAgent", "class_name": "MyAgent" }],
+    "bindings": [{ "name": "MyAgent", "class_name": "MyAgent" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MyAgent"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MyAgent"] }]
 }
 ```
 
@@ -123,7 +119,7 @@ export class MyAgent extends Agent<Env, State> {
 ```typescript
 // In workflow: wait for approval
 const approved = await step.waitForEvent<{ approved: boolean }>("approval", {
-  timeout: "7d",
+  timeout: "7d"
 });
 
 if (!approved.approved) {
@@ -131,6 +127,6 @@ if (!approved.approved) {
 }
 
 // From agent: approve or reject
-await this.approveWorkflow(workflowId); // Sends { approved: true }
-await this.rejectWorkflow(workflowId); // Sends { approved: false }
+await this.approveWorkflow(workflowId);  // Sends { approved: true }
+await this.rejectWorkflow(workflowId);   // Sends { approved: false }
 ```

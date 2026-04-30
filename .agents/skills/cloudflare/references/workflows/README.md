@@ -22,23 +22,22 @@ Durable multi-step applications with automatic retries, state persistence, and l
 ## Quick Start
 
 ```typescript
-import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from "cloudflare:workers";
+import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from 'cloudflare:workers';
 
 type Env = { MY_WORKFLOW: Workflow; DB: D1Database };
 type Params = { userId: string };
 
 export class MyWorkflow extends WorkflowEntrypoint<Env, Params> {
   async run(event: WorkflowEvent<Params>, step: WorkflowStep) {
-    const user = await step.do("fetch user", async () => {
-      return await this.env.DB.prepare("SELECT * FROM users WHERE id = ?")
-        .bind(event.payload.userId)
-        .first();
+    const user = await step.do('fetch user', async () => {
+      return await this.env.DB.prepare('SELECT * FROM users WHERE id = ?')
+        .bind(event.payload.userId).first();
     });
-
-    await step.sleep("wait 7 days", "7 days");
-
-    await step.do("send reminder", async () => {
-      await sendEmail(user.email, "Reminder!");
+    
+    await step.sleep('wait 7 days', '7 days');
+    
+    await step.do('send reminder', async () => {
+      await sendEmail(user.email, 'Reminder!');
     });
   }
 }
@@ -48,10 +47,18 @@ export class MyWorkflow extends WorkflowEntrypoint<Env, Params> {
 
 - **Durability**: Failed steps don't re-run successful ones
 - **Retries**: Configurable backoff (constant/linear/exponential)
-- **Events**: `waitForEvent()` for webhooks/approvals (timeout: 1h → 365d)
-- **Sleep**: `sleep()` / `sleepUntil()` for scheduling (max 365d)
+- **Events**: `waitForEvent()` for webhooks/approvals (configurable timeout)
+- **Sleep**: `sleep()` / `sleepUntil()` for scheduling
 - **Parallel**: `Promise.all()` for concurrent steps
 - **Idempotency**: Check-then-execute patterns
+
+## Retrieval
+
+These reference files cover API shapes, code patterns, and debugging — things that are stable. For **limits, pricing, and other values that change**, always fetch the latest from the official docs:
+
+- **Limits:** https://developers.cloudflare.com/workflows/reference/limits/
+- **Pricing:** https://developers.cloudflare.com/workflows/reference/pricing/
+- **Workers API:** https://developers.cloudflare.com/workflows/build/workers-api/
 
 ## Reading Order
 
@@ -59,14 +66,12 @@ export class MyWorkflow extends WorkflowEntrypoint<Env, Params> {
 **Troubleshooting:** gotchas.md
 
 ## In This Reference
-
 - [configuration.md](./configuration.md) - wrangler.jsonc setup, step config, bindings
 - [api.md](./api.md) - Step APIs, instance management, sleep/parameters
 - [patterns.md](./patterns.md) - Common workflows, testing, orchestration
 - [gotchas.md](./gotchas.md) - Timeouts, limits, debugging strategies
 
 ## See Also
-
 - [durable-objects](../durable-objects/) - Alternative stateful approach
 - [queues](../queues/) - Message-driven workflows
 - [workers](../workers/) - Entry point for workflow instances

@@ -4,7 +4,7 @@
 
 ### "Too much CPU time used"
 
-**Cause:** Worker exceeded CPU time limit (10ms standard, 30ms unbound)  
+**Cause:** Worker exceeded CPU time limit (10ms on Free plan, 30s default / 5min max on Paid)  
 **Solution:** Use `ctx.waitUntil()` for background work, offload heavy compute to Durable Objects, or consider Workers AI for ML workloads
 
 ### "Module-Level State Lost"
@@ -20,7 +20,7 @@
 ### "Node.js module not found"
 
 **Cause:** Node.js built-ins not available by default  
-**Solution:** Use Workers APIs (e.g., R2 for file storage) or enable Node.js compat with `"compatibility_flags": ["nodejs_compat_v2"]`
+**Solution:** Use Workers APIs (e.g., R2 for file storage) or enable Node.js compat with `"compatibility_flags": ["nodejs_compat"]`
 
 ### "Cannot fetch in global scope"
 
@@ -39,8 +39,8 @@
 
 ```typescript
 const session = env.DB.withSession();
-await session.prepare("INSERT INTO users (name) VALUES (?)").bind("Alice").run();
-const user = await session.prepare("SELECT * FROM users WHERE name = ?").bind("Alice").first(); // Guaranteed to see Alice
+await session.prepare('INSERT INTO users (name) VALUES (?)').bind('Alice').run();
+const user = await session.prepare('SELECT * FROM users WHERE name = ?').bind('Alice').first(); // Guaranteed to see Alice
 ```
 
 **When to use sessions:** Write → Read patterns, transactions requiring consistency
@@ -68,23 +68,16 @@ Then import: `import type { Env } from './.wrangler/types/runtime';`
 export class MyDO {
   async fetch(request: Request) {
     const { method } = await request.json();
-    if (method === "increment") return new Response(String(await this.increment()));
+    if (method === 'increment') return new Response(String(await this.increment()));
   }
-  async increment() {
-    return ++this.value;
-  }
+  async increment() { return ++this.value; }
 }
 const stub = env.DO.get(id);
-const res = await stub.fetch("http://x", {
-  method: "POST",
-  body: JSON.stringify({ method: "increment" }),
-});
+const res = await stub.fetch('http://x', { method: 'POST', body: JSON.stringify({ method: 'increment' }) });
 
 // ✅ RPC pattern (type-safe, no serialization overhead)
 export class MyDO {
-  async increment() {
-    return ++this.value;
-  }
+  async increment() { return ++this.value; }
 }
 const stub = env.DO.get(id);
 const count = await stub.increment(); // Direct method call
@@ -115,27 +108,26 @@ Hibernation automatically suspends inactive connections, wakes on events
 
 ```typescript
 // ✅ Hono (Workers-native)
-import { Hono } from "hono";
+import { Hono } from 'hono';
 const app = new Hono();
-app.use("*", async (c, next) => {
-  /* middleware */ await next();
-});
+app.use('*', async (c, next) => { /* middleware */ await next(); });
 ```
 
 See [frameworks.md](./frameworks.md) for full patterns
 
 ## Limits
 
-| Limit               | Value     | Notes                         |
-| ------------------- | --------- | ----------------------------- |
-| Request size        | 100 MB    | Maximum incoming request size |
-| Response size       | Unlimited | Supports streaming            |
-| CPU time (standard) | 10ms      | Standard Workers              |
-| CPU time (unbound)  | 30ms      | Unbound Workers               |
-| Subrequests         | 10,000    | Per request                   |
-| KV reads            | 1000      | Per request                   |
-| KV write size       | 25 MB     | Maximum per write             |
-| Environment size    | 5 MB      | Total size of env bindings    |
+| Limit | Value | Notes |
+|-------|-------|-------|
+| Request size | 100 MB | Maximum incoming request size |
+| Response size | Unlimited | Supports streaming |
+| CPU time (Free) | 10ms | Free plan |
+| CPU time (Paid) | 30s default / 5min max | Configurable via `limits.cpu_ms` |
+| Subrequests (Free) | 50 | Per invocation |
+| Subrequests (Paid) | 10,000 | Per invocation |
+| Subrequest operations (KV, R2, Cache API) | 1,000 | Shared across KV reads, R2 ops, Cache API calls per request |
+| KV value size | 25 MiB | Maximum per key |
+| Environment variable size | 5 KB | Per variable |
 
 ## See Also
 

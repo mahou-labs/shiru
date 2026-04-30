@@ -1,6 +1,6 @@
 # Email Handling
 
-Fetch `docs/email.md` from `https://github.com/cloudflare/agents/tree/main/docs` for complete documentation.
+Fetch https://developers.cloudflare.com/agents/api-reference/email/ for complete documentation.
 
 ## Overview
 
@@ -11,10 +11,12 @@ Agents receive and reply to emails via Cloudflare Email Routing.
 ```jsonc
 {
   "durable_objects": {
-    "bindings": [{ "name": "EmailAgent", "class_name": "EmailAgent" }],
+    "bindings": [{ "name": "EmailAgent", "class_name": "EmailAgent" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["EmailAgent"] }],
-  "send_email": [{ "name": "SEB", "destination_address": "reply@yourdomain.com" }],
+  "send_email": [
+    { "name": "SEB", "destination_address": "reply@yourdomain.com" }
+  ]
 }
 ```
 
@@ -36,7 +38,7 @@ export class EmailAgent extends Agent<Env, State> {
     await this.replyToEmail(email, {
       fromName: "My Agent",
       subject: `Re: ${parsed.subject}`,
-      body: "Thanks for your email!",
+      body: "Thanks for your email!"
     });
   }
 }
@@ -51,13 +53,13 @@ import { createAddressBasedEmailResolver } from "agents/email";
 export default {
   async email(message, env) {
     await routeAgentEmail(message, env, {
-      resolver: createAddressBasedEmailResolver("EmailAgent"),
+      resolver: createAddressBasedEmailResolver("EmailAgent")
     });
   },
 
   async fetch(request, env) {
     return routeAgentRequest(request, env) ?? new Response("Not found", { status: 404 });
-  },
+  }
 };
 ```
 
@@ -86,7 +88,7 @@ const resolver = createSecureReplyEmailResolver(env.EMAIL_SECRET, {
   maxAge: 7 * 24 * 60 * 60, // 7 days (default: 30 days)
   onInvalidSignature: (email, reason) => {
     console.warn(`Invalid signature from ${email.from}: ${reason}`);
-  },
+  }
 });
 ```
 
@@ -96,7 +98,7 @@ Sign outbound emails to enable secure reply routing:
 await this.replyToEmail(email, {
   fromName: "My Agent",
   body: "Thanks!",
-  secret: this.env.EMAIL_SECRET, // Signs headers for secure reply routing
+  secret: this.env.EMAIL_SECRET  // Signs headers for secure reply routing
 });
 ```
 
