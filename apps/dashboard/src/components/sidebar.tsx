@@ -69,13 +69,13 @@ export function Sidebar() {
               ).uj?.showWidget?.("feedback")
             }
           />
-          <SidebarItem
+          {/*<SidebarItem
             type="button"
             icon={IconSidebarLeftOutlineDuo18}
             label="Collapse"
             tooltipLabel={isCollapsed ? "Expand" : "Collapse"}
             onClick={toggleSidebar}
-          />
+          />*/}
         </TooltipProvider>
       </nav>
     </div>

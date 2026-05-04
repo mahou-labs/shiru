@@ -86,7 +86,7 @@ export function SearchBar({ isCollapsed }: SearchBarProps) {
               render={
                 <Button
                   variant="ghost"
-                  className="h-8 w-full justify-start gap-3 px-2 text-muted-foreground border border-sidebar-border bg-background hover:bg-background"
+                  className="h-8 w-75 justify-start gap-3 px-2 text-muted-foreground border border-sidebar-border bg-background hover:bg-background"
                 />
               }
             >

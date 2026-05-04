@@ -6,6 +6,7 @@ import {
   IconChevronRightOutlineDuo18,
   IconGearOutlineDuo18,
   IconMenuBarsOutlineDuo18,
+  IconSidebarLeftOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 
 import { useSidebar } from "@/contexts/sidebar-context";
@@ -16,14 +17,20 @@ import { SearchBar } from "./search-bar";
 import { UserMenu } from "./user-menu";
 
 export function AppHeader({ secondarySidebar }: { secondarySidebar?: AppShellSecondarySidebar }) {
-  const { isSecondaryCollapsed, setMobileOpen, setMobilePanel, toggleSecondarySidebar } =
-    useSidebar();
+  const {
+    isSecondaryCollapsed,
+    setMobileOpen,
+    setMobilePanel,
+    toggleSecondarySidebar,
+    isCollapsed,
+    setIsCollapsed,
+  } = useSidebar();
 
   const ContextIcon =
     secondarySidebar?.kind === "navigation" ? IconGearOutlineDuo18 : IconBookOpen2OutlineDuo18;
 
   return (
-    <header className="relative rounded-t-xl flex h-12 shrink-0 items-center border-b border-border bg-background px-4">
+    <header className="relative rounded-t-xl flex h-12 shrink-0 items-center border-b border-border bg-background px-3">
       <div className="z-10 flex min-w-0 items-center gap-2">
         <Button
           size="icon"
@@ -35,7 +42,17 @@ export function AppHeader({ secondarySidebar }: { secondarySidebar?: AppShellSec
           <IconMenuBarsOutlineDuo18 className="size-4" />
         </Button>
 
-        <Separator orientation="vertical" className="h-5 lg:hidden" />
+        <Button
+          size="icon"
+          variant="ghost"
+          className="hidden lg:inline-flex"
+          aria-label="Collapse"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          <IconSidebarLeftOutlineDuo18 className="size-4" />
+        </Button>
+
+        <Separator orientation="vertical" className="h-5" />
 
         {secondarySidebar && isSecondaryCollapsed && (
           <TooltipProvider delay={0} timeout={500}>
@@ -73,11 +90,11 @@ export function AppHeader({ secondarySidebar }: { secondarySidebar?: AppShellSec
         )}
       </div>
 
-      <div className="pointer-events-none absolute left-1/2 top-1/2 w-[min(32rem,calc(100%-12rem))] -translate-x-1/2 -translate-y-1/2">
-        <div className="pointer-events-auto">
+      {/*<div className="pointer-events-none absolute left-1/2 top-1/2 w-[min(32rem,calc(100%-12rem))] -translate-x-1/2 -translate-y-1/2">*/}
+        <div className="ml-auto">
           <SearchBar />
         </div>
-      </div>
+      {/*</div>*/}
 
       <div className="z-10 ml-auto flex items-center gap-1">
         <NotificationsButton />
