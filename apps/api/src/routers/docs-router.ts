@@ -14,7 +14,7 @@ import { db } from "@/utils/db";
 import { resolveDocsSiteStoragePrefix, syncDocsSiteKv } from "@/utils/docs-site-kv";
 import { log } from "@/utils/logger";
 import { getInstallationOctokit } from "@/utils/oktokit";
-import { protectedProcedure } from "@/utils/orpc";
+import { protectedProcedure, subscriptionProcedure } from "@/utils/orpc";
 
 export const docsRouter = {
   getSiteSettings: protectedProcedure.handler(async ({ context: { session } }) => {
@@ -75,7 +75,7 @@ export const docsRouter = {
       };
     }),
 
-  publish: protectedProcedure
+  publish: subscriptionProcedure
     .input(
       z.object({
         docsSiteId: z.string(),
@@ -582,13 +582,9 @@ export class PublishDocsWorkflow extends WorkflowEntrypoint<typeof env, PublishW
           await Promise.all(
             batch.map((file) => {
               const bytes = Uint8Array.from(atob(file.content), (c) => c.charCodeAt(0));
-              return env.DOCS_DIST.put(
-                `${storagePrefix}/${commitSha}/${file.path}`,
-                bytes,
-                {
-                  httpMetadata: getR2HttpMetadata(file.path),
-                },
-              );
+              return env.DOCS_DIST.put(`${storagePrefix}/${commitSha}/${file.path}`, bytes, {
+                httpMetadata: getR2HttpMetadata(file.path),
+              });
             }),
           );
         }

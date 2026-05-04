@@ -9,7 +9,7 @@ import {
 } from "../test-utils/helpers";
 import type { RpcContext } from "./context";
 import { log } from "./logger";
-import { authedProcedure, protectedProcedure, resolveActiveOrganization } from "./orpc";
+import { protectedProcedure, resolveActiveOrganization, subscriptionProcedure } from "./orpc";
 
 const mockAuthApi = vi.hoisted(() => ({
   listOrganizations: vi.fn(),
@@ -53,16 +53,15 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-// Build testable routers using createRouterClient
-const authedRouter = { test: authedProcedure.handler(async () => "authed-ok") };
-const protectedRouter = { test: protectedProcedure.handler(async () => "protected-ok") };
+const authedRouter = { test: protectedProcedure.handler(async () => "authed-ok") };
+const subscriptionRouter = { test: subscriptionProcedure.handler(async () => "subscription-ok") };
 
 function createAuthedClient(context: RpcContext) {
   return createRouterClient(authedRouter, { context });
 }
 
-function createProtectedClient(context: RpcContext) {
-  return createRouterClient(protectedRouter, { context });
+function createSubscriptionClient(context: RpcContext) {
+  return createRouterClient(subscriptionRouter, { context });
 }
 
 describe("resolveActiveOrganization", () => {
@@ -107,7 +106,6 @@ describe("resolveActiveOrganization", () => {
       })(),
     });
 
-    // Should not throw
     const result = await resolveActiveOrganization(new Headers(), undefined);
     expect(result).toBe("org-1");
   });
@@ -128,15 +126,51 @@ describe("requireAuth middleware", () => {
     );
     await expect(client.test()).rejects.toThrow();
   });
+});
 
-  it("passes when both user and session are present", async () => {
+describe("protectedProcedure middleware", () => {
+  it("passes when user, session, and active org are present", async () => {
     const client = createAuthedClient(createMockContext());
     const result = await client.test();
     expect(result).toBe("authed-ok");
   });
+
+  it("resolves active org when none is set", async () => {
+    mockAuthApi.listOrganizations.mockResolvedValue([
+      { id: "org-1", name: "Org 1", slug: "org-1" },
+    ]);
+
+    const mockSetCookie = new Headers();
+    mockSetCookie.append("set-cookie", "session=abc123");
+    mockAuthApi.setActiveOrganization.mockResolvedValue({
+      headers: mockSetCookie,
+    });
+
+    const client = createAuthedClient(
+      createMockContext({
+        session: createMockSession({ activeOrganizationId: null }),
+      }),
+    );
+    const result = await client.test();
+    expect(result).toBe("authed-ok");
+  });
+
+  it("throws NOT_FOUND when no org can be resolved", async () => {
+    mockAuthApi.listOrganizations.mockResolvedValue([]);
+    mockAuthApi.setActiveOrganization.mockResolvedValue({
+      headers: new Headers(),
+    });
+
+    const client = createAuthedClient(
+      createMockContext({
+        session: createMockSession({ activeOrganizationId: null }),
+      }),
+    );
+    await expect(client.test()).rejects.toThrow();
+  });
 });
 
-describe("requireSubscription middleware", () => {
+describe("subscriptionProcedure middleware", () => {
   type DbRow = { currentPeriodEnd?: Date; createdAt?: Date };
   type DbCallback = (rows: DbRow[]) => unknown;
 
@@ -145,9 +179,9 @@ describe("requireSubscription middleware", () => {
       Promise.resolve(cb([{ currentPeriodEnd: new Date(Date.now() + 86400000) }])),
     );
 
-    const client = createProtectedClient(createMockContext());
+    const client = createSubscriptionClient(createMockContext());
     const result = await client.test();
-    expect(result).toBe("protected-ok");
+    expect(result).toBe("subscription-ok");
   });
 
   it("passes during trial period when no subscription", async () => {
@@ -158,9 +192,9 @@ describe("requireSubscription middleware", () => {
       return Promise.resolve(cb([{ createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }]));
     });
 
-    const client = createProtectedClient(createMockContext());
+    const client = createSubscriptionClient(createMockContext());
     const result = await client.test();
-    expect(result).toBe("protected-ok");
+    expect(result).toBe("subscription-ok");
   });
 
   it("rejects with trial_expired when org >= 30 days old and no subscription", async () => {
@@ -171,7 +205,7 @@ describe("requireSubscription middleware", () => {
       return Promise.resolve(cb([{ createdAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) }]));
     });
 
-    const client = createProtectedClient(createMockContext());
+    const client = createSubscriptionClient(createMockContext());
     await expect(client.test()).rejects.toThrow();
   });
 
@@ -184,7 +218,7 @@ describe("requireSubscription middleware", () => {
       return Promise.resolve(cb([{ createdAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) }]));
     });
 
-    const client = createProtectedClient(createMockContext());
+    const client = createSubscriptionClient(createMockContext());
     await expect(client.test()).rejects.toThrow();
   });
 
@@ -194,7 +228,7 @@ describe("requireSubscription middleware", () => {
       headers: new Headers(),
     });
 
-    const client = createProtectedClient(
+    const client = createSubscriptionClient(
       createMockContext({
         session: createMockSession({ activeOrganizationId: null }),
       }),
@@ -210,9 +244,9 @@ describe("requireSubscription middleware", () => {
       return Promise.resolve(cb([{ createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }]));
     });
 
-    const client = createProtectedClient(createMockContext());
+    const client = createSubscriptionClient(createMockContext());
     const result = await client.test();
-    expect(result).toBe("protected-ok");
+    expect(result).toBe("subscription-ok");
     expect(mockLog.error).toHaveBeenCalledWith(
       "db.subscription_lookup_failed",
       expect.any(Error),
@@ -228,7 +262,7 @@ describe("requireSubscription middleware", () => {
       return Promise.resolve(cb([{ createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }]));
     });
 
-    const client = createProtectedClient(createMockContext());
+    const client = createSubscriptionClient(createMockContext());
     await expect(client.test()).rejects.toThrow();
   });
 });

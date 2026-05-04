@@ -12,10 +12,10 @@ import { log } from "@/utils/logger";
 import { tryCatch } from "@/utils/try-catch";
 
 import { auth } from "../utils/auth";
-import { authedProcedure, protectedProcedure, resolveActiveOrganization } from "../utils/orpc";
+import { protectedProcedure, resolveActiveOrganization } from "../utils/orpc";
 
 export const organizationRouter = {
-  createOrg: authedProcedure
+  createOrg: protectedProcedure
     .input(
       z.object({
         name: z.string().min(1),
@@ -62,7 +62,7 @@ export const organizationRouter = {
       return organization;
     }),
 
-  checkSlugAvailability: authedProcedure
+  checkSlugAvailability: protectedProcedure
     .input(z.string().min(1))
     .output(z.boolean())
     .handler(async ({ input }) => {
@@ -189,7 +189,7 @@ export const organizationRouter = {
             await db
               .update(docsSites)
               .set({ storagePrefix })
-              .where(eq(docsSites.organizationId, activeOrganizationId));
+              .where(eq(docsSites.organizationId, activeOrganizationId!));
           }
 
           if (docsSite.activeCommitSha) {
@@ -325,7 +325,7 @@ export const organizationRouter = {
       });
     }),
 
-  acceptInvite: authedProcedure
+  acceptInvite: protectedProcedure
     .input(z.object({ id: z.string() }))
     .handler(async ({ context: { headers }, input }) => {
       return await auth.api.acceptInvitation({

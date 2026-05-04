@@ -57,6 +57,26 @@ export const requireAuth = o
     return next({ context: { user: context.user, session: context.session } });
   });
 
+const requireOrganization = o
+  .errors({
+    NOT_FOUND: {
+      status: 404,
+      message: "Organization not found",
+    },
+  })
+  .middleware(async ({ context, errors, next }) => {
+    let orgId = context?.session?.activeOrganizationId;
+
+    if (!orgId) {
+      orgId = await resolveActiveOrganization(context.headers, context.resHeaders);
+      if (!orgId) {
+        throw errors.NOT_FOUND();
+      }
+    }
+
+    return next();
+  });
+
 const subscriptionReason = z.enum(["no_organization", "no_active_subscription", "trial_expired"]);
 
 const requireSubscription = o
@@ -125,5 +145,5 @@ const requireSubscription = o
   });
 
 export const publicProcedure = o;
-export const authedProcedure = publicProcedure.use(requireAuth);
-export const protectedProcedure = authedProcedure.use(requireSubscription);
+export const protectedProcedure = publicProcedure.use(requireAuth).use(requireOrganization);
+export const subscriptionProcedure = protectedProcedure.use(requireSubscription);

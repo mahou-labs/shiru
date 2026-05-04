@@ -72,15 +72,11 @@ afterEach(() => vi.clearAllMocks());
 type DbRow = { currentPeriodEnd?: Date; createdAt?: Date; [key: string]: unknown };
 type DbCallback = (rows: DbRow[]) => unknown;
 
-// Helper: make subscription check pass in protectedProcedure middleware
-function mockSubscriptionPass(...handlerResponses: DbRow[][]) {
-  const responses: DbRow[][] = [
-    [{ currentPeriodEnd: new Date(Date.now() + 86400000) }],
-    ...handlerResponses,
-  ];
+// Helper: prime mockDbThen for handler-level db queries in order
+function mockDbSequence(...handlerResponses: DbRow[][]) {
   let callCount = 0;
   mockDbThen.mockImplementation((cb: DbCallback) => {
-    const rows = responses[callCount] ?? [];
+    const rows = handlerResponses[callCount] ?? [];
     callCount++;
     return Promise.resolve(cb(rows));
   });
@@ -176,23 +172,11 @@ describe("checkSlugAvailability", () => {
 });
 
 describe("getSubscription", () => {
-  it("returns null when no activeOrganizationId", async () => {
-    // First mock call is for requireSubscription middleware (explicit .then(cb))
-    // Second call is for getSubscription handler (await chain directly)
-    let callCount = 0;
-    mockDbThen.mockImplementation((cb: DbCallback) => {
-      callCount++;
-      if (callCount === 1)
-        return Promise.resolve(cb([{ currentPeriodEnd: new Date(Date.now() + 86400000) }]));
-      return Promise.resolve(cb([]));
-    });
+  it("returns null when no subscription found", async () => {
+    mockDbThen.mockImplementation((cb: DbCallback) => Promise.resolve(cb([])));
 
-    // activeOrganizationId is set but we test the handler's null check
-    // Need to pass middleware first — the handler checks session.activeOrganizationId
-    // With org-1 set, the handler will query DB
     const client = createClient(createMockContext());
     const result = await client.getSubscription();
-    // DB returns empty, so null
     expect(result).toBeNull();
   });
 
@@ -203,15 +187,7 @@ describe("getSubscription", () => {
       status: "active",
       currentPeriodEnd: new Date(),
     };
-    let callCount = 0;
-    mockDbThen.mockImplementation((cb: DbCallback) => {
-      callCount++;
-      // requireSubscription middleware
-      if (callCount === 1)
-        return Promise.resolve(cb([{ currentPeriodEnd: new Date(Date.now() + 86400000) }]));
-      // getSubscription handler returns sub
-      return Promise.resolve(cb([sub]));
-    });
+    mockDbThen.mockImplementation((cb: DbCallback) => Promise.resolve(cb([sub])));
 
     const client = createClient(createMockContext());
     const result = await client.getSubscription();
@@ -221,7 +197,7 @@ describe("getSubscription", () => {
 
 describe("deleteOrg", () => {
   it("deletes and resolves next active org", async () => {
-    mockSubscriptionPass([{ slug: "org-1" }]);
+    mockDbSequence([{ slug: "org-1" }]);
     mockAuthApi.deleteOrganization.mockResolvedValue(undefined);
     mockAuthApi.listOrganizations.mockResolvedValue([{ id: "org-2" }]);
     mockAuthApi.setActiveOrganization.mockResolvedValue({
@@ -237,7 +213,7 @@ describe("deleteOrg", () => {
   });
 
   it("returns hasRemainingOrgs false when no orgs remain", async () => {
-    mockSubscriptionPass([{ slug: "org-1" }]);
+    mockDbSequence([{ slug: "org-1" }]);
     mockAuthApi.deleteOrganization.mockResolvedValue(undefined);
     mockAuthApi.listOrganizations.mockResolvedValue([]);
     mockAuthApi.setActiveOrganization.mockResolvedValue({
@@ -252,7 +228,7 @@ describe("deleteOrg", () => {
 
 describe("createInvite", () => {
   it("creates invitation with correct orgId", async () => {
-    mockSubscriptionPass();
+    mockDbSequence();
     mockAuthApi.createInvitation.mockResolvedValue({ id: "inv-1" });
 
     const client = createClient(createMockContext());
@@ -266,7 +242,7 @@ describe("createInvite", () => {
   });
 
   it("rejects invalid email format", async () => {
-    mockSubscriptionPass();
+    mockDbSequence();
     const client = createClient(createMockContext());
     await expect(client.createInvite({ email: "not-an-email", role: "member" })).rejects.toThrow();
   });
@@ -274,13 +250,13 @@ describe("createInvite", () => {
 
 describe("updateOrg", () => {
   it("rejects empty payload", async () => {
-    mockSubscriptionPass();
+    mockDbSequence();
     const client = createClient(createMockContext());
     await expect(client.updateOrg({})).rejects.toThrow();
   });
 
   it("refreshes DOCS_KV when the organization slug changes", async () => {
-    mockSubscriptionPass(
+    mockDbSequence(
       [{ slug: "old-org" }],
       [{ activeCommitSha: "sha-live", storagePrefix: "docs-old-org" }],
     );
@@ -301,7 +277,7 @@ describe("updateOrg", () => {
   });
 
   it("repairs a placeholder storagePrefix before warming DOCS_KV for the new slug", async () => {
-    mockSubscriptionPass(
+    mockDbSequence(
       [{ slug: "old-org" }],
       [{ activeCommitSha: "sha-live", storagePrefix: "storage_prefix" }],
       [],
@@ -324,14 +300,14 @@ describe("updateOrg", () => {
 
 describe("updateMemberRole", () => {
   it("validates role is admin or member", async () => {
-    mockSubscriptionPass();
+    mockDbSequence();
     const client = createClient(createMockContext());
     // @ts-expect-error testing invalid role value
     await expect(client.updateMemberRole({ memberId: "m1", role: "owner" })).rejects.toThrow();
   });
 
   it("calls auth.api.updateMemberRole with valid input", async () => {
-    mockSubscriptionPass();
+    mockDbSequence();
     mockAuthApi.updateMemberRole.mockResolvedValue({});
 
     const client = createClient(createMockContext());

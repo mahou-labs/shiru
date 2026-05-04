@@ -4,7 +4,7 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   plugins: process.env.VITEST
     ? []
-    : [cloudflare({ persistState: { path: "../../.wrangler/state" } })],
+    : [cloudflare({ persistState: { path: "../../.wrangler/state" }, inspectorPort: 9229 })],
   resolve: { tsconfigPaths: true },
   server: {
     cors: false,

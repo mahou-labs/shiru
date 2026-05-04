@@ -50,17 +50,12 @@ type DbRow = { currentPeriodEnd?: Date; createdAt?: Date; [key: string]: unknown
 type DbCallback = (rows: DbRow[]) => unknown;
 
 /**
- * Build a mockDbThen sequence: first call satisfies the requireSubscription
- * middleware, subsequent calls satisfy each handler-level db query in order.
+ * Build a mockDbThen sequence for handler-level db queries in order.
  */
 function primeDb(...handlerResponses: DbRow[][]) {
-  const responses: DbRow[][] = [
-    [{ currentPeriodEnd: new Date(Date.now() + 86400000) }],
-    ...handlerResponses,
-  ];
   let callCount = 0;
   mockDbThen.mockImplementation((cb: DbCallback) => {
-    const rows = responses[callCount] ?? [];
+    const rows = handlerResponses[callCount] ?? [];
     callCount++;
     return Promise.resolve(cb(rows));
   });
@@ -135,14 +130,7 @@ describe("githubRouter.getConnection", () => {
   });
 
   it("propagates db errors when the underlying select rejects", async () => {
-    let callCount = 0;
-    mockDbThen.mockImplementation((onFulfilled: DbCallback, onRejected?: (e: unknown) => void) => {
-      callCount++;
-      if (callCount === 1) {
-        return Promise.resolve(
-          onFulfilled([{ currentPeriodEnd: new Date(Date.now() + 86400000) }]),
-        );
-      }
+    mockDbThen.mockImplementation((_onFulfilled: DbCallback, onRejected?: (e: unknown) => void) => {
       onRejected?.(new Error("db down"));
       return undefined;
     });
@@ -269,11 +257,6 @@ describe("githubRouter.selectRepo", () => {
     mockDbThen.mockImplementation((onFulfilled: DbCallback, onRejected?: (e: unknown) => void) => {
       callCount++;
       if (callCount === 1) {
-        return Promise.resolve(
-          onFulfilled([{ currentPeriodEnd: new Date(Date.now() + 86400000) }]),
-        );
-      }
-      if (callCount === 2) {
         return Promise.resolve(onFulfilled([{ githubInstallationId: 42, githubOwner: "acme" }]));
       }
       onRejected?.(new Error("db down"));

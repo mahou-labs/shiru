@@ -73,11 +73,23 @@ type DbRow = { currentPeriodEnd?: Date; createdAt?: Date; [key: string]: unknown
 type DbCallback = (rows: DbRow[]) => unknown;
 
 /**
- * Build a mockDbThen sequence: first call satisfies the requireSubscription
- * middleware (handler tests), subsequent calls satisfy each handler-level db
- * query in order. For workflow tests that bypass middleware, use primeDbRaw.
+ * Build a mockDbThen sequence for handler-level db queries in order.
+ * For workflow tests that bypass middleware, use primeDbRaw.
  */
 function primeDb(...handlerResponses: DbRow[][]) {
+  let callCount = 0;
+  mockDbThen.mockImplementation((onFulfilled: DbCallback) => {
+    const rows = handlerResponses[callCount] ?? [];
+    callCount++;
+    return Promise.resolve(onFulfilled(rows));
+  });
+}
+
+/**
+ * Like primeDb but prepends the subscription-middleware row first.
+ * Use for subscriptionProcedure routes (e.g. publish).
+ */
+function primeDbSub(...handlerResponses: DbRow[][]) {
   const responses: DbRow[][] = [
     [{ currentPeriodEnd: new Date(Date.now() + 86400000) }],
     ...handlerResponses,
@@ -242,7 +254,7 @@ describe("docsRouter.publish", () => {
     // by both `id` AND `organizationId`, so a docsSite owned by a different org
     // returns no rows — same code path as a non-existent site. This test
     // documents the security invariant explicitly.
-    primeDb([]);
+    primeDbSub([]);
 
     const { env } = await import("cloudflare:workers");
     const createSpy = vi.mocked(env.PUBLISH_DOCS.create);
@@ -255,7 +267,7 @@ describe("docsRouter.publish", () => {
   });
 
   it("calls PUBLISH_DOCS.create with the resolved payload when ownership passes", async () => {
-    primeDb([{ id: "site-1" }]);
+    primeDbSub([{ id: "site-1" }]);
 
     const { env } = await import("cloudflare:workers");
     const createSpy = vi.mocked(env.PUBLISH_DOCS.create);
@@ -280,7 +292,7 @@ describe("docsRouter.publish", () => {
   });
 
   it("propagates the error when PUBLISH_DOCS.create rejects", async () => {
-    primeDb([{ id: "site-1" }]);
+    primeDbSub([{ id: "site-1" }]);
 
     const { env } = await import("cloudflare:workers");
     vi.mocked(env.PUBLISH_DOCS.create).mockRejectedValueOnce(new Error("DO overloaded"));

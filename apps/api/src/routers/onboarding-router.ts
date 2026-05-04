@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-import { authedProcedure } from "../utils/orpc";
+import { protectedProcedure } from "../utils/orpc";
 
 async function extractWebsiteMetadata(url: string) {
   const controller = new AbortController();
@@ -95,7 +95,7 @@ async function extractWebsiteMetadata(url: string) {
 }
 
 export const onboardingRouter = {
-  scrapeWebsite: authedProcedure
+  scrapeWebsite: protectedProcedure
     .input(z.object({ url: z.string().url() }))
     .handler(async ({ input }) => {
       const emptyResult = { name: null, description: null, logo: null, suggestedSlug: "" };
