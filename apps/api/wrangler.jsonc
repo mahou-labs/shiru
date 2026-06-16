@@ -22,7 +22,7 @@
   "send_email": [
     {
       "name": "EMAIL",
-      "remote": true,
+      "remote": false,
     },
   ],
   "ratelimits": [

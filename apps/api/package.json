@@ -11,22 +11,22 @@
     "deploy": "wrangler deploy"
   },
   "dependencies": {
-    "@cloudflare/sandbox": "^0.8.14",
+    "@cloudflare/sandbox": "^0.11.0",
     "@octokit/auth-app": "^8.2.0",
     "@orpc/server": "^1.14.0",
     "@polar-sh/better-auth": "catalog:",
-    "@polar-sh/sdk": "^0.47.0",
+    "@polar-sh/sdk": "^0.48.0",
     "@react-email/components": "^1.0.12",
     "better-auth": "catalog:",
-    "cloudflare": "^5.2.0",
-    "drizzle-orm": "1.0.0-beta.18-7eb39f0",
+    "cloudflare": "^6.3.0",
+    "drizzle-orm": "1.0.0-rc.3",
     "hono": "^4.12.15",
     "hono-rate-limiter": "^0.5.3",
     "octokit": "^5.0.5",
     "posthog-node": "^5.30.6",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-email": "^6.0.1",
+    "react-email": "^6.3.2",
     "uuid": "catalog:",
     "zod": "catalog:"
   },
@@ -37,7 +37,7 @@
     "@types/react-dom": "catalog:",
     "@types/uuid": "^11.0.0",
     "better-sqlite3": "^12.9.0",
-    "drizzle-kit": "1.0.0-beta.18-7eb39f0",
+    "drizzle-kit": "1.0.0-rc.3",
     "vitest": "^4.1.5",
     "wrangler": "catalog:"
   }
