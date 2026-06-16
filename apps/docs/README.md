@@ -5,8 +5,8 @@ Welcome to your new TanStack Start app!
 To run this application:
 
 ```bash
-bun install
-bun --bun run dev
+pnpm install
+pnpm dev
 ```
 
 # Building For Production
@@ -14,7 +14,7 @@ bun --bun run dev
 To build this application for production:
 
 ```bash
-bun --bun run build
+pnpm build
 ```
 
 ## Testing
@@ -22,7 +22,7 @@ bun --bun run build
 This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
 
 ```bash
-bun --bun run test
+pnpm test
 ```
 
 ## Styling
@@ -36,46 +36,32 @@ If you prefer not to use Tailwind CSS:
 1. Remove the demo pages in `src/routes/demo/`
 2. Replace the Tailwind import in `src/styles.css` with your own styles
 3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `bun install @tailwindcss/vite tailwindcss -D`
+4. Uninstall the packages: `pnpm add @tailwindcss/vite tailwindcss --dev`
 
 
-# TanStack Chat Application
+## Deploy to Cloudflare Workers
 
-Am example chat application built with TanStack Start, TanStack Store, and Claude AI.
+This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) and `wrangler.jsonc`:
 
-## .env Updates
+1. Install Wrangler: `npm install -g wrangler`
+2. Authenticate: `wrangler login`
+3. Deploy: `npx wrangler deploy`
 
-```env
-ANTHROPIC_API_KEY=your_anthropic_api_key
-```
+For production env vars, run `wrangler secret put MY_VAR` for each secret listed in `.env.example`. Public (non-secret) vars go in `wrangler.jsonc` under `vars`.
 
-## ✨ Features
+KV, D1, R2, and Durable Object bindings are configured in `wrangler.jsonc` — see https://developers.cloudflare.com/workers/wrangler/configuration/.
 
-### AI Capabilities
-- 🤖 Powered by Claude 3.5 Sonnet 
-- 📝 Rich markdown formatting with syntax highlighting
-- 🎯 Customizable system prompts for tailored AI behavior
-- 🔄 Real-time message updates and streaming responses (coming soon)
 
-### User Experience
-- 🎨 Modern UI with Tailwind CSS and Lucide icons
-- 🔍 Conversation management and history
-- 🔐 Secure API key management
-- 📋 Markdown rendering with code highlighting
+## Setting up PostHog
 
-### Technical Features
-- 📦 Centralized state management with TanStack Store
-- 🔌 Extensible architecture for multiple AI providers
-- 🛠️ TypeScript for type safety
+1. Create a PostHog account at [posthog.com](https://posthog.com)
+2. Get your Project API Key from [Project Settings](https://app.posthog.com/project/settings)
+3. Set `VITE_POSTHOG_KEY` in your `.env.local`
 
-## Architecture
+### Optional Configuration
 
-### Tech Stack
-- **Frontend Framework**: TanStack Start
-- **Routing**: TanStack Router
-- **State Management**: TanStack Store
-- **Styling**: Tailwind CSS
-- **AI Integration**: Anthropic's Claude API
+- `VITE_POSTHOG_HOST` - Set this if you're using PostHog Cloud EU (`https://eu.i.posthog.com`) or self-hosting
+
 
 
 ## Routing

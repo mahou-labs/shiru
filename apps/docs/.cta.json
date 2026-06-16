@@ -2,7 +2,7 @@
   "projectName": "docs",
   "mode": "file-router",
   "typescript": true,
-  "packageManager": "bun",
+  "packageManager": "pnpm",
   "includeExamples": false,
   "tailwind": true,
   "addOnOptions": {},
@@ -14,9 +14,9 @@
   "framework": "react",
   "chosenAddOns": [
     "cloudflare",
-    "ai",
     "compiler",
-    "tanstack-query",
-    "store"
+    "db",
+    "posthog",
+    "tanstack-query"
   ]
 }
