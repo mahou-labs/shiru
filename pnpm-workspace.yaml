@@ -19,19 +19,17 @@ catalog:
   tailwind-merge: ^3.5.0
   tailwindcss: ^4.2.4
   uuid: ^14.0.0
-  vite: ^8.0.0
+  vite: npm:@voidzero-dev/vite-plus-core@0.2.1
   wrangler: ^4.95.0
   zod: ^4.3.6
 
 minimumReleaseAge: 4320
-# minimumReleaseAgeExclude:
-#   - "@cloudflare/vite-plugin"
-#   - wrangler
-#   - miniflare
-#   - workerd
-#   - "@cloudflare/kv-asset-handler"
+minimumReleaseAgeExclude:
+  - vite-plus
+  - "@voidzero-dev/vite-plus-*"
 
 overrides:
+  vite: npm:@voidzero-dev/vite-plus-core@0.2.1
   kysely: 0.28.17
 
 allowBuilds:
