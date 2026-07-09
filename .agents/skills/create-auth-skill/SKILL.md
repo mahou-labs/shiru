@@ -60,7 +60,7 @@ Use the `AskQuestion` tool to ask the user **all applicable questions in a singl
 
 7. **Email provider** (only if email verification is Yes, or if Password reset is selected in features — ask in a follow-up call)
    - Prompt: "How do you want to send emails?"
-    - Options: Cloudflare Email | Mock it for now (console.log)
+   - Options: Cloudflare Email | Mock it for now (console.log)
 
 8. **Features & plugins** (always ask, allow multiple)
    - Prompt: "Which additional features do you need?"

@@ -23,7 +23,10 @@ export const Route = createFileRoute("/api/content/publish")({
         const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/, "");
 
         if (!env.DOCS_PUBLISH_TOKEN || token !== env.DOCS_PUBLISH_TOKEN) {
-          return json({ error: "Unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
+          return json(
+            { error: "Unauthorized" },
+            { status: 401, headers: { "Cache-Control": "no-store" } },
+          );
         }
 
         const parsed = publishSchema.safeParse(await request.json());

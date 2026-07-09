@@ -12,9 +12,5 @@
   "routerOnly": false,
   "version": 1,
   "framework": "react",
-  "chosenAddOns": [
-    "cloudflare",
-    "compiler",
-    "posthog"
-  ]
+  "chosenAddOns": ["cloudflare", "compiler", "posthog"]
 }

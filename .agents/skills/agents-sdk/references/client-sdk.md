@@ -14,12 +14,10 @@ function App() {
     agent: "Counter",
     name: "my-instance",
     onStateUpdate: (newState) => setState(newState),
-    onIdentity: (name, agentType) => console.log(`Connected to ${name}`)
+    onIdentity: (name, agentType) => console.log(`Connected to ${name}`),
   });
 
-  return <button onClick={() => agent.setState({ count: state.count + 1 })}>
-    {state.count}
-  </button>;
+  return <button onClick={() => agent.setState({ count: state.count + 1 })}>{state.count}</button>;
 }
 ```
 
@@ -28,7 +26,7 @@ function App() {
 ```tsx
 const agent = useAgent<typeof MyAgent>({
   agent: "MyAgent",
-  name: "default"
+  name: "default",
 });
 
 const result = await agent.stub.myMethod(arg1, arg2);
@@ -41,7 +39,7 @@ useAgent({
   agent: "MyAgent",
   name: "default",
   query: async () => `token=${await getToken()}`,
-  queryDeps: [tokenVersion]
+  queryDeps: [tokenVersion],
 });
 ```
 
@@ -54,12 +52,15 @@ import { useAgentChat } from "@cloudflare/ai-chat/react";
 function Chat() {
   const agent = useAgent({ agent: "ChatAgent", name: "session-1" });
 
-  const { messages, input, handleInputChange, handleSubmit, status } =
-    useAgentChat({ agent });
+  const { messages, input, handleInputChange, handleSubmit, status } = useAgentChat({ agent });
 
   return (
     <div>
-      {messages.map((m) => <div key={m.id}>{m.role}: {m.content}</div>)}
+      {messages.map((m) => (
+        <div key={m.id}>
+          {m.role}: {m.content}
+        </div>
+      ))}
       <form onSubmit={handleSubmit}>
         <input value={input} onChange={handleInputChange} />
       </form>
@@ -76,7 +77,7 @@ import { AgentClient } from "agents/client";
 const client = new AgentClient({
   agent: "MyAgent",
   name: "default",
-  host: "https://my-worker.workers.dev"
+  host: "https://my-worker.workers.dev",
 });
 
 client.addEventListener("stateUpdate", (e) => console.log(e.state));
@@ -93,7 +94,7 @@ const response = await agentFetch({
   agent: "MyAgent",
   name: "default",
   host: "https://my-worker.workers.dev",
-  path: "/api/data"
+  path: "/api/data",
 });
 ```
 
@@ -104,7 +105,7 @@ await agent.call("streamResults", ["query"], {
   stream: {
     onChunk: (data) => console.log(data),
     onDone: () => console.log("done"),
-    onError: (err) => console.error(err)
-  }
+    onError: (err) => console.error(err),
+  },
 });
 ```

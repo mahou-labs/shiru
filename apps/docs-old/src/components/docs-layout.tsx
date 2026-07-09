@@ -2,7 +2,13 @@ import { Link } from "@tanstack/react-router";
 
 import type { DocsManifest, SidebarItem } from "@/lib/content/types";
 
-export function DocsLayout({ manifest, children }: { manifest: DocsManifest; children: React.ReactNode }) {
+export function DocsLayout({
+  manifest,
+  children,
+}: {
+  manifest: DocsManifest;
+  children: React.ReactNode;
+}) {
   return (
     <div className="min-h-screen bg-[oklch(97%_0.012_205)] text-slate-950">
       <div className="mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 lg:grid-cols-[280px_1fr]">

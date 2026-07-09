@@ -4,16 +4,21 @@ const htmlCache = caches as CacheStorage & { readonly default: Cache };
 
 export function getHtmlCacheKey(args: { siteId: string; slug: string; siteVersion: string }) {
   const slugPath = normalizeSlug(args.slug);
-  return new Request(`https://docs-cache.internal/${args.siteId}/${slugPath}?v=${args.siteVersion}`, {
-    method: "GET",
-  });
+  return new Request(
+    `https://docs-cache.internal/${args.siteId}/${slugPath}?v=${args.siteVersion}`,
+    {
+      method: "GET",
+    },
+  );
 }
 
 export function cacheableHtmlHeaders(args: { siteId: string; docId: string; siteVersion: string }) {
   return {
     "Cache-Control": "public, max-age=60, stale-while-revalidate=86400",
     "CDN-Cache-Control": "max-age=31536000",
-    "Cache-Tag": [`site:${args.siteId}`, `doc:${args.docId}`, `version:${args.siteVersion}`].join(","),
+    "Cache-Tag": [`site:${args.siteId}`, `doc:${args.docId}`, `version:${args.siteVersion}`].join(
+      ",",
+    ),
   };
 }
 

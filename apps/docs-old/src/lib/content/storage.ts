@@ -45,10 +45,14 @@ export function createCloudflareDocsStorage(env: Env): DocsStorage {
         customMetadata: { siteId: input.siteId, slug, contentHash },
       });
 
-      await env.DOCS_BUCKET.put(compiledArtifactKey(input.siteId, contentHash), JSON.stringify(artifact), {
-        httpMetadata: { contentType: "application/json; charset=utf-8" },
-        customMetadata: { siteId: input.siteId, slug, contentHash },
-      });
+      await env.DOCS_BUCKET.put(
+        compiledArtifactKey(input.siteId, contentHash),
+        JSON.stringify(artifact),
+        {
+          httpMetadata: { contentType: "application/json; charset=utf-8" },
+          customMetadata: { siteId: input.siteId, slug, contentHash },
+        },
+      );
 
       await env.DOCS_DB.prepare(
         `insert into docs (id, site_id, slug, title, description, order_index, content_hash, updated_at)
@@ -74,7 +78,10 @@ export function createCloudflareDocsStorage(env: Env): DocsStorage {
 
       const docs = await loadDocsMetadata(env, input.siteId);
       const manifest = buildManifest(input.siteId, siteVersion, docs);
-      await env.DOCS_MANIFESTS.put(manifestKey(input.siteId, siteVersion), JSON.stringify(manifest));
+      await env.DOCS_MANIFESTS.put(
+        manifestKey(input.siteId, siteVersion),
+        JSON.stringify(manifest),
+      );
       await env.DOCS_MANIFESTS.put(siteVersionKey(input.siteId), siteVersion);
 
       return { siteId: input.siteId, slug, docId, siteVersion, contentHash };

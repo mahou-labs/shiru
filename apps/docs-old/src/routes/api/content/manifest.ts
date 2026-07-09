@@ -16,13 +16,19 @@ export const Route = createFileRoute("/api/content/manifest")({
         const siteVersion = await storage.getCurrentVersion(siteId);
 
         if (!siteVersion) {
-          return json({ error: "Manifest not found" }, { status: 404, headers: { "Cache-Control": "public, max-age=30" } });
+          return json(
+            { error: "Manifest not found" },
+            { status: 404, headers: { "Cache-Control": "public, max-age=30" } },
+          );
         }
 
         const manifest = await storage.getManifest(siteId, siteVersion);
 
         if (!manifest) {
-          return json({ error: "Manifest not found" }, { status: 404, headers: { "Cache-Control": "public, max-age=30" } });
+          return json(
+            { error: "Manifest not found" },
+            { status: 404, headers: { "Cache-Control": "public, max-age=30" } },
+          );
         }
 
         return json(manifest, {

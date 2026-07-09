@@ -3,25 +3,25 @@ packages:
   - "packages/*"
 
 catalog:
-  "@cloudflare/vite-plugin": ^1.39.0
-  "@orpc/client": ^1.14.0
-  "@polar-sh/better-auth": ^1.8.3
-  "@tailwindcss/vite": ^4.2.4
-  "@types/react": ^19.2.16
+  "@cloudflare/vite-plugin": ^1.43.0
+  "@orpc/client": ^1.14.6
+  "@polar-sh/better-auth": ^1.8.4
+  "@tailwindcss/vite": ^4.3.2
+  "@types/react": ^19.2.17
   "@types/react-dom": ^19.2.3
-  astro: ^6.1.9
-  better-auth: ^1.6.9
+  astro: ^6.4.8
+  better-auth: ^1.6.23
   clsx: ^2.1.1
-  nucleo-ui-outline-18: ^1.4.0
-  nucleo-ui-outline-duo-18: ^1.4.0
-  react: ^19.2.5
-  react-dom: ^19.2.5
-  tailwind-merge: ^3.5.0
-  tailwindcss: ^4.2.4
-  uuid: ^14.0.0
+  nucleo-ui-outline-18: ^1.5.0
+  nucleo-ui-outline-duo-18: ^1.5.0
+  react: ^19.2.7
+  react-dom: ^19.2.7
+  tailwind-merge: ^3.6.0
+  tailwindcss: ^4.3.2
+  uuid: ^14.0.1
   vite: npm:@voidzero-dev/vite-plus-core@0.2.1
-  wrangler: ^4.95.0
-  zod: ^4.3.6
+  wrangler: ^4.107.0
+  zod: ^4.4.3
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
@@ -38,7 +38,7 @@ allowBuilds:
   nucleo-ui-outline-duo-18: true
   nucleo-core-outline-24: true
   "@cloudflare/vite-plugin": true
-  '@google/genai': false
+  "@google/genai": false
   core-js: false
   esbuild: false
   msgpackr-extract: false

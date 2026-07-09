@@ -12,6 +12,7 @@ vi.mock("@/emails/email-verification", () => ({
 }));
 
 import { env } from "cloudflare:workers";
+
 import { sendVerificationEmail } from "./email";
 
 const mockSend = vi.mocked(env.EMAIL.send);

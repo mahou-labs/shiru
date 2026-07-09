@@ -91,9 +91,9 @@ export function AppHeader({ secondarySidebar }: { secondarySidebar?: AppShellSec
       </div>
 
       {/*<div className="pointer-events-none absolute left-1/2 top-1/2 w-[min(32rem,calc(100%-12rem))] -translate-x-1/2 -translate-y-1/2">*/}
-        <div className="ml-auto">
-          <SearchBar />
-        </div>
+      <div className="ml-auto">
+        <SearchBar />
+      </div>
       {/*</div>*/}
 
       <div className="z-10 ml-auto flex items-center gap-1">

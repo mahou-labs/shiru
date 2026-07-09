@@ -49,8 +49,8 @@ const result = await this.retry(
       if (err.message.includes("429")) return true;
       if (err.message.includes("401")) return false;
       return nextAttempt <= 3;
-    }
-  }
+    },
+  },
 );
 ```
 
@@ -67,7 +67,7 @@ this.queue("handler", payload, { retry: { maxAttempts: 5 } });
 ```typescript
 export class MyAgent extends Agent<Env, State> {
   static options = {
-    retry: { maxAttempts: 5, baseDelayMs: 200, maxDelayMs: 10000 }
+    retry: { maxAttempts: 5, baseDelayMs: 200, maxDelayMs: 10000 },
   };
 }
 ```

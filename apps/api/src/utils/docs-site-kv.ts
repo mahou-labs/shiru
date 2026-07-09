@@ -13,7 +13,10 @@ export function getDocsSiteKvKey(slug: string) {
   return `docs:site:${slug}`;
 }
 
-export function resolveDocsSiteStoragePrefix(storagePrefix: string | null | undefined, slug: string) {
+export function resolveDocsSiteStoragePrefix(
+  storagePrefix: string | null | undefined,
+  slug: string,
+) {
   if (!storagePrefix || storagePrefix === placeholderStoragePrefix) {
     return slug;
   }

@@ -9,9 +9,9 @@ import remarkGfm from "remark-gfm";
 import remarkMdx from "remark-mdx";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
-import { parse as yamlParse } from "yaml";
 import { unified } from "unified";
 import { visit } from "unist-util-visit";
+import { parse as yamlParse } from "yaml";
 import { z } from "zod";
 
 import type { CompiledDocArtifact, DocHeading } from "./types";
@@ -36,9 +36,7 @@ const sanitizeSchema: SanitizeSchema = {
 export async function hashMdx(mdx: string) {
   const data = new TextEncoder().encode(mdx);
   const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export async function compileMdxDocument(args: {

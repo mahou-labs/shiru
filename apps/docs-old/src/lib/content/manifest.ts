@@ -1,6 +1,10 @@
 import type { DocMetadata, DocsManifest, SidebarItem } from "./types";
 
-export function buildManifest(siteId: string, siteVersion: string, docs: DocMetadata[]): DocsManifest {
+export function buildManifest(
+  siteId: string,
+  siteVersion: string,
+  docs: DocMetadata[],
+): DocsManifest {
   const pages = Object.fromEntries(docs.map((doc) => [doc.slug, doc]));
   const items: SidebarItem[] = [];
 
