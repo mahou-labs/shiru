@@ -66,6 +66,20 @@ import { createMockContext } from "../test-utils/helpers";
 import { organizationRouter } from "./organization-router";
 
 const mockLog = vi.mocked(log);
+const invalidSiteSubdomains = [
+  "Bad",
+  "bad_slug",
+  "-bad",
+  "bad-",
+  "bad.slug",
+  "bad slug",
+  "app",
+  "api",
+  "docs",
+  "t",
+  "www",
+  "a".repeat(64),
+];
 
 afterEach(() => vi.clearAllMocks());
 
@@ -87,7 +101,7 @@ function createClient(context: RpcContext) {
 }
 
 describe("createOrg", () => {
-  it.each(["Bad", "bad_slug", "-bad", "bad-", "bad.slug", "bad slug", "app", "api", "docs", "t", "www"])(
+  it.each(invalidSiteSubdomains)(
     "rejects unavailable Site Subdomain %s before creating an organization",
     async (slug) => {
       const client = createClient(createMockContext());
@@ -180,7 +194,7 @@ describe("checkSlugAvailability", () => {
     });
   });
 
-  it.each(["Bad", "bad_slug", "-bad", "bad-", "bad.slug", "bad slug", "app", "api", "docs", "t", "www"])(
+  it.each(invalidSiteSubdomains)(
     "returns false for unavailable Site Subdomain %s without calling Better Auth",
     async (slug) => {
       const client = createClient(createMockContext());
@@ -275,7 +289,7 @@ describe("updateOrg", () => {
     await expect(client.updateOrg({})).rejects.toThrow();
   });
 
-  it.each(["Bad", "bad_slug", "-bad", "bad-", "bad.slug", "bad slug", "app", "api", "docs", "t", "www"])(
+  it.each(invalidSiteSubdomains)(
     "rejects unavailable Site Subdomain %s before renaming an organization",
     async (slug) => {
       const client = createClient(createMockContext());

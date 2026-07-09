@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 const reservedSubdomains = new Set(["app", "api", "docs", "t", "www"]);
-const dnsLabel = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+const dnsLabel = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 export const siteSubdomainSchema = z
   .string()
