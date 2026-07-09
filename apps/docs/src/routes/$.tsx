@@ -1,16 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { getPublishedDocument } from "@/functions/document";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/$")({
   component: DocumentRoute,
   head: ({ loaderData }) => documentHead(loaderData),
-  loader: () => getPublishedDocument({ data: { path: "" } }),
+  loader: ({ params }) => {
+    const path = params._splat ?? "";
+    if (path.endsWith("/")) {
+      throw redirect({ href: `/${path.slice(0, -1)}` });
+    }
+    return getPublishedDocument({ data: { path } });
+  },
   notFoundComponent: NotFound,
 });
 
 function DocumentRoute() {
-  const { Document } = Route.useLoaderData();
+  const { Document } = Route.useLoaderData() ?? { Document: null };
   return <>{Document}</>;
 }
 

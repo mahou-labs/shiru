@@ -11,7 +11,11 @@ const config = defineConfig({
   resolve: { tsconfigPaths: true },
   plugins: [
     devtools(),
-    cloudflare({ viteEnvironment: { name: "ssr" } }),
+    !process.env.VITEST &&
+      cloudflare({
+        persistState: { path: "../../.wrangler/state" },
+        viteEnvironment: { childEnvironments: ["rsc"], name: "ssr" },
+      }),
     tailwindcss(),
     tanstackStart({
       rsc: {

@@ -1,7 +1,26 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tanstack-start-app",
-  "compatibility_date": "2025-09-02",
+  "name": "shiru-docs",
+  "compatibility_date": "2026-07-08",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+    },
+  },
+  "kv_namespaces": [
+    {
+      "binding": "DOCS_KV",
+      "id": "56d9abb7d5994c54a03dc3cc91614311",
+      "preview_id": "56d9abb7d5994c54a03dc3cc91614311",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "DOCS_SOURCE",
+      "bucket_name": "shiru-docs-source",
+    },
+  ],
 }

@@ -1,8 +1,4 @@
-import { TanStackDevtools } from "@tanstack/react-devtools";
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-
-import PostHogProvider from "../contexts/posthog-context";
 
 import appCss from "../index.css?url";
 
@@ -37,20 +33,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <PostHogProvider>
-          {children}
-          <TanStackDevtools
-            config={{
-              position: "bottom-right",
-            }}
-            plugins={[
-              {
-                name: "Tanstack Router",
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-            ]}
-          />
-        </PostHogProvider>
+        {children}
         <Scripts />
       </body>
     </html>
