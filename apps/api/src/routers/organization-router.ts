@@ -9,6 +9,7 @@ import { subscriptions } from "@/schema/subscription";
 import { db } from "@/utils/db";
 import { resolveDocsSiteStoragePrefix, syncDocsSiteKv } from "@/utils/docs-site-kv";
 import { log } from "@/utils/logger";
+import { isSiteSubdomain, siteSubdomainSchema } from "@/utils/site-subdomain";
 import { tryCatch } from "@/utils/try-catch";
 
 import { auth } from "../utils/auth";
@@ -19,7 +20,7 @@ export const organizationRouter = {
     .input(
       z.object({
         name: z.string().min(1),
-        slug: z.string().min(1),
+        slug: siteSubdomainSchema,
         logo: z.url().optional(),
       }),
     )
@@ -66,6 +67,10 @@ export const organizationRouter = {
     .input(z.string().min(1))
     .output(z.boolean())
     .handler(async ({ input }) => {
+      if (!isSiteSubdomain(input)) {
+        return false;
+      }
+
       try {
         const { status } = await auth.api.checkOrganizationSlug({
           body: {
@@ -137,7 +142,7 @@ export const organizationRouter = {
       z
         .object({
           name: z.string().min(1).optional(),
-          slug: z.string().min(1).optional(),
+          slug: siteSubdomainSchema.optional(),
         })
         .refine((data) => data.name || data.slug, {
           message: "At least one of name or slug is required",

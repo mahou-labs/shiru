@@ -87,6 +87,16 @@ function createClient(context: RpcContext) {
 }
 
 describe("createOrg", () => {
+  it.each(["Bad", "bad_slug", "-bad", "bad-", "bad.slug", "bad slug", "app", "api", "docs", "t", "www"])(
+    "rejects unavailable Site Subdomain %s before creating an organization",
+    async (slug) => {
+      const client = createClient(createMockContext());
+
+      await expect(client.createOrg({ name: "Org", slug })).rejects.toThrow();
+      expect(mockAuthApi.createOrganization).not.toHaveBeenCalled();
+    },
+  );
+
   it("creates org, sets active, forwards cookies", async () => {
     mockAuthApi.createOrganization.mockResolvedValue({
       id: "new-org",
@@ -169,6 +179,16 @@ describe("checkSlugAvailability", () => {
       slug: "my-slug",
     });
   });
+
+  it.each(["Bad", "bad_slug", "-bad", "bad-", "bad.slug", "bad slug", "app", "api", "docs", "t", "www"])(
+    "returns false for unavailable Site Subdomain %s without calling Better Auth",
+    async (slug) => {
+      const client = createClient(createMockContext());
+
+      await expect(client.checkSlugAvailability(slug)).resolves.toBe(false);
+      expect(mockAuthApi.checkOrganizationSlug).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe("getSubscription", () => {
@@ -254,6 +274,16 @@ describe("updateOrg", () => {
     const client = createClient(createMockContext());
     await expect(client.updateOrg({})).rejects.toThrow();
   });
+
+  it.each(["Bad", "bad_slug", "-bad", "bad-", "bad.slug", "bad slug", "app", "api", "docs", "t", "www"])(
+    "rejects unavailable Site Subdomain %s before renaming an organization",
+    async (slug) => {
+      const client = createClient(createMockContext());
+
+      await expect(client.updateOrg({ slug })).rejects.toThrow();
+      expect(mockAuthApi.updateOrganization).not.toHaveBeenCalled();
+    },
+  );
 
   it("refreshes DOCS_KV when the organization slug changes", async () => {
     mockDbSequence(
