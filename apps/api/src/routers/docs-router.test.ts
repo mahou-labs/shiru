@@ -1019,6 +1019,28 @@ describe("PublishDocsWorkflow — fetch-github-files step", () => {
     const fakeStep = makeFakeStep();
     await expect(workflow.run(buildEvent(), fakeStep as never)).rejects.toThrow();
   });
+
+  it.each([
+    ["uppercase segment", "guides/Getting-Started.mdx"],
+    ["uppercase extension", "guides/getting-started.MDX"],
+    ["non-kebab segment", "guides/getting_started.mdx"],
+    ["empty dotfile segment", "guides/.mdx"],
+  ])("rejects a Content-only MDX filename with an %s", async (_case, path) => {
+    primeDbRaw([SITE_ROW], [ORG_ROW], []);
+
+    mockGetTree.mockResolvedValue({
+      data: { tree: [{ path, type: "blob", sha: "b1" }] },
+    });
+
+    const workflow = instantiate();
+    const fakeStep = makeFakeStep();
+    await expect(workflow.run(buildEvent(), fakeStep as never)).rejects.toThrow(
+      "Invalid Document Path",
+    );
+
+    const { env } = await import("cloudflare:workers");
+    expect(env.DOCS_SOURCE.put).not.toHaveBeenCalled();
+  });
 });
 
 describe("PublishDocsWorkflow — upload-source-to-r2 step", () => {
@@ -1026,14 +1048,14 @@ describe("PublishDocsWorkflow — upload-source-to-r2 step", () => {
     mockGetRef.mockResolvedValue({ data: { object: { sha: "commit-sha-abc" } } });
   });
 
-  it("calls DOCS_SOURCE.put with the {storagePrefix}/{commitSha}/{path} key for each file", async () => {
+  it("uploads valid root and nested Content-only MDX filenames with their source paths", async () => {
     primeDbRaw([SITE_ROW], [ORG_ROW], [], [], []);
 
     mockGetTree.mockResolvedValue({
       data: {
         tree: [
-          { path: "a.md", type: "blob", sha: "sha-a" },
-          { path: "b.md", type: "blob", sha: "sha-b" },
+          { path: "index.mdx", type: "blob", sha: "sha-index" },
+          { path: "guides/getting-started.mdx", type: "blob", sha: "sha-guide" },
         ],
       },
     });
@@ -1047,11 +1069,11 @@ describe("PublishDocsWorkflow — upload-source-to-r2 step", () => {
     const { env } = await import("cloudflare:workers");
     expect(env.DOCS_SOURCE.put).toHaveBeenCalledTimes(2);
     expect(env.DOCS_SOURCE.put).toHaveBeenCalledWith(
-      "docs-acme/commit-sha-abc/a.md",
+      "docs-acme/commit-sha-abc/index.mdx",
       expect.any(Uint8Array),
     );
     expect(env.DOCS_SOURCE.put).toHaveBeenCalledWith(
-      "docs-acme/commit-sha-abc/b.md",
+      "docs-acme/commit-sha-abc/guides/getting-started.mdx",
       expect.any(Uint8Array),
     );
   });

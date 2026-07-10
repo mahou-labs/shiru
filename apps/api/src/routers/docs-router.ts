@@ -134,6 +134,7 @@ export const docsRouter = {
 // trying to escape — file paths originate from a (potentially attacker-owned)
 // GitHub repository and are written into the build sandbox.
 const SAFE_PATH_SEGMENT = /^[A-Za-z0-9._-]+$/;
+const documentPathSegment = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export const validateDocsFilePath = (path: string): void => {
   if (!path || path.length > 1024) {
@@ -150,6 +151,16 @@ export const validateDocsFilePath = (path: string): void => {
     }
     if (!SAFE_PATH_SEGMENT.test(segment)) {
       throw new NonRetryableError(`Unsafe characters in docs file path: ${path}`);
+    }
+  }
+
+  if (path.toLowerCase().endsWith(".mdx")) {
+    const documentPath = path.slice(0, -".mdx".length);
+    if (
+      !path.endsWith(".mdx") ||
+      !documentPath.split("/").every((segment) => documentPathSegment.test(segment))
+    ) {
+      throw new NonRetryableError(`Invalid Document Path filename: ${path}`);
     }
   }
 };
