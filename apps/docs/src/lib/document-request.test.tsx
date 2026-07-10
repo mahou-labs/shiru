@@ -68,7 +68,9 @@ function DocumentHtml({ document }: { document: RenderedDocument }) {
         <meta charSet="utf-8" />
         <meta content="width=device-width, initial-scale=1" name="viewport" />
         <title>{document.title}</title>
-        {document.description ? <meta content={document.description} name="description" /> : null}
+        {document.description !== undefined ? (
+          <meta content={document.description} name="description" />
+        ) : null}
       </head>
       <body>
         <DocumentArticle document={document} />
@@ -144,18 +146,18 @@ describe("Documentation Delivery request handler", () => {
     expect(trailingSlash.headers.get("location")).toBe("/guides/install");
   });
 
-  it("renders metadata, GFM, heading anchors, and safe internal links", async () => {
+  it("renders Document Metadata only in the head with GFM, Heading Anchors, and safe internal links", async () => {
     const response = await handleDocumentRequest(
       new Request("http://shiru.localhost:3000/guides/start"),
       createBindings({
         [documentKey("guides/start.mdx")]: [
           "---",
-          "title: Start",
-          "description: Learn the basics",
+          "title: Metadata only title",
+          "description: Metadata only description",
           "---",
           "",
-          "# Install",
-          "# Install",
+          "# Install ![Cloudflare](https://example.com/cloudflare.svg)",
+          "# Install ![Cloudflare](https://example.com/cloudflare.svg)",
           "",
           "| Name | Value |",
           "| --- | --- |",
@@ -163,17 +165,24 @@ describe("Documentation Delivery request handler", () => {
           "",
           "- [x] Done",
           "",
+          "~~Removed~~ and www.example.com",
+          "",
           "[Next](../next.mdx?mode=fast#details) [Site](https://example.com)",
         ].join("\n"),
       }),
     );
 
     const html = await response.text();
-    expect(html).toContain("<title>Start</title>");
-    expect(html).toContain('content="Learn the basics" name="description"');
-    expect(html).toContain('id="install"');
-    expect(html).toContain('id="install-1"');
+    expect(html).toContain("<title>Metadata only title</title>");
+    expect(html).toContain('content="Metadata only description" name="description"');
+    expect(html.match(/Metadata only title/g)).toHaveLength(1);
+    expect(html.match(/Metadata only description/g)).toHaveLength(1);
+    expect(html).toContain('id="install-cloudflare"');
+    expect(html).toContain('id="install-cloudflare-1"');
     expect(html).toContain("<table>");
+    expect(html).toContain('type="checkbox"');
+    expect(html).toContain("<del>Removed</del>");
+    expect(html).toContain('href="http://www.example.com"');
     expect(html).toContain('href="/next?mode=fast#details"');
     expect(html).toContain('href="https://example.com"');
   });
@@ -182,8 +191,14 @@ describe("Documentation Delivery request handler", () => {
     "---\ntitle: Bad\n---\n\n# Bad\n\n<script>alert(1)</script>",
     "---\ntitle: Bad\n---\n\n# Bad\n\n<Component />",
     "---\ntitle: Bad\n---\n\nimport value from './value'\n\n# Bad",
+    "---\ntitle: Bad\n---\n\nexport const value = 1\n\n# Bad",
     "---\ntitle: Bad\n---\n\n# Bad\n\n{value}",
+    "---\ntitle: Bad\n---\n\n<>Bad</>",
     "---\ntitle: Bad\n---\n\n# Bad\n\n[Unsafe](javascript:alert(1))",
+    "---\ntitle: [private-parser-detail\n---\n\n# Bad",
+    "---\ndescription: Missing title\n---\n\n# Bad",
+    "---\ntitle: '   '\n---\n\n# Bad",
+    "---\ntitle: Bad\ndescription:\n  - Not a string\n---\n\n# Bad",
     "# Bad",
   ])("keeps invalid Content-only MDX behind a generic server error", async (source) => {
     const response = await handleDocumentRequest(

@@ -1,10 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { getPublishedDocument } from "@/functions/document";
+import { getDocumentHead } from "@/lib/document-head";
 
 export const Route = createFileRoute("/$")({
   component: DocumentRoute,
-  head: ({ loaderData }) => documentHead(loaderData),
+  head: ({ loaderData }) => getDocumentHead(loaderData),
   loader: ({ params }) => {
     const path = params._splat ?? "";
     if (path.endsWith("/")) {
@@ -26,17 +27,4 @@ function NotFound() {
       <p>Not found</p>
     </main>
   );
-}
-
-function documentHead(loaderData: { description?: string; title: string } | undefined) {
-  if (!loaderData) {
-    return {};
-  }
-
-  return {
-    meta: [
-      { title: loaderData.title },
-      ...(loaderData.description ? [{ content: loaderData.description, name: "description" }] : []),
-    ],
-  };
 }

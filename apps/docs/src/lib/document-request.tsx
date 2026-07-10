@@ -1,5 +1,5 @@
 import GithubSlugger from "github-slugger";
-import { toJsxRuntime } from "hast-util-to-jsx-runtime";
+import { toJsxRuntime, type Components } from "hast-util-to-jsx-runtime";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
 import remarkMdx from "remark-mdx";
@@ -34,19 +34,24 @@ export type RenderedDocument = {
   title: string;
 };
 
-export const documentComponents = {};
+export type DocumentComponentRegistry = Readonly<
+  Record<string, React.ElementType> & Partial<Components>
+>;
+
+export const documentComponents: DocumentComponentRegistry = Object.freeze({});
 
 const siteSubdomain = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const documentPathSegment = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const documentComponentName = /^[A-Z][A-Za-z0-9]*$/;
 const maximumDocumentBytes = 1024 * 1024;
-const unsafeMdxNodeTypes = new Set([
+const executableMdxNodeTypes = new Set([
   "html",
   "mdxFlowExpression",
   "mdxTextExpression",
   "mdxjsEsm",
-  "mdxJsxFlowElement",
-  "mdxJsxTextElement",
 ]);
+const documentComponentNodeTypes = ["mdxJsxFlowElement", "mdxJsxTextElement"] as const;
+const documentComponentNodeTypeSet = new Set<string>(documentComponentNodeTypes);
 const externalProtocols = new Set(["http:", "https:", "mailto:", "tel:"]);
 
 export class NotFoundError extends Error {}
@@ -168,21 +173,35 @@ async function getSiteRecord(bindings: DocsBindings, subdomain: string): Promise
 
 function renderDocument(source: string, sourcePath: string): RenderedDocument {
   const { content, metadata } = parseDocumentMetadata(source);
-  const processor = unified().use(remarkParse).use(remarkMdx).use(remarkGfm).use(remarkRehype);
+  const processor = unified()
+    .use(remarkParse)
+    .use(remarkMdx)
+    .use(remarkGfm)
+    .use(remarkRehype, undefined, { passThrough: [...documentComponentNodeTypes] });
   const markdownTree = processor.parse(content);
 
   visit(markdownTree, (node) => {
-    if (unsafeMdxNodeTypes.has(node.type)) {
+    if (executableMdxNodeTypes.has(node.type)) {
       throw new InvalidDocumentError("Unsupported Content-only MDX syntax");
+    }
+    if (documentComponentNodeTypeSet.has(node.type)) {
+      getDocumentComponentName(node);
+      getDocumentComponentProperties(node);
     }
   });
 
   const hastTree = processor.runSync(markdownTree);
   const slugger = new GithubSlugger();
 
+  visit(hastTree, (node) => {
+    if (documentComponentNodeTypeSet.has(node.type)) {
+      convertDocumentComponent(node);
+    }
+  });
+
   visit(hastTree, "element", (node) => {
     if (/^h[1-6]$/.test(node.tagName)) {
-      node.properties.id = slugger.slug(getTextContent(node));
+      node.properties.id = slugger.slug(getHeadingAnchorText(node));
     }
     if (node.tagName === "a" && typeof node.properties.href === "string") {
       node.properties.href = rewriteDocumentLink(node.properties.href, sourcePath);
@@ -222,8 +241,81 @@ function parseDocumentMetadata(source: string) {
   };
 }
 
-function getTextContent(node: unknown): string {
-  if (!node || typeof node !== "object" || !("children" in node) || !Array.isArray(node.children)) {
+function getDocumentComponentName(node: unknown) {
+  if (
+    !node ||
+    typeof node !== "object" ||
+    !("name" in node) ||
+    typeof node.name !== "string" ||
+    !documentComponentName.test(node.name) ||
+    !Object.hasOwn(documentComponents, node.name)
+  ) {
+    throw new InvalidDocumentError("Unsupported Document Component");
+  }
+
+  return node.name;
+}
+
+function getDocumentComponentProperties(node: unknown) {
+  if (!node || typeof node !== "object" || !("attributes" in node)) {
+    throw new InvalidDocumentError("Invalid Document Component");
+  }
+  if (!Array.isArray(node.attributes)) {
+    throw new InvalidDocumentError("Invalid Document Component properties");
+  }
+
+  const properties: Record<string, boolean | string> = {};
+  for (const attribute of node.attributes) {
+    if (
+      !attribute ||
+      typeof attribute !== "object" ||
+      !("type" in attribute) ||
+      attribute.type !== "mdxJsxAttribute" ||
+      !("name" in attribute) ||
+      typeof attribute.name !== "string" ||
+      !("value" in attribute) ||
+      (attribute.value !== null && typeof attribute.value !== "string")
+    ) {
+      throw new InvalidDocumentError("Invalid Document Component properties");
+    }
+    properties[attribute.name] = attribute.value ?? true;
+  }
+
+  return properties;
+}
+
+function convertDocumentComponent(node: unknown) {
+  if (!node || typeof node !== "object") {
+    throw new InvalidDocumentError("Invalid Document Component");
+  }
+
+  const tagName = getDocumentComponentName(node);
+  const properties = getDocumentComponentProperties(node);
+  Object.assign(node, { properties, tagName, type: "element" });
+  if ("name" in node) {
+    delete node.name;
+  }
+  if ("attributes" in node) {
+    delete node.attributes;
+  }
+}
+
+function getHeadingAnchorText(node: unknown): string {
+  if (!node || typeof node !== "object") {
+    return "";
+  }
+  if (
+    "tagName" in node &&
+    node.tagName === "img" &&
+    "properties" in node &&
+    node.properties &&
+    typeof node.properties === "object" &&
+    "alt" in node.properties &&
+    typeof node.properties.alt === "string"
+  ) {
+    return node.properties.alt;
+  }
+  if (!("children" in node) || !Array.isArray(node.children)) {
     return "";
   }
 
@@ -235,7 +327,7 @@ function getTextContent(node: unknown): string {
       if ("value" in child && typeof child.value === "string") {
         return child.value;
       }
-      return getTextContent(child);
+      return getHeadingAnchorText(child);
     })
     .join("");
 }
