@@ -68,6 +68,63 @@ describe("Documentation Delivery Worker", () => {
     expect(html).toContain('content="" name="description"');
   });
 
+  it("renders repository-style Internal Document Links as safe public navigation", async () => {
+    await publishDocument(
+      "guides/setup/start",
+      [
+        "---",
+        "title: Safe links",
+        "---",
+        "",
+        "[Install](./install.mdx?mode=fast#requirements)",
+        "[Overview](../overview.mdx)",
+        "[Home](../../index.mdx?ref=guide#intro)",
+        "[Section](#examples)",
+        "[Filtered](?mode=compact#examples)",
+        "[Empty]()",
+        "[Relative](./faq)",
+        "[HTTPS](https://example.com/docs.mdx?ref=shiru#start)",
+        "[HTTP](http://example.com/docs)",
+        "[Email](mailto:docs@example.com)",
+        "[Phone](tel:+15551234567)",
+      ].join("\n"),
+    );
+
+    const response = await env.DOCS_WORKER.fetch("http://shiru.localhost:3000/guides/setup/start");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('href="/guides/setup/install?mode=fast#requirements"');
+    expect(html).toContain('href="/guides/overview"');
+    expect(html).toContain('href="/?ref=guide#intro"');
+    expect(html).toContain('href="#examples"');
+    expect(html).toContain('href="?mode=compact#examples"');
+    expect(html).toContain('href=""');
+    expect(html).toContain('href="./faq"');
+    expect(html).toContain('href="https://example.com/docs.mdx?ref=shiru#start"');
+    expect(html).toContain('href="http://example.com/docs"');
+    expect(html).toContain('href="mailto:docs@example.com"');
+    expect(html).toContain('href="tel:+15551234567"');
+  });
+
+  it.each([
+    ["JavaScript", "javascript:alert(1)"],
+    ["data", "data:text/html,unsafe"],
+    ["FTP", "ftp://example.com/file"],
+    ["file", "file:///private/file"],
+    ["protocol-relative", "//example.com/file"],
+  ])("rejects %s links behind a generic public error", async (_linkType, href) => {
+    await publishDocument("unsafe-link", `---\ntitle: Unsafe link\n---\n\n[Unsafe](${href})`);
+
+    const response = await env.DOCS_WORKER.fetch("http://shiru.localhost:3000/unsafe-link");
+    const body = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(body).toContain("Unable to render document");
+    expect(body).not.toContain(href);
+    expect(body).not.toContain("Unsupported link protocol");
+  });
+
   it.each([
     ["raw HTML", "---\ntitle: Private title\n---\n\n<script>private-parser-detail</script>"],
     ["unknown JSX", "---\ntitle: Private title\n---\n\n<PrivateComponent />"],

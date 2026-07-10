@@ -333,7 +333,7 @@ function getHeadingAnchorText(node: unknown): string {
 }
 
 function rewriteDocumentLink(href: string, sourcePath: string) {
-  if (href.startsWith("#") || href.startsWith("?")) {
+  if (href === "" || href.startsWith("#") || href.startsWith("?")) {
     return href;
   }
   if (href.startsWith("//")) {
