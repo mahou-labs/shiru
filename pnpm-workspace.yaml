@@ -19,18 +19,30 @@ catalog:
   tailwind-merge: ^3.6.0
   tailwindcss: ^4.3.2
   uuid: ^14.0.1
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.1
+  vite: npm:@voidzero-dev/vite-plus-core@0.2.4
   wrangler: ^4.107.0
   zod: ^4.4.3
+  vitest: 4.1.10
+  vite-plus: 0.2.4
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - vite-plus
   - "@voidzero-dev/vite-plus-*"
+  - "@voidzero-dev/*"
+  - oxlint
+  - "@oxlint/*"
+  - oxlint-tsgolint
+  - "@oxlint-tsgolint/*"
+  - oxfmt
+  - "@oxfmt/*"
+  - vitest
+  - "@vitest/*"
 
 overrides:
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.1
+  vite: "catalog:"
   kysely: 0.28.17
+  vitest: "catalog:"
 
 allowBuilds:
   better-sqlite3: true
@@ -45,3 +57,10 @@ allowBuilds:
   protobufjs: false
   sharp: false
   workerd: false
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: "*"
+    vitest: "*"

@@ -6,11 +6,11 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vp dev --port 3000",
     "generate-routes": "tsr generate",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest run",
+    "build": "vp build",
+    "preview": "vp preview",
+    "test": "vp test run",
     "deploy": "pnpm run build && wrangler deploy"
   },
   "dependencies": {
@@ -54,7 +54,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "jsdom": "^29.1.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9",
+    "vitest": "catalog:",
     "wrangler": "^4.107.0"
   },
   "pnpm": {
