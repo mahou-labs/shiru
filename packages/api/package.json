@@ -1,0 +1,25 @@
+{
+  "name": "@shiru/api",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check-types": "tsc -b"
+  },
+  "dependencies": {
+    "@orpc/client": "catalog:",
+    "@orpc/openapi": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/zod": "catalog:",
+    "@shiru/auth": "workspace:*",
+    "@shiru/db": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@shiru/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

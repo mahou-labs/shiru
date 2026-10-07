@@ -1,0 +1,38 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  esbuild: true
+  sharp: true
+  msgpackr-extract: true
+  workerd: true
+catalog:
+  zod: ^4.5.4
+  typescript: ^6.0.3
+  "@types/node": ^26.4.1
+  varlock: 1.18.0
+  "@cloudflare/workers-types": ^5.20260906.1
+  "@orpc/server": ^1.15.0
+  "@orpc/openapi": ^1.15.0
+  "@orpc/zod": ^1.15.0
+  better-auth: 1.7.7
+  lucide-react: ^1.41.0
+  next-themes: ^0.4.6
+  react: ^19.2.8
+  react-dom: ^19.2.8
+  sonner: ^2.0.8
+  "@orpc/client": ^1.15.0
+  "@polar-sh/better-auth": ^1.8.4
+  "@types/react": ^19.2.18
+  "@types/react-dom": ^19.2.7
+  tailwindcss: ^4.3.3
+  drizzle-orm: 1.0.0-rc.4
+  vite: npm:@voidzero-dev/vite-plus-core@1.0.0
+  vite-plus: 1.0.0
+overrides:
+  vite@*: "catalog:"
+peerDependencyRules:
+  allowAny:
+    - vite
+  allowedVersions:
+    vite: "*"

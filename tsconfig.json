@@ -1,0 +1,3 @@
+{
+  "extends": "@shiru/config/tsconfig.base.json"
+}

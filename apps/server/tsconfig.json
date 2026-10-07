@@ -1,0 +1,14 @@
+{
+  "extends": "@shiru/config/tsconfig.base.json",
+  "references": [{ "path": "../../packages/api" }],
+  "include": ["src", "cloudflare.config.ts", "vite.config.ts", ".cloudflare/types"],
+  "compilerOptions": {
+    "types": ["node"],
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx"
+  }
+}
