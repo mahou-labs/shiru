@@ -9,38 +9,22 @@
   "scripts": {
     "dev": "vp run -r dev",
     "build": "vp run -r build",
-    "check-types": "vp run -r check-types",
-    "check": "vp check && vp run -r check-types",
-    "lint": "vp lint",
-    "format": "vp fmt",
-    "staged": "vp staged",
+    "check-types": "vp check --no-fmt --no-lint",
+    "deploy:dry-run": "vp run --filter api deploy:dry-run && vp run --filter dashboard deploy:dry-run",
     "hooks:setup": "vp config",
-    "dev:web": "vp run --filter web dev",
-    "dev:server": "vp run --filter server dev",
-    "db:push": "vp run --filter @shiru/db db:push",
-    "db:studio": "vp run --filter @shiru/db db:studio",
-    "db:generate": "vp run --filter @shiru/db db:generate",
-    "db:migrate": "vp run --filter @shiru/db db:migrate",
-    "deploy": "vp run --filter server deploy",
-    "deploy:server": "vp run --filter server deploy",
-    "deploy:web": "vp run --filter web deploy",
-    "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./packages/db/",
-    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./packages/db/"
-  },
-  "dependencies": {
-    "zod": "catalog:"
+    "dev:dashboard": "vp run --filter dashboard dev",
+    "dev:api": "vp run --filter api dev",
+    "db:push": "vp run --filter api db:push",
+    "db:studio": "vp run --filter api db:studio",
+    "db:generate": "vp run --filter api db:generate",
+    "db:migrate": "vp run --filter api db:migrate",
+    "deploy:api": "vp run --filter api deploy",
+    "deploy:dashboard": "vp run --filter dashboard deploy"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "catalog:",
-    "@shiru/config": "workspace:*",
     "@types/node": "catalog:",
-    "rolldown": "1.2.7",
     "typescript": "catalog:",
-    "varlock": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.1"
   },
   "packageManager": "pnpm@12.9.1"
 }

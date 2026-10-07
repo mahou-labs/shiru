@@ -10,8 +10,8 @@ catalog:
   zod: ^4.5.4
   typescript: ^6.0.3
   "@types/node": ^26.4.1
-  varlock: 1.18.0
-  "@cloudflare/workers-types": ^5.20260906.1
+  "@cloudflare/vite-plugin": 2.0.0-beta.sha-52b0dc0e9
+  cf: 1.0.0-beta.12
   "@orpc/server": ^1.15.0
   "@orpc/openapi": ^1.15.0
   "@orpc/zod": ^1.15.0

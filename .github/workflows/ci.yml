@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Public test-only values; CI never needs production credentials.
+      CORS_ORIGIN: https://app.example.com
+      BETTER_AUTH_URL: https://api.example.com
+      POLAR_SUCCESS_URL: https://app.example.com/success?checkout_id={CHECKOUT_ID}
+      VITE_API_URL: https://api.example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version: "24"
+          cache: true
+          run-install: false
+      - run: vp install --frozen-lockfile
+      - run: vp run build
+      - run: vp check
+      - run: vp run deploy:dry-run
