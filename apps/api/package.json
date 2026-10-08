@@ -3,36 +3,41 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "cf dev",
+    "dev": "varlock load && cf dev",
     "build": "cf build",
     "deploy": "cf deploy",
     "deploy:dry-run": "cf deploy --prebuilt --dry-run",
-    "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:migrate": "cf d1 migrations apply 094e93eb-7015-487f-8888-7d5013a4a8e5 --dir drizzle --pattern 'drizzle/*/migration.sql'",
+    "db:migrate:local": "cf d1 migrations apply 094e93eb-7015-487f-8888-7d5013a4a8e5 --dir drizzle --pattern 'drizzle/*/migration.sql' --local --mode development --persist-to .cloudflare/state",
+    "test": "vp test --coverage"
   },
   "dependencies": {
-    "@better-auth/core": "1.7.7",
-    "@better-auth/drizzle-adapter": "1.7.7",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
     "@polar-sh/better-auth": "catalog:",
     "@polar-sh/sdk": "^0.47.0",
+    "@react-email/components": "^1.0.12",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
     "hono": "^4.13.7",
-    "postgres": "^3.4.9",
     "posthog-node": "^5.55.0",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "uuid": "^14.0.2",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitest/coverage-v8": "5.0.1",
     "cf": "catalog:",
     "drizzle-kit": "1.0.0-rc.4",
     "typescript": "catalog:",
+    "varlock": "^1.21.1",
     "vite": "catalog:"
   }
 }

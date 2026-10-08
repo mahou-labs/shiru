@@ -11,8 +11,7 @@ export const Route = createFileRoute("/_auth")({
         to: "/login",
       });
     }
-    const { data: customerState } = await authClient.customer.state();
-    return { session, customerState };
+    return { session };
   },
 });
 

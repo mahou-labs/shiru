@@ -16,10 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      # Public test-only values; CI never needs production credentials.
-      CORS_ORIGIN: https://app.example.com
-      BETTER_AUTH_URL: https://api.example.com
-      POLAR_SUCCESS_URL: https://app.example.com/success?checkout_id={CHECKOUT_ID}
+      # Example value; CI never needs production credentials.
       VITE_API_URL: https://api.example.com
     steps:
       - uses: actions/checkout@v4
@@ -31,4 +28,5 @@ jobs:
       - run: vp install --frozen-lockfile
       - run: vp run build
       - run: vp check
+      - run: vp run test
       - run: vp run deploy:dry-run

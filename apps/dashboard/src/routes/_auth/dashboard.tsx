@@ -10,26 +10,38 @@ export const Route = createFileRoute("/_auth/dashboard")({
 });
 
 function RouteComponent() {
-  const { session, customerState } = Route.useRouteContext();
+  const { session } = Route.useRouteContext();
+  const organizationId = session.data?.session.activeOrganizationId;
 
   const privateData = useQuery(orpc.privateData.queryOptions());
-
-  const hasProSubscription = (customerState?.activeSubscriptions?.length ?? 0) > 0;
+  const access = useQuery({ ...orpc.subscription.queryOptions(), enabled: !!organizationId });
 
   return (
     <div>
       <h1>Dashboard</h1>
       <p>Welcome {session.data?.user.name}</p>
       <p>API: {privateData.data?.message}</p>
-      <p>Plan: {hasProSubscription ? "Pro" : "Free"}</p>
-      {hasProSubscription ? (
+      {!organizationId ? (
+        <p>Create an organization to start your trial.</p>
+      ) : access.data?.kind === "subscription" ? (
         <Button onClick={async () => await authClient.customer.portal()}>
-          Manage Subscription
+          Manage subscription
         </Button>
       ) : (
-        <Button onClick={async () => await authClient.checkout({ slug: "pro" })}>
-          Upgrade to Pro
-        </Button>
+        <>
+          <p>
+            {access.data?.kind === "trial"
+              ? `Trial ends ${access.data.endsAt.toLocaleDateString()}`
+              : "Your trial has ended"}
+          </p>
+          <Button
+            onClick={async () =>
+              await authClient.checkout({ slug: "starter-monthly", referenceId: organizationId })
+            }
+          >
+            Upgrade
+          </Button>
+        </>
       )}
     </div>
   );

@@ -57,3 +57,6 @@ coverage
 .cache
 tmp
 temp
+
+# verification runs (logs and evidence)
+/.verify/

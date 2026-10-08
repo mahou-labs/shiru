@@ -6,6 +6,7 @@ allowBuilds:
   sharp: true
   msgpackr-extract: true
   workerd: true
+  core-js: false
 catalog:
   zod: ^4.5.4
   typescript: ^6.0.3

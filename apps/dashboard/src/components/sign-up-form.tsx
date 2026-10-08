@@ -2,7 +2,6 @@ import { Button } from "@shiru/ui/components/button";
 import { Input } from "@shiru/ui/components/input";
 import { Label } from "@shiru/ui/components/label";
 import { useForm } from "@tanstack/react-form";
-import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -11,9 +10,6 @@ import { authClient } from "@/lib/auth-client";
 import Loader from "./loader";
 
 export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
-  const navigate = useNavigate({
-    from: "/",
-  });
   const { isPending } = authClient.useSession();
 
   const form = useForm({
@@ -28,13 +24,11 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
           email: value.email,
           password: value.password,
           name: value.name,
+          callbackURL: `${window.location.origin}/dashboard`,
         },
         {
           onSuccess: () => {
-            void navigate({
-              to: "/dashboard",
-            });
-            toast.success("Sign up successful");
+            toast.success(`Check ${value.email} for a link to verify your account`);
           },
           onError: (error) => {
             toast.error(error.error.message || error.error.statusText);

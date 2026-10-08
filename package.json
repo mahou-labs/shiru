@@ -14,12 +14,13 @@
     "hooks:setup": "vp config",
     "dev:dashboard": "vp run --filter dashboard dev",
     "dev:api": "vp run --filter api dev",
-    "db:push": "vp run --filter api db:push",
-    "db:studio": "vp run --filter api db:studio",
     "db:generate": "vp run --filter api db:generate",
     "db:migrate": "vp run --filter api db:migrate",
     "deploy:api": "vp run --filter api deploy",
-    "deploy:dashboard": "vp run --filter dashboard deploy"
+    "deploy:dashboard": "vp run --filter dashboard deploy",
+    "db:migrate:local": "vp run --filter api db:migrate:local",
+    "update": "vp update --recursive --workspace-root --interactive --latest",
+    "test": "vp run --filter api test"
   },
   "devDependencies": {
     "@types/node": "catalog:",
