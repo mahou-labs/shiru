@@ -10,17 +10,16 @@
     "dev": "vp run -r dev",
     "build": "vp run -r build",
     "check-types": "vp check --no-fmt --no-lint",
-    "deploy:dry-run": "vp run --filter api deploy:dry-run",
+    "deploy:dry-run": "vp run -r deploy:dry-run",
     "hooks:setup": "vp config",
     "dev:dashboard": "vp run --filter dashboard dev",
     "dev:api": "vp run --filter api dev",
     "db:generate": "vp run --filter api db:generate",
     "db:migrate": "vp run --filter api db:migrate",
-    "deploy:api": "vp run --filter api deploy",
-    "deploy:dashboard": "vp run --filter dashboard deploy",
     "db:push": "vp run --filter api db:push",
     "update": "vp update --recursive --workspace-root --interactive --latest",
-    "test": "vp run --filter api test"
+    "test": "vp run --filter api test",
+    "deploy": "vp run db:migrate && vp run -r deploy"
   },
   "devDependencies": {
     "@types/node": "catalog:",

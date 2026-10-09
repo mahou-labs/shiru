@@ -72,7 +72,15 @@ Access rules live in `apps/api/src/utils/billing.ts`. Polar's `subscription.crea
 
 ## Deployment
 
-Authenticate once with `cf auth login` from `apps/api`. Then run `vp run db:migrate`, `vp run deploy:api` and `vp run deploy:dashboard`.
+Pushes to `main` deploy through the `deploy` job in `.github/workflows/ci.yml`, after checks, build and tests pass. It applies pending D1 migrations, then deploys the three Workers:
+
+- `shiru-api` serves `api.shiru.sh`.
+- `shiru-dashboard` serves `app.shiru.sh`.
+- `shiru-site` serves `shiru.sh`.
+
+The job needs three repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `NUCLEO_LICENSE_KEY`. Production URLs live in each app's Cloudflare config and in `apps/dashboard/.env.production`. The API's `BETTER_AUTH_SECRET`, `POLAR_ACCESS_TOKEN` and `POLAR_WEBHOOK_SECRET` are Worker secrets, set with `cf workers secrets update`.
+
+To deploy by hand, export `CLOUDFLARE_API_TOKEN`, then run `vp run build` and `vp run deploy`. Schema changes need a migration: run `vp run db:generate` in `apps/api` and commit the new folder in `apps/api/drizzle`.
 
 ## UI
 
