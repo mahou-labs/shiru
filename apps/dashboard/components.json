@@ -13,7 +13,7 @@
   "iconLibrary": "lucide",
   "aliases": {
     "components": "@/components",
-    "utils": "@shiru/ui/lib/utils",
+    "utils": "cn",
     "ui": "@shiru/ui/components",
     "lib": "@/lib",
     "hooks": "@/hooks"

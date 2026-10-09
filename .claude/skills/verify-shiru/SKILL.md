@@ -5,7 +5,7 @@ description: Launch and drive the shiru dashboard (React, http://localhost:3001)
 
 # Verify shiru
 
-Shiru is two apps started together by `vp run dev`: the dashboard at `http://localhost:3001` and the API at `http://localhost:3000`. Users touch the dashboard. The API is also reachable over HTTP, which is the only entry point for features with no UI yet (organizations). All helpers live in `.claude/skills/verify-shiru/scripts/`. Run them from the repo root.
+Shiru is two apps started together by `vp run dev`: the dashboard at `http://localhost:3001` and the API at `http://localhost:3000`. Users touch the dashboard. The API is also reachable over HTTP, which is the fastest way to seed state (extra organizations, members) before driving the UI. All helpers live in `.claude/skills/verify-shiru/scripts/`. Run them from the repo root.
 
 Read `features/README.md` before driving anything. Each feature file there is the recipe for one user-facing feature.
 
@@ -40,9 +40,10 @@ node .claude/skills/verify-shiru/scripts/browser.mjs <steps.mjs> "$(cat .verify/
 
 - `goto(url)`, `url()`, `text()` (the page's visible text), `evaluate(js)`.
 - `waitForText(text, timeoutMs?)`, `waitForUrl(fragment, timeoutMs?)`. Both throw on timeout.
-- `fill(selector, value)` sets an input so React sees the change. Form fields use stable ids: `#name`, `#email`, `#password`.
-- `clickButton(label)` clicks the first button, link or menu item whose visible text is exactly `label`, such as `Need an account? Sign Up` or `Sign Out`. On `/login`, `Sign In` and `Sign Up` also match the header link, so submit forms with `click("form button[type=submit]")`.
+- `fill(selector, value)` sets an input so React sees the change. Select form fields by name: `[name=email]`, `[name=password]`.
+- `clickButton(label)` clicks the first button, link, menu item or select option whose visible text is exactly `label`, such as `Sign up` or `Sign out`. Submit forms with `click("form button[type=submit]")`.
 - `click(selector)` clicks the first element matching a CSS selector.
+- `press(selector)` clicks it with real mouse events. Use it for Base UI menu and select triggers, which `click()` does not open.
 - `screenshot(file)` saves a PNG into the evidence folder. `log(line)` appends to `steps.log`.
 
 A thrown error makes the run exit 1, write `FAIL <reason>` to `steps.log` and save `failure.png`. Browser console messages, uncaught exceptions and failed network requests (including CORS failures) always go to `browser-console.log`. Ready-made steps files are in `steps/`.

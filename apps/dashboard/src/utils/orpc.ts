@@ -1,39 +1,45 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import type { AppRouterClient } from "../../../api/src/routers";
-import { QueryCache, QueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toastManager } from "@shiru/ui/components/toast";
+import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 
-export function createQueryClient() {
-  return new QueryClient({
-    queryCache: new QueryCache({
-      onError: (error, query) => {
-        toast.error(`Error: ${error.message}`, {
-          action: {
-            label: "retry",
-            onClick: () => {
-              query.invalidate();
-            },
-          },
-        });
-      },
-    }),
-  });
+import { errorMessage } from "@/lib/errors";
+
+import type { AppRouterClient } from "../../../api/src/routers";
+
+declare module "@tanstack/react-query" {
+  interface Register {
+    queryMeta: { silent?: boolean };
+  }
 }
 
-export const queryClient = createQueryClient();
+export const queryClient = new QueryClient({
+  defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } },
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      if (query.meta?.silent) return;
+      toastManager.add({
+        type: "error",
+        title: errorMessage(error),
+        actionProps: { children: "Retry", onClick: () => void query.fetch() },
+      });
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      toastManager.add({ type: "error", title: errorMessage(error) });
+    },
+  }),
+});
 
-export const link = new RPCLink({
+const link = new RPCLink({
   url: `${import.meta.env.VITE_API_URL.replace(/\/$/, "")}/rpc`,
   fetch(url, options) {
-    return fetch(url, {
-      ...options,
-      credentials: "include",
-    });
+    return fetch(url, { ...options, credentials: "include" });
   },
 });
 
-export const client: AppRouterClient = createORPCClient(link);
+const client: AppRouterClient = createORPCClient(link);
 
 export const orpc = createTanstackQueryUtils(client);
