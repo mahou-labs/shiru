@@ -1,0 +1,164 @@
+---
+import type { Feature, Section } from "../content";
+import { calloutMdx, headHtml, linksMdx } from "../mocks";
+import Code from "./Code.astro";
+import Icon from "./Icon.astro";
+import Rich from "./Rich.astro";
+import SectionHeading from "./SectionHeading.astro";
+
+type Props = Extract<Section, { kind: "features" }>;
+
+const { heading, features } = Astro.props;
+
+const span: Record<Feature["visual"], string> = {
+  mdx: "md:col-span-2 lg:col-span-7",
+  commits: "md:col-span-2 lg:col-span-5",
+  head: "md:col-span-2 lg:col-span-4",
+  gfm: "lg:col-span-4",
+  urls: "lg:col-span-4",
+};
+
+const commits = [
+  { hash: "a1f3c9e", message: "Document webhook signatures", when: "2h", live: true },
+  { hash: "7d02b4e", message: "Add the Python quickstart", when: "1d" },
+  { hash: "3c9e1f0", message: "Fix a typo in errors.mdx", when: "3d" },
+  { hash: "e84b2d1", message: "Split the API reference", when: "1w" },
+  { hash: "0b7f6a3", message: "Import docs from the old site", when: "2w" },
+];
+
+const events = [
+  { name: "invoice.paid", when: "A payment succeeds" },
+  { name: "customer.deleted", when: "A customer is removed" },
+];
+
+const panel = "rounded-2xl bg-surface shadow-card";
+// Marked rows carry their own padding so the teal tint runs edge to edge.
+const rows = "py-3 text-[0.75rem]/[1.7] [&>code>span>span]:px-4";
+---
+
+<section class="py-20 md:py-28">
+  <div class="mx-auto w-full max-w-[1200px] px-5 md:px-10">
+    <SectionHeading {heading} />
+
+    <ul class="mt-12 grid gap-4 md:mt-16 md:grid-cols-2 lg:grid-cols-12">
+      {
+        features.map((feature) => (
+          <li
+            class:list={[
+              "flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface-muted px-7 pt-8 pb-7 md:px-8",
+              span[feature.visual],
+            ]}
+          >
+            <h3 class="text-[1.25rem]/[1.25] font-medium tracking-[-0.02em]">{feature.title}</h3>
+            <p class="mt-2 max-w-[44ch] text-[0.9375rem]/[1.5] text-fg-muted">
+              <Rich text={feature.body} />
+            </p>
+            <div class="mt-auto pt-8" inert>
+              {feature.visual === "mdx" && (
+                <div class="grid gap-6 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] sm:items-center">
+                  <Code code={calloutMdx} lang="md" label="webhooks.mdx" wrap class={`${panel} px-4 py-3.5 text-[0.8125rem]/[1.7]`} />
+                  <div>
+                    <div class="text-xl font-semibold tracking-[-0.02em]">Webhooks</div>
+                    <div class="mt-3 flex gap-2.5 rounded-xl bg-warn-soft p-3 text-[0.875rem]/[1.5] text-fg">
+                      <Icon name="warning" class="mt-px size-4.5 text-warn" />
+                      <p>Verify signatures before parsing the body.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {feature.visual === "commits" && (
+                <ol class="relative rounded-2xl bg-surface p-2 text-[0.875rem] shadow-card">
+                  <span class="absolute top-6 bottom-6 left-[20.5px] w-px bg-border" aria-hidden="true" />
+                  {commits.map((commit) => (
+                    <li
+                      class:list={[
+                        "relative flex items-center gap-3 rounded-xl px-3 py-2.5",
+                        commit.live && "bg-mock-raised",
+                      ]}
+                    >
+                      <span
+                        class:list={[
+                          "size-2.5 shrink-0 rounded-full border-2",
+                          commit.live ? "border-[#16a34a] bg-[#16a34a]" : "border-border-strong bg-surface",
+                        ]}
+                      />
+                      <span
+                        class:list={["font-mono text-[0.9em]", commit.live ? "font-medium text-fg" : "text-fg-muted"]}
+                        translate="no"
+                      >
+                        {commit.hash}
+                      </span>
+                      <span class="min-w-0 flex-1 truncate">{commit.message}</span>
+                      {commit.live ? (
+                        <span class="shrink-0 rounded-[4px] bg-[#16a34a] px-1.5 py-px text-[0.6875rem] font-semibold tracking-[0.04em] text-white uppercase">Live</span>
+                      ) : (
+                        <span class="shrink-0 text-fg-muted tabular-nums">{commit.when} ago</span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {feature.visual === "head" && (
+                <Code code={headHtml} lang="html" label="Rendered head" mark={[3, 4, 5, 6, 7, 8]} class={`${panel} ${rows}`} />
+              )}
+              {feature.visual === "gfm" && (
+                <div class="grid gap-5 rounded-2xl bg-surface p-4 text-[0.875rem] shadow-card">
+                  <table class="w-full text-left">
+                    <thead>
+                      <tr class="border-b border-border">
+                        <th class="pr-4 pb-2 font-medium">Event</th>
+                        <th class="pb-2 font-medium">Sent when</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                      {events.map((event) => (
+                        <tr>
+                          <td class="py-2 pr-4 font-mono text-[0.9em]" translate="no">{event.name}</td>
+                          <td class="py-2 text-fg-muted">{event.when}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <ul class="grid gap-2">
+                    <li class="flex items-center gap-2.5">
+                      <span class="grid size-4 place-items-center rounded bg-mock-accent text-surface"><Icon name="check" class="size-3" /></span>
+                      Verify the signature
+                    </li>
+                    <li class="flex items-center gap-2.5">
+                      <span class="grid size-4 place-items-center rounded bg-mock-accent text-surface"><Icon name="check" class="size-3" /></span>
+                      <span>Respond with <s class="text-fg-muted">200</s> 204</span>
+                    </li>
+                    <li class="flex min-w-0 items-center gap-2.5">
+                      <span class="size-4 shrink-0 rounded border border-fg-muted" />
+                      <span class="min-w-0 truncate">
+                        Read <span class="text-mock-accent underline underline-offset-2" translate="no">https://acme.shiru.sh/errors</span>
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              )}
+              {feature.visual === "urls" && (
+                <div class="grid gap-4">
+                  <Code code={linksMdx} lang="md" label="webhooks.mdx" wrap class={`${panel} px-4 py-3 text-[0.75rem]/[1.7]`} />
+                  <div class="grid gap-2.5 px-1 text-[0.875rem]">
+                    <div class="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <span>See <span class="text-mock-accent underline underline-offset-2">Webhooks</span>.</span>
+                      <code class="text-[0.75rem] text-fg-muted" translate="no">href="/webhooks"</code>
+                    </div>
+                    <div class="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <span class="flex items-center gap-1.5 font-medium">
+                        Verify signatures
+                        <Icon name="link" class="size-3.5 text-fg-muted" />
+                      </span>
+                      <code class="text-[0.75rem] text-mock-accent" translate="no">#verify-signatures</code>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

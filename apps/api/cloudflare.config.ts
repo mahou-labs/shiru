@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
       env: {
         DB: bindings.d1({ name: "shiru-api", id: "094e93eb-7015-487f-8888-7d5013a4a8e5" }),
         DASHBOARD_URL: bindings.secret(),
+        SITE_URL: bindings.secret(),
         BETTER_AUTH_SECRET: bindings.secret(),
         BETTER_AUTH_URL: bindings.secret(),
         POLAR_ACCESS_TOKEN: bindings.secret(),

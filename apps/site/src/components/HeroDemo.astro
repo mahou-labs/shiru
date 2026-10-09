@@ -1,0 +1,144 @@
+---
+import Code from "./Code.astro";
+import Icon from "./Icon.astro";
+import Url from "./Url.astro";
+import { verifyAnswer, webhookHandler } from "../mocks";
+
+interface Props {
+  caption: string;
+}
+
+const fix = verifyAnswer
+  .split("\n")
+  .map((line) => `  ${line}`)
+  .join("\n");
+
+const tools = [
+  { verb: "Read", target: "acme.shiru.sh/llms.txt", meta: "12 pages", start: 800, done: 1600 },
+  {
+    verb: "Read",
+    target: "acme.shiru.sh/webhooks.md",
+    meta: "Markdown, 2.1 KB",
+    start: 1900,
+    done: 2700,
+  },
+];
+
+const inlineCode = "whitespace-nowrap rounded bg-mock-raised px-1 py-px font-mono text-[0.9em] text-mock-accent";
+---
+
+<figure class="relative mx-auto w-full max-w-[1200px] px-5 md:px-10">
+  <div
+    class="overflow-hidden rounded-[14px] bg-mock-bg text-mock-fg shadow-window"
+  >
+    <div class="grid h-[52px] grid-cols-[1fr_minmax(0,22rem)_1fr] items-center gap-4 border-b border-mock-border bg-surface px-4">
+      <span class="flex gap-2" aria-hidden="true">
+        <span class="size-3 rounded-full bg-fg/15"></span>
+        <span class="size-3 rounded-full bg-fg/15"></span>
+        <span class="size-3 rounded-full bg-fg/15"></span>
+      </span>
+      <span
+        class="flex h-8 items-center justify-center truncate rounded-md bg-surface px-3 text-[0.8125rem] text-fg-muted shadow-[0_1px_3px_rgb(0_0_0/0.05)] ring-1 ring-mock-border"
+        translate="no">webhooks.ts – acme-app</span
+      >
+    </div>
+
+<div class="grid md:grid-cols-[55fr_45fr]">
+      <div class="hidden min-w-0 border-r border-mock-border md:block">
+        <Code
+          code={webhookHandler}
+          lang="ts"
+          numbers
+          mark={[8]}
+          diff={{ line: 8, remove: 2, add: fix }}
+          label="webhooks.ts"
+          class="h-full py-4 text-[0.8125rem]/[1.7]"
+        />
+      </div>
+
+      <section class="flex min-w-0 flex-col" aria-label="Agent">
+        <ol class="flex flex-1 flex-col gap-4 p-4 text-[0.875rem]/[1.6] sm:p-5">
+          <li
+            class="max-w-[85%] self-end rounded-[18px] rounded-br-[6px] bg-mock-raised px-3.5 py-2 motion-safe:animate-seq-in motion-safe:[animation-delay:200ms]"
+          >
+            Verify Acme webhook signatures in this handler.
+          </li>
+
+          {
+            tools.map((tool) => (
+              <li
+                class="flex items-center gap-2.5 text-[0.8125rem] motion-safe:animate-seq-in"
+                style={`animation-delay: ${tool.start}ms`}
+              >
+                <span class="relative grid size-4 place-items-center" aria-hidden="true">
+                  <span
+                    class="absolute inset-0 text-mock-muted opacity-0 motion-safe:animate-seq-spinner"
+                    style={`animation-delay: ${tool.start}ms`}
+                  >
+                    <Icon name="spinner" class="size-4" />
+                  </span>
+                  <span
+                    class="grid size-4 place-items-center rounded-full bg-mock-accent/15 text-mock-accent motion-safe:animate-seq-check"
+                    style={`animation-delay: ${tool.done}ms`}
+                  >
+                    <Icon name="check" class="size-3" />
+                  </span>
+                </span>
+                <span class="min-w-0 truncate">
+                  {tool.verb}{" "}
+                  <Url url={tool.target} class="font-mono text-[0.95em]" />
+                </span>
+                <span
+                  class="ml-auto shrink-0 text-mock-muted motion-safe:animate-seq-in"
+                  style={`animation-delay: ${tool.done}ms`}
+                >
+                  {tool.meta}
+                </span>
+              </li>
+            ))
+          }
+
+          <li class="flex flex-col gap-3">
+            <p class="motion-safe:animate-seq-in motion-safe:[animation-delay:3000ms]">
+              Acme signs every webhook with HMAC-SHA256 in the{" "}
+              <code class={inlineCode} translate="no">Acme-Signature</code> header. The webhooks guide
+              says to verify it with <code class={inlineCode} translate="no">acme.webhooks.verify()</code>
+              before parsing the body:
+            </p>
+            <div class="flex flex-col gap-3 motion-safe:animate-seq-in motion-safe:[animation-delay:3300ms]">
+              <Code
+                code={verifyAnswer}
+                lang="ts"
+                label="Suggested change"
+                class="rounded-[14px] bg-mock-raised px-3.5 py-3 text-[0.78125rem]/[1.7] shadow-[inset_0_0_0_1px_rgb(0_0_0/0.04)]"
+              />
+              <span
+                class="inline-flex items-center gap-1.5 self-start rounded-md px-2.5 py-1 text-[0.75rem] text-mock-muted ring-1 ring-mock-border"
+              >
+                <Icon name="source" class="size-3.5" />
+                Source: <Url url="acme.shiru.sh/webhooks.md" class="font-mono" />
+              </span>
+            </div>
+            <span
+              class="flex items-center gap-2 text-[0.8125rem] md:hidden motion-safe:animate-seq-in motion-safe:[animation-delay:4100ms]"
+            >
+              <span class="grid size-4 place-items-center rounded-full bg-mock-string/15 text-mock-string">
+                <Icon name="check" class="size-3" />
+              </span>
+              Applied to <span class="font-mono text-[0.95em]" translate="no">webhooks.ts</span>
+            </span>
+          </li>
+        </ol>
+
+        <div class="border-t border-mock-border p-3" aria-hidden="true">
+          <div
+            class="flex h-11 items-center rounded-[16px] bg-surface px-4 text-[0.8125rem] text-mock-muted ring-1 ring-mock-border"
+          >
+            Ask a follow-up
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <figcaption class="mt-5 text-center text-[0.8125rem] text-fg-muted">{Astro.props.caption}</figcaption>
+</figure>

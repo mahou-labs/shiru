@@ -1,0 +1,169 @@
+---
+import type { Section } from "../content";
+import { llmsTxt, quickstartMarkdown } from "../mocks";
+import Code from "./Code.astro";
+import Icon from "./Icon.astro";
+import Rich from "./Rich.astro";
+import SectionHeading from "./SectionHeading.astro";
+import Url from "./Url.astro";
+
+type Props = Extract<Section, { kind: "agents" }>;
+
+const { id, heading, lead, points } = Astro.props;
+
+const sidebar = [
+  { group: "Get started", items: ["Introduction", "Quickstart", "Authentication"] },
+  { group: "Guides", items: ["Webhooks", "Errors"] },
+];
+
+const chrome = "flex h-11 items-center gap-3 border-b px-4";
+const dot = "size-2.5 rounded-full bg-fg/15";
+const address = "flex h-7 min-w-0 flex-1 items-center gap-1.5 truncate rounded-md px-3 text-[0.8125rem] ring-1";
+// Points are numbered in order; each number is pinned to the part of the mock it describes.
+const marker =
+  "grid size-6 shrink-0 place-items-center rounded-full bg-accent text-[0.75rem] font-medium text-on-accent tabular-nums";
+---
+
+<section {id} class="scroll-mt-20 py-20 md:py-28">
+  <div class="mx-auto w-full max-w-[1200px] px-5 md:px-10">
+    <SectionHeading {heading} {lead} />
+
+    <div class="mt-14 grid gap-3 lg:grid-cols-[minmax(0,1fr)_7rem_minmax(0,1fr)]">
+      <div
+        class="flex min-w-0 flex-col overflow-hidden rounded-[14px] bg-surface shadow-window"
+      >
+        <div class:list={[chrome, "border-mock-border"]}>
+          <span class="flex gap-1.5" aria-hidden="true">
+            <span class={dot} /><span class={dot} /><span class={dot} />
+          </span>
+          <span class:list={[address, "bg-surface text-fg-muted ring-mock-border"]}>
+            <Icon name="globe" class="size-3.5" />
+            <span translate="no">acme.shiru.sh/quickstart</span>
+          </span>
+        </div>
+        <div class="grid flex-1 sm:grid-cols-[9.5rem_minmax(0,1fr)]">
+          <div class="hidden border-r border-mock-border bg-mock-bg p-4 text-[0.8125rem] sm:block" aria-hidden="true">
+            {
+              sidebar.map(({ group, items }) => (
+                <div class="mb-4">
+                  <div class="mb-1.5 px-2 font-semibold text-fg">{group}</div>
+                  {items.map((item) => (
+                    <div
+                      class:list={[
+                        "rounded-lg px-2 py-1",
+                        item === "Quickstart" ? "bg-mock-raised font-medium text-fg" : "text-fg-muted",
+                      ]}
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              ))
+            }
+          </div>
+          <div class="flex min-w-0 flex-col p-5 sm:p-6">
+            <div class="text-2xl font-semibold tracking-[-0.02em]">Quickstart</div>
+            <p class="mt-2 text-[0.9375rem]/6 text-fg-muted">
+              Install the Acme SDK and send your first request.
+            </p>
+            <Code
+              code="$ npm install @acme/sdk"
+              lang="sh"
+              label="Install command"
+              class="mt-4 rounded-xl bg-mock-raised px-3.5 py-2.5 text-[0.8125rem]/6"
+            />
+            <div class="mt-4 mb-6 flex gap-2.5 rounded-xl bg-brand-soft p-3 text-[0.875rem]/[1.5] text-fg">
+              <Icon name="info" class="mt-px size-4.5 text-brand" />
+              <p>Keep your API key on the server. Never ship it to the browser.</p>
+            </div>
+            <div
+              class="mt-auto flex items-center justify-between border-t border-border pt-4 text-[0.875rem]"
+              aria-hidden="true"
+            >
+              <span class="text-fg-muted">Next</span>
+              <span class="flex items-center gap-1.5 font-medium">
+                Authentication
+                <Icon name="arrow" class="size-4 text-fg-muted" />
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="flex items-center justify-center gap-2.5 py-3 text-fg-muted lg:flex-col lg:py-0"
+        aria-hidden="true"
+      >
+        <span class={marker}>3</span>
+        <code class="text-center text-[0.75rem]/5 text-fg" translate="no"
+          >&lt;link rel=<br class="hidden lg:block" />"alternate"&gt;</code
+        >
+        <Icon name="arrow" class="size-4 rotate-90 lg:rotate-0" />
+      </div>
+
+      <div class="flex min-w-0 flex-col gap-3">
+        <div
+          class="flex flex-1 flex-col overflow-hidden rounded-[14px] bg-mock-bg text-mock-fg shadow-window"
+        >
+          <div class:list={[chrome, "border-mock-border bg-surface"]}>
+            <span class="flex gap-1.5" aria-hidden="true">
+              <span class={dot} /><span class={dot} /><span class={dot} />
+            </span>
+            <span class:list={[address, "bg-surface text-mock-muted ring-mock-border"]}>
+              <Icon name="markdown" class="size-3.5" />
+              <Url url="acme.shiru.sh/quickstart.md" />
+            </span>
+            <span class={marker} aria-hidden="true">1</span>
+          </div>
+          <Code
+            code={quickstartMarkdown}
+            lang="md"
+            label="quickstart.md"
+            wrap
+            class="flex-1 p-5 text-[0.8125rem]/[1.7]"
+          />
+        </div>
+        <div
+          class="overflow-hidden rounded-[14px] bg-mock-bg text-mock-fg shadow-window"
+        >
+          <div class:list={[chrome, "border-mock-border bg-surface"]}>
+            <span class="flex gap-1.5" aria-hidden="true">
+              <span class={dot} /><span class={dot} /><span class={dot} />
+            </span>
+            <span class:list={[address, "bg-surface text-mock-muted ring-mock-border"]}>
+              <Icon name="list" class="size-3.5" />
+              <span translate="no">acme.shiru.sh/<span class="text-mock-accent">llms.txt</span></span>
+            </span>
+            <span class={marker} aria-hidden="true">2</span>
+          </div>
+          <Code
+            code={llmsTxt}
+            lang="md"
+            label="llms.txt"
+            mark={[5]}
+            wrap
+            class="py-4 text-[0.8125rem]/[1.7] [&>code>span>span]:px-5"
+          />
+        </div>
+      </div>
+    </div>
+
+    <ol class="mt-14 grid gap-8 md:grid-cols-3">
+      {
+        points.map((point, i) => (
+          <li class="flex gap-3.5">
+            <span class:list={[marker, "mt-0.5"]} aria-hidden="true">
+              {i + 1}
+            </span>
+            <div>
+              <h3 class="text-[1.0625rem]/7 font-medium tracking-[-0.01em]">{point.title}</h3>
+              <p class="mt-1 max-w-[42ch] text-[0.9375rem]/[1.55] text-fg-muted">
+                <Rich text={point.body} />
+              </p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

@@ -1,0 +1,36 @@
+---
+import type { Section } from "../content";
+import Icon from "./Icon.astro";
+import Rich from "./Rich.astro";
+import Title from "./Title.astro";
+
+type Props = Extract<Section, { kind: "faq" }>;
+
+const { id, heading, entries } = Astro.props;
+---
+
+<section {id} class="scroll-mt-20 py-20 md:py-28">
+  <div class="mx-auto grid w-full max-w-[1200px] gap-10 px-5 md:px-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+    <h2 class="text-[2.25rem]/[1.05] font-medium tracking-[-0.03em] md:text-[3.25rem]">
+      <span class="mr-3 align-[0.15em] font-mono text-[0.5em] font-normal text-fg-faint" aria-hidden="true">##</span><Title text={heading} />
+    </h2>
+    <div class="divide-y divide-border border-y border-border">
+      {
+        entries.map((entry) => (
+          <details class="group details-content:h-0 details-content:overflow-clip details-content:transition-[height,content-visibility] details-content:transition-discrete details-content:duration-250 details-content:ease-out open:details-content:h-auto motion-reduce:details-content:transition-none">
+            <summary class="flex list-none items-center justify-between gap-6 rounded-lg py-5 text-[1.0625rem]/7 font-medium tracking-[-0.01em] [&::-webkit-details-marker]:hidden">
+              {entry.question}
+              <Icon
+                name="chevron"
+                class="size-5 text-fg-muted transition-transform duration-200 ease-out group-open:rotate-180 motion-reduce:transition-none"
+              />
+            </summary>
+            <p class="max-w-[65ch] pb-6 text-[0.9375rem]/[1.6] text-fg-muted">
+              <Rich text={entry.answer} />
+            </p>
+          </details>
+        ))
+      }
+    </div>
+  </div>
+</section>

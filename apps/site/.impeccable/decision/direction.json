@@ -1,0 +1,270 @@
+{
+  "title": "Choose the visual world for shiru.sh",
+  "question": "The roll assigned The Press Proof. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "The Press Proof",
+      "kicker": "THE ROLL",
+      "lineage": "printer's galley and page proofs, signed off before the press run",
+      "thesis": "Every page ships twice: the galley agents read and the finished page people read.",
+      "palette": [
+        "#F6F7F4",
+        "#16181A",
+        "#00A0D6",
+        "#E0007C",
+        "#FFE14D",
+        "#9FD3E6"
+      ],
+      "materials": [
+        "coated proof stock",
+        "crop and registration marks",
+        "CMYK color bar",
+        "non-photo blue pencil"
+      ],
+      "viewport": "One proof sheet on the press bed: the headline set as the finished page inside trim marks, a slug line carrying the nav, and a Page proof / Galley switch that re-sets the whole sheet as Markdown.",
+      "risk": "Turns into print nostalgia if the marks decorate instead of carrying nav, state and structure.",
+      "raised": [
+        {
+          "from": "textiles-weave-drape-fashion-drawcord-transforming-cape",
+          "raise": "One control re-sets the entire sheet between page and galley, not a framed demo in the middle of a template."
+        },
+        {
+          "from": "operate-c-cracktro-scroller-queue",
+          "raise": "Nothing is boxed: no cards, structure comes only from trim marks, gutters and the color bar."
+        },
+        {
+          "from": "posters-covers-sleeves-movida-scene-magazine",
+          "raise": "State is ink registration: idle plates sit a hair out of register and the active one snaps into register."
+        },
+        {
+          "from": "dream-surreal-impossible-worlds-sleeping-city-fold",
+          "raise": "Each section prints on its own process plate (C, M, Y, K), so the scroll reads like a set of separations."
+        },
+        {
+          "from": "pop-culture-shelf-skate-deck-wall",
+          "raise": "The open-book mark is redrawn to hold at favicon and sign-off-stamp size."
+        }
+      ],
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          {
+            "label": "slug line + nav",
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 1
+          },
+          {
+            "label": "trim marks",
+            "x": 0,
+            "y": 1,
+            "w": 1,
+            "h": 1
+          },
+          {
+            "label": "headline set as page",
+            "x": 1,
+            "y": 2,
+            "w": 7,
+            "h": 3,
+            "accent": true
+          },
+          {
+            "label": "page / galley switch",
+            "x": 8,
+            "y": 2,
+            "w": 3,
+            "h": 1,
+            "accent": true
+          },
+          {
+            "label": "OK-to-print waitlist sign-off",
+            "x": 1,
+            "y": 5,
+            "w": 6,
+            "h": 2
+          },
+          {
+            "label": "color bar",
+            "x": 0,
+            "y": 9,
+            "w": 12,
+            "h": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "model-pick",
+      "label": "The Manual Page",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "Unix man pages, one troff source typeset for print and formatted for the terminal",
+      "thesis": "Shiru is man(1) for the web: one source, typeset for people, formatted for machines.",
+      "palette": [
+        "#FFFFFF",
+        "#111111",
+        "#2A6F97",
+        "#C8C8C8"
+      ],
+      "materials": [
+        "troff typesetting",
+        "fixed-width terminal text",
+        "section headers in caps"
+      ],
+      "viewport": "A typeset man page header (SHIRU(1)) with NAME, SYNOPSIS and DESCRIPTION, the waitlist as a SYNOPSIS line you complete.",
+      "risk": "Familiar developer-mono territory; sits close to what dev-tool sites already do."
+    },
+    {
+      "id": "signals-instruments-phosphor-terminal-midnight",
+      "label": "Phosphor Terminal",
+      "verdict": "competitive",
+      "lineage": "green-phosphor terminals in a machine room",
+      "thesis": "The landing page as one live transcript an agent and a person both read.",
+      "palette": [
+        "#0A0F0A",
+        "#33FF66",
+        "#1E7A3A",
+        "#B6FFC8"
+      ],
+      "materials": [
+        "curved glass",
+        "scanline glow",
+        "afterimage trails"
+      ],
+      "viewport": "A transcript that curls llms.txt and prints the reply, with the waitlist as a typed prompt.",
+      "case": "Holds audience identification (developers live in terminals); loses product clarity because the human reader half disappears.",
+      "risk": "Near-black with one neon accent is the most common AI look for dev tools."
+    },
+    {
+      "id": "textiles-weave-drape-fashion-drawcord-transforming-cape",
+      "label": "Drawcord Cape",
+      "verdict": "declined",
+      "lineage": "transforming silk cape",
+      "thesis": "One pull turns a flat plane into a shaped volume.",
+      "palette": [
+        "#0B0B0B",
+        "#C9A23A",
+        "#4A4F55"
+      ],
+      "materials": [
+        "matte silk",
+        "gold drawcord"
+      ],
+      "viewport": "A black semicircle that gathers on one control.",
+      "case": "Fuses poorly: neither audience nor product reads in cloth.",
+      "kept": "One control transforms the whole page.",
+      "risk": "Fashion costume on a developer tool."
+    },
+    {
+      "id": "operate-c-cracktro-scroller-queue",
+      "label": "Cracktro Queue",
+      "verdict": "declined",
+      "lineage": "demoscene title screens",
+      "thesis": "Rank is depth on a black void, never a box.",
+      "palette": [
+        "#000000",
+        "#F2EEDF",
+        "#8A8A8A",
+        "#FFB000"
+      ],
+      "materials": [
+        "bitmap face",
+        "drifting dust fields"
+      ],
+      "viewport": "One still line of text over drifting layers.",
+      "case": "Fuses poorly: reads as nostalgia, hides the two-readers mechanism.",
+      "kept": "Nothing enclosed by a rule or a box.",
+      "risk": "Retro novelty."
+    },
+    {
+      "id": "posters-covers-sleeves-movida-scene-magazine",
+      "label": "Movida Magazine",
+      "verdict": "declined",
+      "lineage": "1980s Madrid scene magazines",
+      "thesis": "Cover lines thrown across a hard-cropped portrait.",
+      "palette": [
+        "#FF2E9A",
+        "#B5FF2E",
+        "#000000",
+        "#FFFFFF"
+      ],
+      "materials": [
+        "misregistered fluorescent ink"
+      ],
+      "viewport": "A scattered cover with angled cover lines.",
+      "case": "Fuses poorly: no grid fights documentation's job.",
+      "kept": "State shown by ink registration.",
+      "risk": "Unreadable for a docs product."
+    },
+    {
+      "id": "dream-surreal-impossible-worlds-sleeping-city-fold",
+      "label": "Sleeping City Fold",
+      "verdict": "declined",
+      "lineage": "surreal folded city",
+      "thesis": "Districts fold into a quilt and dream their own weather.",
+      "palette": [
+        "#0E1A3A",
+        "#E8C25A",
+        "#F1EEE6"
+      ],
+      "materials": [
+        "quilt seams",
+        "embroidered lights"
+      ],
+      "viewport": "A night map folding over a park.",
+      "case": "Fuses poorly: no tie to developers or docs.",
+      "kept": "Each region tinted its own hue.",
+      "risk": "Whimsy with no product truth."
+    },
+    {
+      "id": "pop-culture-shelf-skate-deck-wall",
+      "label": "Skate Deck Wall",
+      "verdict": "declined",
+      "lineage": "skate-shop deck racks",
+      "thesis": "Browse by walking a wall of full-bleed boards.",
+      "palette": [
+        "#00D1C1",
+        "#FF4FA3",
+        "#F3EFE6",
+        "#111111"
+      ],
+      "materials": [
+        "silkscreen on maple",
+        "grip tape"
+      ],
+      "viewport": "A rack of tall decks you pull and flip.",
+      "case": "Fuses poorly: retail browsing, not reading.",
+      "kept": "A mark that survives scale-down.",
+      "risk": "Loud costume."
+    }
+  ],
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "buildPath": {
+    "value": "code"
+  },
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A clean developer-docs landing page, executed impeccably.",
+    "palette": [
+      "#FFFFFF",
+      "#0F172A",
+      "#0EA5E9"
+    ],
+    "materials": [
+      "clean grid",
+      "product screenshots"
+    ],
+    "viewport": "Headline, waitlist field, a docs screenshot, then features and FAQ.",
+    "risk": "Indistinguishable from Mintlify and its neighbours by design."
+  },
+  "steer": true
+}

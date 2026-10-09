@@ -1,0 +1,81 @@
+---
+import "../styles/global.css";
+import Agents from "../components/Agents.astro";
+import Cta from "../components/Cta.astro";
+import Faq from "../components/Faq.astro";
+import Features from "../components/Features.astro";
+import Footer from "../components/Footer.astro";
+import Hero from "../components/Hero.astro";
+import How from "../components/How.astro";
+import Nav from "../components/Nav.astro";
+import OpenSource from "../components/OpenSource.astro";
+import { page } from "../content";
+
+const description = page.hero.subhead;
+---
+
+<!doctype html>
+<html lang="en" class="motion-safe:scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{page.title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={`${page.origin}/`} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="text/markdown" href="/index.md" />
+    <meta name="theme-color" content="#f3f0eb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191715" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={`${page.origin}/`} />
+    <meta property="og:site_name" content={page.name} />
+    <meta property="og:title" content={page.title} />
+    <meta property="og:description" content={description} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={page.title} />
+    <meta name="twitter:description" content={description} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap"
+    />
+  </head>
+  <body>
+    <a
+      href="#main"
+      class="fixed top-3 left-3 z-50 -translate-y-[200%] rounded-[10px] bg-accent px-4 py-2.5 font-medium text-on-accent focus-visible:translate-y-[env(safe-area-inset-top)]"
+      >Skip to content</a
+    >
+    <Nav />
+    <main id="main" tabindex="-1" class="outline-none">
+      <Hero />
+      {
+        page.sections.map((section) => {
+          switch (section.kind) {
+            case "agents":
+              return <Agents {...section} />;
+            case "how":
+              return <How {...section} />;
+            case "features":
+              return <Features {...section} />;
+            case "openSource":
+              return <OpenSource {...section} />;
+            case "faq":
+              return <Faq {...section} />;
+            case "cta":
+              return <Cta {...section} />;
+          }
+        })
+      }
+    </main>
+    <Footer />
+
+    <script>
+      const heroEmail = document.querySelector<HTMLInputElement>("#waitlist input");
+      for (const link of document.querySelectorAll('a[href="#waitlist"]')) {
+        link.addEventListener("click", () => heroEmail?.focus({ preventScroll: true }));
+      }
+    </script>
+  </body>
+</html>

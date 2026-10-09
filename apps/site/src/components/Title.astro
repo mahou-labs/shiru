@@ -1,0 +1,26 @@
+---
+import type { Heading } from "../content";
+
+interface Props {
+  text: Heading;
+  markers?: boolean;
+}
+
+const { text, markers = false } = Astro.props;
+const parts = text.split("*");
+const marker = "font-mono text-[0.8em] font-normal tracking-[-0.04em] text-fg-faint";
+---
+
+{
+  parts.map((part, i) =>
+    i % 2 === 0 ? (
+      part
+    ) : markers ? (
+      <>
+        <span class={marker} aria-hidden="true">**</span>{part}<span class={marker} aria-hidden="true">**</span>
+      </>
+    ) : (
+      <span class="text-fg-muted">{part}</span>
+    ),
+  )
+}

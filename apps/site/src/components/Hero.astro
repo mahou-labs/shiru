@@ -1,0 +1,38 @@
+---
+import { page } from "../content";
+import HeroDemo from "./HeroDemo.astro";
+import Icon from "./Icon.astro";
+import Title from "./Title.astro";
+import Waitlist from "./Waitlist.astro";
+
+const { hero, links } = page;
+---
+
+<section class="relative isolate -mt-16 overflow-x-clip pb-20 md:-mt-20 md:pb-28">
+  <div class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[52rem] bg-linear-to-b from-tint to-bg" aria-hidden="true"></div>
+  <div class="relative mx-auto flex w-full max-w-[1200px] flex-col items-start px-5 pt-[calc(4rem+4rem)] text-left md:px-10 md:pt-[calc(5rem+5rem)]">
+    <h1 class="max-w-[13em] text-[2.5rem]/[1.02] font-medium tracking-[-0.035em] text-balance md:text-[4rem]">
+      <Title markers text={hero.heading.replace("AI agents", "AI agents")} />
+    </h1>
+    <p class="mt-6 max-w-[40rem] text-lg/[1.6] text-fg-muted">{hero.subhead}</p>
+    <div id="waitlist" class="mt-8 flex w-full scroll-mt-24 flex-col items-start">
+      <Waitlist id="hero-waitlist" />
+      <div
+        class="mt-4 flex flex-wrap items-center justify-start gap-x-6 gap-y-2 text-[0.875rem] text-fg-muted"
+      >
+        <p>{hero.note}</p>
+        <a
+          href={links.github}
+          class="group/gh inline-flex items-center gap-1.5 rounded-md font-medium text-fg-muted transition-colors duration-200 ease-out hover:text-fg pointer-coarse:min-h-11"
+        >
+          <Icon name="branch" class="size-4" />
+          View on GitHub
+          <span class="transition-transform duration-200 ease-out group-hover/gh:translate-x-0.5" aria-hidden="true">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="relative mt-14 md:mt-16">
+    <HeroDemo caption={hero.demoLabel} />
+  </div>
+</section>

@@ -1,0 +1,22 @@
+---
+interface Props {
+  text: string;
+}
+
+const parts = Astro.props.text.split("`");
+---
+
+{
+  parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <code
+        class="rounded-[0.3em] bg-fg/6 whitespace-nowrap px-[0.3em] py-[0.1em] text-[0.88em] text-fg"
+        translate="no"
+      >
+        {part}
+      </code>
+    ) : (
+      part
+    ),
+  )
+}

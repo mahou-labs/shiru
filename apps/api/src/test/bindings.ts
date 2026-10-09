@@ -1,7 +1,9 @@
 import { DatabaseSync } from "node:sqlite";
 
+import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqlite";
 import { drizzle } from "drizzle-orm/node-sqlite";
-import { migrate } from "drizzle-orm/node-sqlite/migrator";
+
+import * as schema from "../schema";
 
 type SentEmail = { from: string; to: string; subject: string; html: string; text: string };
 type PolarCustomer = { id: string; email: string; name: string | null; externalId: string | null };
@@ -10,12 +12,19 @@ export const sentEmails: SentEmail[] = [];
 export const polarCustomers: PolarCustomer[] = [];
 const pendingWork: Promise<unknown>[] = [];
 
-export const db = drizzle({ client: new DatabaseSync(":memory:") });
-migrate(db, { migrationsFolder: new URL("../../drizzle", import.meta.url).pathname });
+const client = new DatabaseSync(":memory:");
+const statements = await generateMigration(
+  await generateDrizzleJson({}),
+  await generateDrizzleJson(schema),
+);
+for (const statement of statements) client.exec(statement);
+
+export const db = drizzle({ client });
 
 export const env = {
   DB: undefined,
   DASHBOARD_URL: "http://localhost:3001",
+  SITE_URL: "http://localhost:3002",
   BETTER_AUTH_URL: "http://localhost:3000",
   BETTER_AUTH_SECRET: "test-secret-that-is-at-least-32-characters",
   POLAR_ACCESS_TOKEN: "polar_test_token",

@@ -1,0 +1,25 @@
+---
+import type { Section } from "../content";
+import Title from "./Title.astro";
+import Waitlist from "./Waitlist.astro";
+
+type Props = Extract<Section, { kind: "cta" }>;
+
+const { heading, body } = Astro.props;
+---
+
+<section class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-20 md:px-10 md:pb-28">
+  <div
+    class="grid w-full gap-10 rounded-2xl bg-night-bg px-6 py-14 text-fg [--color-accent-hover:#ffffff] [--color-accent:var(--color-night-fg)] [--color-border-strong:var(--color-night-border)] [--color-border:var(--color-night-border)] [--color-brand:var(--color-night-muted)] [--color-danger:#ff8a7a] [--color-fg-muted:var(--color-night-muted)] [--color-fg:var(--color-night-fg)] [--color-on-accent:var(--color-night-bg)] [--color-surface:var(--color-night-raised)] md:px-12 md:py-20 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:gap-16"
+  >
+    <div>
+      <h2 class="max-w-[16ch] text-[2.5rem]/[1.04] font-medium tracking-[-0.03em] text-balance md:text-[3.5rem]">
+        <span class="mr-3 align-[0.15em] font-mono text-[0.5em] font-normal text-fg-faint" aria-hidden="true">##</span><Title
+          text={heading}
+        />
+      </h2>
+      <p class="mt-5 max-w-[40ch] text-lg/[1.6] text-fg-muted">{body}</p>
+    </div>
+    <Waitlist id="cta-waitlist" class="lg:max-w-none" />
+  </div>
+</section>

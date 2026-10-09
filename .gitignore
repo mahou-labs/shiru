@@ -10,6 +10,7 @@ build
 
 # Generated files
 apps/dashboard/src/routeTree.gen.ts
+apps/site/.astro
 local.db
 local.db-*
 
@@ -45,6 +46,7 @@ lerna-debug.log*
 
 # Better-T-Stack
 .cloudflare
+.wrangler
 .dev.vars*
 .vercel
 

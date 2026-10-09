@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "cf dev",
     "build": "cf build",
-    "deploy": "cf deploy",
-    "deploy:dry-run": "cf deploy --prebuilt --dry-run"
+    "deploy": "cf deploy"
   },
   "dependencies": {
     "@orpc/client": "catalog:",

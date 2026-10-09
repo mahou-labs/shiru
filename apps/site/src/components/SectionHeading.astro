@@ -1,0 +1,25 @@
+---
+import Rich from "./Rich.astro";
+import Title from "./Title.astro";
+
+interface Props {
+  heading: string;
+  lead?: string;
+  class?: string;
+}
+
+const { heading, lead, class: className } = Astro.props;
+---
+
+<div class:list={["max-w-3xl", className]}>
+  <h2 class="text-[2.25rem]/[1.05] font-medium tracking-[-0.03em] md:text-[3.25rem]">
+    <span class="mr-3 align-[0.15em] font-mono text-[0.5em] font-normal text-fg-faint" aria-hidden="true">##</span><Title text={heading} />
+  </h2>
+  {
+    lead && (
+      <p class="mt-5 max-w-[56ch] text-lg/[1.6] text-fg-muted">
+        <Rich text={lead} />
+      </p>
+    )
+  }
+</div>

@@ -1,0 +1,12 @@
+---
+interface Props {
+  url: string;
+  accent?: string;
+  class?: string;
+}
+
+const { url, accent = "text-mock-accent", class: className } = Astro.props;
+const [, base = url, ext] = /^(.*?)(\.md)?$/.exec(url) ?? [];
+---
+
+<span class={className} translate="no">{base}{ext && <span class={accent}>{ext}</span>}</span>

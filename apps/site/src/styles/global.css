@@ -1,0 +1,224 @@
+@import "tailwindcss";
+
+@theme static {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #faf9f7;
+  --color-tint: #f3f0eb;
+  --color-fg: #282624;
+  --color-fg-muted: #6b6865;
+  --color-fg-faint: #b8b5b2;
+  --color-border: #eeece9;
+  --color-border-strong: #e0ddd8;
+  --color-accent: #171717;
+  --color-accent-hover: #2d2d2d;
+  --color-on-accent: #ffffff;
+  --color-brand: #282624;
+  --color-brand-soft: #f3f0eb;
+  --color-danger: #c4320a;
+  --color-warn: #8a5300;
+  --color-warn-soft: #fcf1d9;
+
+  /* Product mocks are light app windows, like a screenshot of the real thing. */
+  --color-mock-bg: #fcfcfb;
+  --color-mock-raised: #f5f5f4;
+  --color-mock-border: #ebe9e6;
+  --color-mock-fg: #282624;
+  --color-mock-muted: #848281;
+  --color-mock-accent: #0a66d8;
+  --color-mock-keyword: #8b3fd1;
+  --color-mock-string: #16803c;
+  --color-mock-comment: #9a9896;
+  --color-mock-danger: #dc2626;
+
+  /* The one dark surface: the closing call to action. */
+  --color-night-bg: #131211;
+  --color-night-raised: #1f1d1b;
+  --color-night-border: #34312e;
+  --color-night-fg: #f3f0eb;
+  --color-night-muted: #a8a39d;
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:
+    "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  --shadow-window:
+    0 0 0 1px rgb(0 0 0 / 0.07), 0 24px 48px -24px rgb(0 0 0 / 0.22),
+    0 8px 16px -8px rgb(0 0 0 / 0.08);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px -4px rgb(0 0 0 / 0.12);
+
+  --animate-seq-in: seq-in 500ms var(--ease-out) both;
+  --animate-seq-spinner: seq-spinner 800ms linear backwards;
+  --animate-seq-check: seq-check 300ms var(--ease-out) both;
+  --animate-diff-del: diff-del 800ms var(--ease-out) 3800ms both;
+  --animate-diff-add: diff-add 600ms var(--ease-out) 4100ms both;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #121110;
+    --color-surface: #1a1917;
+    --color-surface-muted: #1b1a18;
+    --color-tint: #191715;
+    --color-fg: #f3f0eb;
+    --color-fg-muted: #a39e98;
+    --color-fg-faint: #5c5853;
+    --color-border: #2a2724;
+    --color-border-strong: #36322e;
+    --color-accent: #f3f0eb;
+    --color-accent-hover: #ffffff;
+    --color-on-accent: #131211;
+    --color-brand: #f3f0eb;
+    --color-brand-soft: #262320;
+    --color-danger: #ff8a7a;
+    --color-warn: #f2b955;
+    --color-warn-soft: #2a2010;
+
+    --color-mock-bg: #161514;
+    --color-mock-raised: #201e1c;
+    --color-mock-border: #2e2b28;
+    --color-mock-fg: #ece8e3;
+    --color-mock-muted: #9a958f;
+    --color-mock-accent: #6cb0ff;
+    --color-mock-keyword: #d0a2f7;
+    --color-mock-string: #86d99c;
+    --color-mock-comment: #8a857f;
+    --color-mock-danger: #ff8a7a;
+
+    --color-night-bg: #1d1b19;
+    --color-night-raised: #282522;
+    --color-night-border: #3a3632;
+
+    --shadow-window:
+      0 0 0 1px rgb(255 255 255 / 0.06), 0 24px 48px -24px rgb(0 0 0 / 0.6),
+      0 8px 16px -8px rgb(0 0 0 / 0.4);
+    --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.06), 0 4px 12px -4px rgb(0 0 0 / 0.5);
+  }
+}
+
+@keyframes seq-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes seq-spinner {
+  from {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes seq-check {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes diff-del {
+  0% {
+    height: calc(var(--rows) * 1lh);
+    opacity: 1;
+    background-color: transparent;
+    text-decoration-color: transparent;
+  }
+  40% {
+    height: calc(var(--rows) * 1lh);
+    opacity: 1;
+    background-color: color-mix(in oklab, var(--color-mock-danger) 18%, transparent);
+    text-decoration-color: var(--color-mock-danger);
+  }
+  100% {
+    height: 0;
+    opacity: 0;
+    background-color: color-mix(in oklab, var(--color-mock-danger) 18%, transparent);
+    text-decoration-color: var(--color-mock-danger);
+  }
+}
+
+@keyframes diff-add {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+    interpolate-size: allow-keywords;
+    background: var(--color-bg);
+    scroll-padding-top: 5rem;
+    scrollbar-color: var(--color-border) var(--color-bg);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    caret-color: var(--color-fg);
+    accent-color: var(--color-brand);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    letter-spacing: -0.011em;
+    font-kerning: normal;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  code,
+  pre,
+  kbd {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-brand) 22%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-fg);
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--color-border) padding-box;
+  }
+
+  button,
+  summary {
+    cursor: pointer;
+  }
+}

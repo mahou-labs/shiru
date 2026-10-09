@@ -1,0 +1,119 @@
+---
+import { page } from "../content";
+import Icon from "./Icon.astro";
+
+interface Props {
+  id: string;
+  class?: string;
+}
+
+const { id, class: className } = Astro.props;
+---
+
+<form
+  class:list={["group w-full max-w-md", className]}
+  data-waitlist={page.links.waitlistApi}
+  data-state="idle"
+  action="#waitlist"
+  method="post"
+  novalidate
+>
+  <div class="flex flex-col gap-2 group-data-[state=joined]:hidden sm:flex-row">
+    <label for={`${id}-email`} class="sr-only">Work email</label>
+    <input
+      id={`${id}-email`}
+      class="h-11 w-full min-w-0 rounded-[10px] border border-border-strong bg-surface px-3.5 text-base text-fg placeholder:text-fg-muted aria-invalid:border-danger read-only:text-fg-muted sm:flex-1 sm:text-[0.9375rem]"
+      type="email"
+      name="email"
+      required
+      autocomplete="email"
+      spellcheck="false"
+      autocapitalize="off"
+      placeholder="you@company.com"
+      aria-describedby={`${id}-status`}
+    />
+    <button
+      type="submit"
+      class="h-11 shrink-0 rounded-[10px] bg-accent px-4.5 text-base font-medium tracking-tight text-on-accent transition-[transform,background-color] duration-150 ease-out hover:bg-accent-hover active:scale-[0.97] disabled:cursor-progress sm:text-[0.9375rem]"
+    >
+      Join the waitlist
+    </button>
+  </div>
+  <p
+    id={`${id}-status`}
+    class="flex items-start gap-2.5 text-left text-[0.9375rem]/6 empty:hidden group-data-[state=error]:mt-3 group-data-[state=error]:text-danger group-data-[state=joined]:rounded-xl group-data-[state=joined]:bg-surface group-data-[state=joined]:p-4 group-data-[state=joined]:shadow-card group-data-[state=joined]:text-fg"
+    aria-live="polite"
+    tabindex="-1"
+  ></p>
+  <template>
+    <span
+      class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-accent text-on-accent"
+      aria-hidden="true"><Icon name="check" class="size-3.5" /></span
+    >
+  </template>
+</form>
+
+<script>
+  type WaitlistState =
+    | { state: "idle" }
+    | { state: "sending" }
+    | { state: "joined"; email: string }
+    | { state: "error"; reason: keyof typeof errors };
+
+  const errors = {
+    network: "Couldn't reach the waitlist. Check your connection and try again.",
+    invalid: "That doesn't look like an email address.",
+  };
+
+  async function join(endpoint: string, email: string): Promise<WaitlistState> {
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ json: { email } }),
+        credentials: "omit",
+      });
+      if (response.status === 400) return { state: "error", reason: "invalid" };
+      const body: unknown = await response.json();
+      const joined = response.ok && (body as { json?: { joined?: unknown } }).json?.joined === true;
+      return joined ? { state: "joined", email } : { state: "error", reason: "network" };
+    } catch {
+      return { state: "error", reason: "network" };
+    }
+  }
+
+  for (const form of document.querySelectorAll<HTMLFormElement>("form[data-waitlist]")) {
+    const endpoint = form.dataset.waitlist!;
+    const input = form.querySelector("input")!;
+    const button = form.querySelector("button")!;
+    const output = form.querySelector<HTMLElement>("[aria-live]")!;
+    const check = form.querySelector("template")!.content;
+    const label = button.textContent!.trim();
+
+    function setState(next: WaitlistState) {
+      form.dataset.state = next.state;
+      button.disabled = next.state === "sending";
+      button.textContent = next.state === "sending" ? "Joining…" : label;
+      input.readOnly = next.state === "sending";
+      input.toggleAttribute("aria-invalid", next.state === "error" && next.reason === "invalid");
+      output.replaceChildren(
+        ...(next.state === "joined"
+          ? [
+              check.cloneNode(true),
+              `You're on the list. We'll email ${next.email} once, when Shiru ships.`,
+            ]
+          : next.state === "error"
+            ? [errors[next.reason]]
+            : []),
+      );
+      if (next.state === "joined") output.focus();
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (form.dataset.state === "sending") return;
+      setState({ state: "sending" });
+      setState(await join(endpoint, input.value.trim()));
+    });
+  }
+</script>

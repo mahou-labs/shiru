@@ -1,0 +1,425 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-08T19:00:00Z",
+  "title": "Design System: Shiru (shiru.sh)",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Manual Paper",
+        "canonical": "#ffffff",
+        "dark": "#121212",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1a1a1a",
+        "dark": "#e8e8e6",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "ink-strong": {
+        "role": "neutral",
+        "displayName": "Bold Ink",
+        "canonical": "#000000",
+        "dark": "#ffffff",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Margin Grey",
+        "canonical": "#5c5c5c",
+        "dark": "#a3a3a3",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule Grey",
+        "canonical": "#d4d4d4",
+        "dark": "#333333",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "link": {
+        "role": "primary",
+        "displayName": "Manual Blue",
+        "canonical": "#1f4fbf",
+        "dark": "#8ab4ff",
+        "tonalRamp": [
+          "oklch(15% 0.06 264)",
+          "oklch(26% 0.11 264)",
+          "oklch(37% 0.16 264)",
+          "oklch(47% 0.19 264)",
+          "oklch(58% 0.17 264)",
+          "oklch(70% 0.13 264)",
+          "oklch(82% 0.08 264)",
+          "oklch(95% 0.02 264)"
+        ]
+      },
+      "mark": {
+        "role": "neutral",
+        "displayName": "Selection",
+        "canonical": "#1a1a1a",
+        "dark": "#e8e8e6",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "paper-dark": {
+        "role": "neutral",
+        "displayName": "Manual Paper (terminal)",
+        "canonical": "#121212",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Ink (terminal)",
+        "canonical": "#e8e8e6",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "ink-strong-dark": {
+        "role": "neutral",
+        "displayName": "Bold Ink (terminal)",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "ink-muted-dark": {
+        "role": "neutral",
+        "displayName": "Margin Grey (terminal)",
+        "canonical": "#a3a3a3",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "rule-dark": {
+        "role": "neutral",
+        "displayName": "Rule Grey (terminal)",
+        "canonical": "#333333",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      },
+      "link-dark": {
+        "role": "primary",
+        "displayName": "Manual Blue (terminal)",
+        "canonical": "#8ab4ff",
+        "tonalRamp": [
+          "oklch(15% 0.06 264)",
+          "oklch(26% 0.11 264)",
+          "oklch(37% 0.16 264)",
+          "oklch(47% 0.19 264)",
+          "oklch(58% 0.17 264)",
+          "oklch(70% 0.13 264)",
+          "oklch(82% 0.08 264)",
+          "oklch(95% 0.02 264)"
+        ]
+      },
+      "mark-dark": {
+        "role": "neutral",
+        "displayName": "Selection (terminal)",
+        "canonical": "#e8e8e6",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#a3a3a3",
+          "#cccccc",
+          "#f0f0f0"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The NAME line only; one per page."
+      },
+      "title": {
+        "displayName": "Section Head",
+        "purpose": "Bold caps section names in the margin, at body size."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running prose at a 68ch measure."
+      },
+      "command": {
+        "displayName": "Command",
+        "purpose": "SYNOPSIS command line and its status output."
+      },
+      "code-block": {
+        "displayName": "Code Block",
+        "purpose": "Console examples; 0.875rem below 45rem."
+      },
+      "source": {
+        "displayName": "Source",
+        "purpose": "The page as Markdown in the markdown view."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Header line, footer line, view switch, skip link."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "The single easing curve for all state changes."
+      },
+      {
+        "name": "view-crossfade",
+        "value": "opacity 200ms, filter blur(2px) 200ms, visibility delayed 200ms",
+        "purpose": "Typeset/markdown switch; blur dropped under reduced motion."
+      },
+      {
+        "name": "press",
+        "value": "transform scale(0.97) and background-color, 160ms",
+        "purpose": "Command submit hover and press."
+      },
+      {
+        "name": "link-hover",
+        "value": "text-decoration-thickness 1px to 2px",
+        "purpose": "Link and toggle hover on fine pointers; no transition."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "45rem",
+        "purpose": "Below: margin grid collapses, gutters 1rem, header and footer drop their centre items."
+      }
+    ],
+    "focus": {
+      "value": "outline: 2px solid ink; outline-offset: 3px",
+      "purpose": "Global :focus-visible ring."
+    },
+    "selection": {
+      "value": "background: mark; color: paper",
+      "purpose": "Reverse-video text selection."
+    }
+  },
+  "components": [
+    {
+      "name": "Command Submit",
+      "kind": "button",
+      "refersTo": "button-command",
+      "description": "The one primary action: a reverse-video typewriter key at the end of a command line.",
+      "html": "<button type=\"button\" class=\"ds-btn-command\">Join waitlist</button>",
+      "css": ".ds-btn-command{min-height:2.75rem;padding:0.25rem 1ch;border:0;border-radius:0;background:var(--color-ink, #1a1a1a);color:var(--color-paper, #ffffff);font:700 1.0625rem/1.5 var(--font-mono, \"Courier Prime\", \"Courier New\", ui-monospace, monospace);cursor:pointer;transition:transform 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)),background-color 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));} .ds-btn-command:hover{background:var(--color-ink-strong, #000000);} .ds-btn-command:active{transform:scale(0.97);} .ds-btn-command:focus-visible{outline:2px solid var(--color-ink, #1a1a1a);outline-offset:3px;} .ds-btn-command:disabled{cursor:progress;}"
+    },
+    {
+      "name": "Command Line with Argument Input",
+      "kind": "input",
+      "refersTo": "input-argument",
+      "description": "SYNOPSIS waitlist: the email is the live argument of a shell command.",
+      "html": "<p class=\"ds-cmd\"><b>shiru join</b> <label for=\"ds-email\"><b>--email</b></label> <input id=\"ds-email\" class=\"ds-input-arg\" type=\"email\" placeholder=\"you@company.com\"> <button type=\"button\" class=\"ds-cmd-btn\">Join waitlist</button></p>",
+      "css": ".ds-cmd{display:flex;flex-wrap:wrap;align-items:baseline;gap:0.75rem 1ch;margin:0;font:400 1.0625rem/1.5 var(--font-mono, \"Courier Prime\", \"Courier New\", ui-monospace, monospace);color:var(--color-ink, #1a1a1a);} .ds-cmd b{font-weight:700;color:var(--color-ink-strong, #000000);} .ds-input-arg{min-width:17ch;max-width:100%;padding:0.125rem 0;border:0;border-bottom:1px solid currentColor;border-radius:0;background:transparent;color:var(--color-ink, #1a1a1a);font:inherit;} .ds-input-arg::placeholder{color:var(--color-ink-muted, #5c5c5c);} .ds-input-arg:focus-visible{outline:2px solid var(--color-ink, #1a1a1a);outline-offset:3px;} .ds-cmd-btn{min-height:2.75rem;padding:0.25rem 1ch;border:0;border-radius:0;background:var(--color-ink, #1a1a1a);color:var(--color-paper, #ffffff);font:700 1.0625rem/1.5 var(--font-mono, \"Courier Prime\", \"Courier New\", ui-monospace, monospace);cursor:pointer;} .ds-cmd-btn:hover{background:var(--color-ink-strong, #000000);}"
+    },
+    {
+      "name": "Header Line",
+      "kind": "nav",
+      "refersTo": "header-line",
+      "description": "Manual frame: title left, manual name centre, format links right, over a hairline.",
+      "html": "<header class=\"ds-header\"><span>SHIRU(1)</span><span class=\"ds-header-mid\">Shiru Manual</span><nav class=\"ds-header-nav\"><a href=\"#\">index.md</a><a href=\"#\">llms.txt</a><a href=\"#\">GitHub</a></nav></header>",
+      "css": ".ds-header{display:flex;align-items:baseline;justify-content:space-between;gap:2ch;padding:1.5rem 0 0.75rem;border-bottom:1px solid var(--color-rule, #d4d4d4);font:400 0.875rem/1.5 var(--font-mono, \"Courier Prime\", \"Courier New\", ui-monospace, monospace);white-space:nowrap;color:var(--color-ink-muted, #5c5c5c);} .ds-header>span:first-child,.ds-header-nav{flex:1;} .ds-header-nav{display:flex;justify-content:flex-end;gap:2ch;} .ds-header-nav a{color:var(--color-link, #1f4fbf);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:0.18em;} .ds-header-nav a:hover{text-decoration-thickness:2px;} .ds-header-nav a:focus-visible{outline:2px solid var(--color-ink, #1a1a1a);outline-offset:3px;}"
+    },
+    {
+      "name": "View Switch",
+      "kind": "custom",
+      "refersTo": "view-toggle",
+      "description": "Signature: re-sets the page between typeset and its Markdown source; pressed option is reverse video.",
+      "html": "<div class=\"ds-view\" role=\"group\" aria-label=\"View\"><span aria-hidden=\"true\">view:</span><button type=\"button\" class=\"ds-view-btn\" aria-pressed=\"true\">typeset</button><span aria-hidden=\"true\">|</span><button type=\"button\" class=\"ds-view-btn\" aria-pressed=\"false\">markdown</button></div>",
+      "css": ".ds-view{display:inline-flex;align-items:center;gap:0.5ch;padding-left:1ch;background:var(--color-paper, #ffffff);font:400 0.875rem/1.5 var(--font-mono, \"Courier Prime\", \"Courier New\", ui-monospace, monospace);color:var(--color-ink-muted, #5c5c5c);} .ds-view-btn{padding:0.125rem 0.75ch;border:0;border-radius:0;background:transparent;font:inherit;color:var(--color-ink, #1a1a1a);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:0.18em;cursor:pointer;} .ds-view-btn:not([aria-pressed=true]):hover{color:var(--color-ink-strong, #000000);text-decoration-thickness:2px;} .ds-view-btn[aria-pressed=true]{background:var(--color-ink, #1a1a1a);color:var(--color-paper, #ffffff);text-decoration:none;} .ds-view-btn:focus-visible{outline:2px solid var(--color-ink, #1a1a1a);outline-offset:3px;}"
+    },
+    {
+      "name": "Manual Section",
+      "kind": "custom",
+      "refersTo": "section-head",
+      "description": "Bold caps head hung in an 11rem margin, body at 68ch beside it; collapses to head-over-indented-body below 45rem.",
+      "html": "<article class=\"ds-section\"><h2>DESCRIPTION</h2><p>Shiru turns the MDX in your repository into a documentation site, and serves every page twice: typeset for people, and as plain Markdown for agents. <a href=\"#\">Read /index.md</a>.</p></article>",
+      "css": ".ds-section{display:grid;grid-template-columns:11rem minmax(0,1fr);column-gap:2.5rem;align-items:baseline;font:400 1.1875rem/1.6 var(--font-serif, \"STIX Two Text\", \"Times New Roman\", Times, serif);color:var(--color-ink, #1a1a1a);} .ds-section h2{grid-column:1;margin:0;font-size:1em;font-weight:700;letter-spacing:0.02em;color:var(--color-ink-strong, #000000);} .ds-section p{grid-column:2;margin:0;max-width:68ch;} .ds-section a{color:var(--color-link, #1f4fbf);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:0.18em;} .ds-section a:hover{text-decoration-thickness:2px;} @media (max-width:45rem){.ds-section{display:block;} .ds-section p{margin:0.5rem 0 0 1.5rem;}}"
+    },
+    {
+      "name": "NAME Display Line",
+      "kind": "custom",
+      "refersTo": "display",
+      "description": "The only large type: bold command name, en dash, one-line description, with a shape-outside wedge that narrows lines two and three.",
+      "html": "<p class=\"ds-name\"><b>shiru</b> – documentation that people read and agents parse.</p>",
+      "css": ".ds-name{max-width:10em;margin:0;font:400 clamp(min(2.125rem,8.6vw),5.5vw,4.25rem)/1.05 var(--font-serif, \"STIX Two Text\", \"Times New Roman\", Times, serif);letter-spacing:-0.02em;color:var(--color-ink, #1a1a1a);} .ds-name b{font-weight:700;color:var(--color-ink-strong, #000000);} .ds-name::before{content:\"\";float:right;inline-size:2.4em;block-size:3lh;shape-outside:polygon(100% 0,100% 1.5lh,0 1.5lh,0 100%,100% 100%);}"
+    },
+    {
+      "name": "Example Block",
+      "kind": "custom",
+      "refersTo": "code-block",
+      "description": "Unboxed console example in mono, indented 2rem, no background or highlighting.",
+      "html": "<pre class=\"ds-example\" tabindex=\"0\"><code>$ curl https://acme.shiru.sh/llms.txt\n# Acme\n\n- [Quickstart](https://acme.shiru.sh/quickstart.md)</code></pre>",
+      "css": ".ds-example{margin:0 0 0 2rem;font:400 1rem/1.5 var(--font-mono, \"Courier Prime\", \"Courier New\", ui-monospace, monospace);color:var(--color-ink, #1a1a1a);overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--color-rule, #d4d4d4) transparent;} .ds-example:focus-visible{outline:2px solid var(--color-ink, #1a1a1a);outline-offset:3px;}"
+    },
+    {
+      "name": "Running Link",
+      "kind": "custom",
+      "refersTo": "link",
+      "description": "Manual Blue with a 1px underline; underline thickens to 2px on hover. Emphasis uses the same underline in ink.",
+      "html": "<p class=\"ds-prose\">Agents get an <a href=\"#\">/llms.txt</a> index at <em>your-team</em>.shiru.sh.</p>",
+      "css": ".ds-prose{margin:0;font:400 1.1875rem/1.6 var(--font-serif, \"STIX Two Text\", \"Times New Roman\", Times, serif);color:var(--color-ink, #1a1a1a);} .ds-prose a{color:var(--color-link, #1f4fbf);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:0.18em;} .ds-prose a:hover{text-decoration-thickness:2px;} .ds-prose a:focus-visible{outline:2px solid var(--color-ink, #1a1a1a);outline-offset:3px;} .ds-prose em{font-style:normal;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:0.18em;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Manual Page",
+    "overview": "shiru.sh is SHIRU(1): one source, typeset for people and plain for agents, the way troff and nroff render one man page twice. The page is white manual paper with black ink and a single manual blue for links. A mono header line and footer line frame it like a printed manual. Section names hang in a left margin in bold caps, and their bodies sit in a hanging indent beside them. Everything else is running text, command lines and example blocks.\n\nDensity is a reference document's density: one long column with a fixed measure, generous section breaks and no decorative furniture. Hierarchy comes from the margin, weight and the move between serif and mono, not from size steps, colour fields or containers. The only large type on the page is the NAME line. Dark mode is the same page on a terminal: the tokens invert and nothing else changes.\n\nThe page can re-set itself. A view switch on the header rule crossfades the typeset article into its own Markdown source, which is the same string served at `/index.md`. Every new surface in this world has to survive that test: it must still make sense as plain Markdown.",
+    "keyCharacteristics": [
+      "Paper, ink and one blue. No other hues.",
+      "STIX Two Text for the typeset view, Courier Prime for commands, code, source and the frame lines.",
+      "Bold caps section names hung in an 11rem margin; bodies in the second column at a 68ch measure.",
+      "Underlines mark links and emphasis, as nroff marks italics.",
+      "Flat and square: no cards, shadows, gradients, radii or decorative icons.",
+      "One signature motion, the 200ms typeset/markdown crossfade."
+    ],
+    "rules": [
+      {
+        "name": "The One Blue Rule",
+        "body": "Blue means \"this goes somewhere.\" If an element is blue and not a link (or the form accent), it is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Reverse Video Rule",
+        "body": "The only filled surfaces are ink blocks with paper text: the command submit, the pressed view toggle, the skip link, and selection. There is no tinted or grey surface anywhere.",
+        "section": "colors"
+      },
+      {
+        "name": "The Same-Size Head Rule",
+        "body": "Section heads are body size. Do not add heading sizes. The display line is the one exception, and there is only one per page.",
+        "section": "typography"
+      },
+      {
+        "name": "The Underline-Is-Italic Rule",
+        "body": "`em` is set upright with a 1px underline at 0.18em offset, as nroff renders italics. The italic face is loaded but the typeset view does not use it for emphasis.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono-Is-Literal Rule",
+        "body": "Anything a reader would type, fetch or paste (commands, paths, filenames, URLs used as values) is set in Courier Prime and marked `translate=\"no\"`.",
+        "section": "typography"
+      },
+      {
+        "name": "The Hanging Margin Rule",
+        "body": "Every section is a margin head plus an indented body. New content goes into a named section, not into a new layout.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Paper Rule",
+        "body": "No box-shadow, no tinted panels, no cards. If something needs separating, give it its own section or a hairline in Rule Grey.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** put every piece of content in a named section with a bold caps head in the 11rem margin and its body at a 68ch measure.",
+      "**Do** keep blue for links. Use reverse video (Ink fill, Paper text) for the one primary action and pressed states.",
+      "**Do** set anything literal (commands, paths, URLs) in Courier Prime with `translate=\"no\"`.",
+      "**Do** make every component degrade to plain Markdown. Each MDX component needs a Markdown fallback, or `/index.md` breaks.",
+      "**Do** define every colour in both the paper and terminal palettes, and change nothing else for dark mode.",
+      "**Do** use the shared ease-out curve (cubic-bezier(0.23, 1, 0.32, 1)) at 160–200ms for state changes, and drop blur and scale under reduced motion."
+    ],
+    "donts": [
+      "**Don't** add cards, shadows, gradients, rounded corners or tinted panels.",
+      "**Don't** add decorative or UI icons. The open-book logo mark is the only drawn glyph, and it appears as the brand mark (favicon, footer).",
+      "**Don't** add heading sizes. Section heads stay at body size, and the display size belongs to the NAME line alone.",
+      "**Don't** remove link underlines or use colour alone for emphasis. Emphasis is an underline.",
+      "**Don't** introduce a second accent hue, including for error or success states.",
+      "**Don't** set body copy in Margin Grey. It is for the frame lines and placeholders."
+    ]
+  }
+}

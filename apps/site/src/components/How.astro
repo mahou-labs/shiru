@@ -1,0 +1,109 @@
+---
+import type { Section } from "../content";
+import Icon from "./Icon.astro";
+import Rich from "./Rich.astro";
+import Url from "./Url.astro";
+import SectionHeading from "./SectionHeading.astro";
+
+type Props = Extract<Section, { kind: "how" }>;
+
+const { id, heading, steps } = Astro.props;
+
+const tree = [
+  { name: "docs", depth: 0, folder: true },
+  { name: "introduction.mdx", depth: 1 },
+  { name: "quickstart.mdx", depth: 1, active: true },
+  { name: "webhooks.mdx", depth: 1 },
+  { name: "package.json", depth: 0 },
+];
+
+const urls = [
+  { icon: "globe", label: "People", url: "your-team.shiru.sh/quickstart" },
+  { icon: "agent", label: "Agents", url: "…/quickstart.md" },
+] as const;
+
+const panel = "h-40 overflow-hidden rounded-2xl text-[0.8125rem]";
+---
+
+<section {id} class="scroll-mt-20 py-20 md:py-28">
+  <div class="mx-auto w-full max-w-[1200px] px-5 md:px-10">
+    <SectionHeading {heading} />
+
+    <ol class="mt-12 grid gap-0 md:mt-16 md:grid-cols-3 md:gap-8">
+      {
+        steps.map((step, i) => (
+          <li class="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-4 md:grid-cols-1">
+            <div class="flex flex-col items-center md:flex-row md:gap-3">
+              <span class="grid size-8 shrink-0 place-items-center font-mono text-sm text-fg-muted tabular-nums">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span
+                class:list={[
+                  "my-2 w-px flex-1 bg-border md:my-0 md:-mr-8 md:h-px md:w-auto",
+                  i === steps.length - 1 && "invisible",
+                ]}
+                aria-hidden="true"
+              />
+            </div>
+            <div class:list={["md:pt-6", i < steps.length - 1 && "pb-12 md:pb-0"]}>
+              <h3 class="pt-0.5 text-[1.25rem]/[1.25] font-medium tracking-[-0.02em] md:pt-0">{step.title}</h3>
+              <p class="mt-2 max-w-[40ch] text-[0.9375rem]/[1.5] text-fg-muted">
+                <Rich text={step.body} />
+              </p>
+              <div class="mt-6" inert>
+                {step.visual === "tree" && (
+                  <div class:list={[panel, "bg-surface p-3 shadow-window"]} translate="no">
+                    {tree.map((row) => (
+                      <div
+                        class:list={[
+                          "flex h-7 items-center gap-2 rounded-lg px-2",
+                          row.active ? "bg-mock-raised font-medium text-fg" : "text-fg-muted",
+                        ]}
+                        style={`padding-left: ${0.5 + row.depth * 1.25}rem`}
+                      >
+                        <Icon name={row.folder ? "folder" : "file"} class="size-4" />
+                        <span class="font-mono text-[0.95em]">{row.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {step.visual === "terminal" && (
+                  <div class:list={[panel, "bg-mock-bg p-4 font-mono text-mock-fg [font-variant-ligatures:none] shadow-window"]} translate="no">
+                    <div>
+                      <span class="text-mock-comment">$</span> git push
+                    </div>
+                    <div class="mt-1 text-mock-muted">To github.com:acme/docs.git</div>
+                    <div class="text-mock-muted">   7d02b4e..a1f3c9e  main -&gt; main</div>
+                    <div class="mt-3 flex items-center gap-2 text-mock-fg">
+                      <span class="grid size-4 place-items-center rounded-full bg-mock-accent/15 text-mock-accent">
+                        <Icon name="check" class="size-3" />
+                      </span>
+                      Published <span class="text-mock-accent">a1f3c9e</span>
+                    </div>
+                  </div>
+                )}
+                {step.visual === "urls" && (
+                  <div class:list={[panel, "flex flex-col justify-center gap-4 bg-surface p-4 shadow-window"]}>
+                    {urls.map((row) => (
+                      <div class="grid gap-1.5">
+                        <span class="flex items-center gap-1.5 text-fg-muted">
+                          <Icon name={row.icon} class="size-4" />
+                          {row.label}
+                        </span>
+                        <Url
+                          url={row.url}
+                          accent="text-mock-accent"
+                          class="min-w-0 justify-self-start truncate rounded-md bg-surface px-3 py-1.5 font-mono text-[0.95em] text-fg ring-1 ring-mock-border shadow-[0_1px_3px_rgb(0_0_0/0.05)]"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

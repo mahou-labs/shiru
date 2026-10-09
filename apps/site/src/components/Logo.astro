@@ -1,0 +1,17 @@
+---
+interface Props {
+  class?: string;
+}
+---
+
+<!-- Two rounded quarters for the page people read, two square ones for the Markdown agents read. -->
+<svg
+  class:list={["shrink-0", Astro.props.class ?? "size-6 text-fg"]}
+  viewBox="0 0 18 18"
+  fill="currentColor"
+  aria-hidden="true"
+>
+  <path d="M8 3a5 5 0 0 0-5 5h5z"></path>
+  <path d="M10 15a5 5 0 0 0 5-5h-5z"></path>
+  <path d="M10 3h5v5h-5zM3 10h5v5H3z" fill-opacity="0.4"></path>
+</svg>

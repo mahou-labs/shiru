@@ -9,7 +9,7 @@
     "deploy:dry-run": "cf deploy --prebuilt --dry-run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "cf d1 migrations apply 094e93eb-7015-487f-8888-7d5013a4a8e5 --dir drizzle --pattern 'drizzle/*/migration.sql'",
-    "db:migrate:local": "cf d1 migrations apply 094e93eb-7015-487f-8888-7d5013a4a8e5 --dir drizzle --pattern 'drizzle/*/migration.sql' --local --mode development --persist-to .cloudflare/state",
+    "db:push": "drizzle-kit push",
     "test": "vp test --coverage"
   },
   "dependencies": {
