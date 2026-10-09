@@ -160,13 +160,26 @@ const page = {
     })()`);
   },
   async clickButton(label) {
-    const finder = `[...document.querySelectorAll("button, a, [role=menuitem]")].find((el) => el.innerText.trim() === ${JSON.stringify(label)})`;
+    const finder = `[...document.querySelectorAll("button, a, [role=menuitem], [role=option]")].find((el) => el.innerText.trim() === ${JSON.stringify(label)})`;
     await waitUntil(`!!${finder}`, `button "${label}"`);
     await evaluate(`${finder}.click()`);
   },
   async click(selector) {
     await waitUntil(`!!document.querySelector(${JSON.stringify(selector)})`, `element ${selector}`);
     await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+  },
+  // Base UI menus and selects open on pointerdown, which element.click() never fires.
+  async press(selector) {
+    await waitUntil(`!!document.querySelector(${JSON.stringify(selector)})`, `element ${selector}`);
+    const { x, y } = await evaluate(`(() => {
+      const el = document.querySelector(${JSON.stringify(selector)});
+      el.scrollIntoView({ block: "center" });
+      const r = el.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    })()`);
+    for (const type of ["mouseMoved", "mousePressed", "mouseReleased"]) {
+      await cmd("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
+    }
   },
   async screenshot(name) {
     const { data } = await cmd("Page.captureScreenshot", { format: "png" });

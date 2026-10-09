@@ -1,19 +1,37 @@
-import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { Button } from "@shiru/ui/components/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@shiru/ui/components/empty";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { IconCheckOutlineDuo18 } from "nucleo-ui-outline-duo-18";
+
+import { accessQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/success")({
-  component: SuccessPage,
-  validateSearch: (search) => ({
-    checkout_id: search.checkout_id as string,
-  }),
+  beforeLoad: ({ context }) => context.queryClient.invalidateQueries(accessQuery),
+  component: CheckoutSuccess,
 });
 
-function SuccessPage() {
-  const { checkout_id } = useSearch({ from: "/success" });
-
+function CheckoutSuccess() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1>Payment Successful!</h1>
-      {checkout_id && <p>Checkout ID: {checkout_id}</p>}
-    </div>
+    <Empty className="min-h-svh bg-sidebar">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <IconCheckOutlineDuo18 />
+        </EmptyMedia>
+        <EmptyTitle>You're subscribed</EmptyTitle>
+        <EmptyDescription>
+          Thanks for upgrading. It can take a moment for your plan to show up in billing.
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button render={<Link to="/" />}>Go to dashboard</Button>
+      </EmptyContent>
+    </Empty>
   );
 }

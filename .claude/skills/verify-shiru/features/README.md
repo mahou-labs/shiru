@@ -12,7 +12,7 @@ This folder is the maintained source for verifying shiru's user-facing behavior.
 ## Driving conventions
 
 - Prefer the dashboard. Use the API directly only for features that have no UI, and say so.
-- Use the stable handles: input ids `#name`, `#email`, `#password`, and exact button labels.
+- Select inputs by name (`[name=email]`) and buttons by exact label. Open Base UI menus and selects with `press(selector)`; `click()` does not open them.
 - Send `Origin: http://localhost:3001` on every API request, and keep cookies in `$RUN/jar`.
 - Capture emails with `latest-email.sh` before cleanup. The dev server deletes them when it stops.
 
@@ -30,7 +30,6 @@ Each feature file starts with an H1 and one paragraph on what the user sees, the
 
 ## Features
 
-- [API status](./api-status.md) covers the home page's live API check and the browser CORS path it depends on.
-- [Accounts and email verification](./accounts.md) covers sign-up, the verification email and link, sign-in, protected pages and sign-out.
-- [Organizations and trials](./organizations-and-trials.md) covers creating and switching organizations and the one-trial-per-user rule.
-- [Billing and paid access](./billing.md) covers the dashboard plan panel, checkout and the paid procedure level.
+- [Accounts and email verification](./accounts.md) covers sign-up, the verification email and link, sign-in, protected pages, sign-out, password reset and account settings.
+- [Organizations and trials](./organizations-and-trials.md) covers onboarding, switching, organization settings, members, invitations, leaving and deleting, and the one-trial-per-user rule.
+- [Billing and paid access](./billing.md) covers the billing page, checkout and the paid procedure level.

@@ -10,7 +10,7 @@ import { v7 as uuidv7 } from "uuid";
 import * as schema from "../schema/auth";
 import { claimTrial, syncSubscription } from "./billing";
 import { db } from "./db";
-import { sendVerificationEmail } from "./email";
+import { sendInvitationEmail, sendPasswordResetEmail, sendVerificationEmail } from "./email";
 
 const production = env.ENVIRONMENT === "production";
 
@@ -33,12 +33,15 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      waitUntil(sendPasswordResetEmail({ to: user.email, name: user.name, link: url }));
+    },
   },
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      waitUntil(sendVerificationEmail({ to: user.email, name: user.name, verificationLink: url }));
+      waitUntil(sendVerificationEmail({ to: user.email, name: user.name, link: url }));
     },
   },
   secret: env.BETTER_AUTH_SECRET,
@@ -82,6 +85,16 @@ export const auth = betterAuth({
   plugins: [
     organization({
       allowUserToCreateOrganization: true,
+      sendInvitationEmail: async ({ id, email, inviter, organization }) => {
+        waitUntil(
+          sendInvitationEmail({
+            to: email,
+            inviter: inviter.user.name,
+            organization: organization.name,
+            link: `${env.DASHBOARD_URL}/invite/${id}`,
+          }),
+        );
+      },
       schema: {
         organization: {
           additionalFields: {

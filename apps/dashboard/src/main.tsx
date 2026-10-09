@@ -1,20 +1,25 @@
+import { Spinner } from "@shiru/ui/components/spinner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
 
-import Loader from "./components/loader";
 import { routeTree } from "./routeTree.gen";
 import { orpc, queryClient } from "./utils/orpc";
 
 const router = createRouter({
   routeTree,
   defaultPreload: "intent",
+  defaultPreloadStaleTime: 0,
   scrollRestoration: true,
-  defaultPendingComponent: () => <Loader />,
+  defaultPendingComponent: () => (
+    <div className="flex h-svh items-center justify-center">
+      <Spinner />
+    </div>
+  ),
   context: { orpc, queryClient },
-  Wrap: function WrapComponent({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  },
+  Wrap: ({ children }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  ),
 });
 
 declare module "@tanstack/react-router" {
@@ -30,6 +35,5 @@ if (!rootElement) {
 }
 
 if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(<RouterProvider router={router} />);
+  ReactDOM.createRoot(rootElement).render(<RouterProvider router={router} />);
 }
