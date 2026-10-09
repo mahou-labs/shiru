@@ -13,12 +13,13 @@
   "iconLibrary": "lucide",
   "aliases": {
     "components": "@shiru/ui/components",
-    "utils": "@shiru/ui/lib/utils",
+    "utils": "cn",
     "hooks": "@shiru/ui/hooks",
-    "lib": "@shiru/ui/lib",
     "ui": "@shiru/ui/components"
   },
   "menuColor": "default",
   "menuAccent": "subtle",
-  "registries": {}
+  "registries": {
+    "@coss": "https://coss.com/ui/r/{name}.json"
+  }
 }
