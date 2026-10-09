@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "varlock load && cf dev",
     "build": "cf build",
-    "deploy": "cf deploy",
+    "deploy": "cf deploy --prebuilt",
     "deploy:dry-run": "cf deploy --prebuilt --dry-run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "cf d1 migrations apply 094e93eb-7015-487f-8888-7d5013a4a8e5 --dir drizzle --pattern 'drizzle/*/migration.sql'",

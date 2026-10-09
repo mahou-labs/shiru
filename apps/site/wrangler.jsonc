@@ -1,6 +1,7 @@
 {
   "name": "shiru-site",
   "compatibility_date": "2026-10-07",
+  "routes": [{ "pattern": "shiru.sh", "custom_domain": true }],
   "assets": {
     "directory": "./dist",
   },
