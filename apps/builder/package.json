@@ -9,7 +9,6 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/react": "catalog:",
-    "satteri": "0.10.5",
     "typescript": "catalog:",
     "zod": "catalog:"
   }
