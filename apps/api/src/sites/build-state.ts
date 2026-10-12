@@ -141,9 +141,17 @@ function reconcile(
     case "terminated":
       return finish(state, target, workflowId, { ok: false, error: "The build was stopped" });
     case "unknown":
-      return finish(state, target, workflowId, {
-        ok: false,
-        error: "The build instance was not found",
-      });
+      return restart(state, target, workflowId);
   }
+}
+
+// The DO records the workflow id before it calls `create`, so a missing instance means `create`
+// never ran. Start again, with the newest requested sha, rather than fail a build nobody ran.
+function restart(state: SiteBuilds, target: TargetLabel, workflowId: string): Transition {
+  const current = targetState(state, target);
+  if (current.kind !== "building" || current.build.workflowId !== workflowId) {
+    return { state, effects: [] };
+  }
+  const idle = withTarget(state, target, { kind: "idle", deployed: current.deployed });
+  return request(idle, target, current.pendingSha ?? current.build.sha, true);
 }
