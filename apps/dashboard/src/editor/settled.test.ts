@@ -1,0 +1,81 @@
+import { MutationObserver, QueryClient } from "@tanstack/react-query";
+import { describe, expect, test } from "vite-plus/test";
+
+import { settled } from "./settled";
+
+type Save = { path: string; content: string };
+
+/** Saves the way useAutosave does: each write chained behind the one before it. */
+function autosaver(client: QueryClient, log: string[]) {
+  const gates: (() => void)[] = [];
+  let inflight: Promise<unknown> = Promise.resolve();
+  const observer = new MutationObserver<unknown, Error, Save>(client, {
+    mutationKey: ["save"],
+    mutationFn: async (save) => {
+      await new Promise<void>((resolve) => gates.push(resolve));
+      log.push(`save ${save.path} ${save.content}`);
+    },
+  });
+  return {
+    enqueue(save: Save) {
+      inflight = inflight.then(() => observer.mutate(save)).catch(() => {});
+    },
+    /** Lets the oldest waiting request reach the server. */
+    release: () => gates.shift()?.(),
+  };
+}
+
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+const savesOf = (path: string) => ({
+  mutationKey: ["save"],
+  predicate: (mutation: { state: { variables: unknown } }) =>
+    (mutation.state.variables as Save | undefined)?.path === path,
+});
+
+describe("settled", () => {
+  test("waits for a save queued behind one in flight before letting the delete go", async () => {
+    const client = new QueryClient();
+    const log: string[] = [];
+    const saves = autosaver(client, log);
+    saves.enqueue({ path: "content/a.mdx", content: "typed" });
+    // The editor unmounts with one more edit, flushed behind the save in flight.
+    saves.enqueue({ path: "content/a.mdx", content: "flushed" });
+    const deleted = settled(client.getMutationCache(), savesOf("content/a.mdx")).then(() =>
+      log.push("delete content/a.mdx"),
+    );
+
+    await tick();
+    saves.release();
+    await tick();
+    expect(log).toEqual(["save content/a.mdx typed"]);
+    saves.release();
+    await deleted;
+    expect(log).toEqual([
+      "save content/a.mdx typed",
+      "save content/a.mdx flushed",
+      "delete content/a.mdx",
+    ]);
+  });
+
+  test("ignores saves of other pages", async () => {
+    const client = new QueryClient();
+    const log: string[] = [];
+    const saves = autosaver(client, log);
+    saves.enqueue({ path: "content/b.mdx", content: "typed" });
+    await tick();
+
+    await settled(client.getMutationCache(), savesOf("content/a.mdx"));
+    log.push("delete content/a.mdx");
+    saves.release();
+    await tick();
+    expect(log).toEqual(["delete content/a.mdx", "save content/b.mdx typed"]);
+  });
+
+  test("resolves when nothing is saving", async () => {
+    const client = new QueryClient();
+    await expect(
+      settled(client.getMutationCache(), savesOf("content/a.mdx")),
+    ).resolves.toBeUndefined();
+  });
+});
