@@ -1,6 +1,12 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { hasUnsaved, saveReducer, type SaveEvent, type SaveState } from "./use-autosave";
+import {
+  hasUnsaved,
+  saveReducer,
+  writeQueue,
+  type SaveEvent,
+  type SaveState,
+} from "./use-autosave";
 
 const run = (events: SaveEvent[], from: SaveState = { kind: "idle" }) =>
   events.reduce(saveReducer, from);
@@ -72,5 +78,33 @@ describe("hasUnsaved", () => {
     [{ kind: "error", error: null }, true],
   ])("%j is %s", (state, expected) => {
     expect(hasUnsaved(state)).toBe(expected);
+  });
+});
+
+describe("writeQueue", () => {
+  test("runs writes in order, one at a time", async () => {
+    const queue = writeQueue();
+    const log: string[] = [];
+    const { promise: gate, resolve: release } = Promise.withResolvers<void>();
+    const first = queue.push(async () => {
+      await gate;
+      log.push("first");
+    });
+    const second = queue.push(async () => log.push("second"));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(log).toEqual([]);
+    release();
+    await Promise.all([first, second]);
+    expect(log).toEqual(["first", "second"]);
+  });
+
+  test("last() rejects with a failed write until another write takes its place", async () => {
+    const queue = writeQueue();
+    const failed = queue.push(() => Promise.reject(new Error("offline")));
+    await expect(failed).rejects.toThrow("offline");
+    await expect(queue.last()).rejects.toThrow("offline");
+
+    await expect(queue.push(async () => "saved")).resolves.toBe("saved");
+    await expect(queue.last()).resolves.toBe("saved");
   });
 });

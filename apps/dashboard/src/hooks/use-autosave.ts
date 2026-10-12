@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 
 /**
  * Where a document's edits stand against the server. `dirty` holds edits not sent yet.
@@ -44,13 +44,28 @@ export function hasUnsaved(state: SaveState) {
 }
 
 /**
+ * Runs writes one at a time, in order, so an older value can never land after a newer one. A failed
+ * write does not stop the next, but `last()` rejects with it until another write takes its place.
+ */
+export function writeQueue() {
+  let last: Promise<unknown> = Promise.resolve();
+  return {
+    push(write: () => Promise<unknown>) {
+      last = last.catch(() => {}).then(write);
+      return last;
+    },
+    last: () => last,
+  };
+}
+
+/**
  * Writes what `read()` returns `delay` ms after the last `edit()`, one request at a time.
  * Unmounting with unsaved edits writes them right away, and closing the tab asks first.
  */
 export function useAutosave<T>(read: () => T, write: (value: T) => Promise<unknown>, delay = 1000) {
   const [state, dispatch] = useReducer(saveReducer, { kind: "idle" });
   const latest = useRef({ state, read, write });
-  const inflight = useRef<Promise<unknown>>(Promise.resolve());
+  const [queue] = useState(writeQueue);
 
   useEffect(() => {
     latest.current = { state, read, write };
@@ -60,10 +75,7 @@ export function useAutosave<T>(read: () => T, write: (value: T) => Promise<unkno
   function enqueue() {
     const { read, write } = latest.current;
     const value = read();
-    // Chained so an older value can never land after a newer one.
-    const request = inflight.current.then(() => write(value));
-    inflight.current = request.catch(() => {});
-    return request;
+    return queue.push(() => write(value));
   }
 
   function send() {
@@ -102,6 +114,6 @@ export function useAutosave<T>(read: () => T, write: (value: T) => Promise<unkno
     state,
     edit: () => dispatch({ type: "edit" }),
     /** Sends unsaved edits now. Resolves once every edit so far is written, rejects if that fails. */
-    flush: () => (hasUnsaved(state) ? send() : inflight.current),
+    flush: () => (hasUnsaved(state) ? send() : queue.last()),
   };
 }
