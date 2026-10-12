@@ -16,7 +16,13 @@ export default defineConfig(({ mode }) => {
       compatibilityDate: "2026-10-07",
       observability: { enabled: true },
       env: development
-        ? { ...domains, DEV_SITES_ORIGIN: bindings.text("http://localhost:3000") }
+        ? {
+            ...domains,
+            // Overridable so a verify script can point it at its own API server.
+            DEV_SITES_ORIGIN: bindings.text(
+              process.env.DEV_SITES_ORIGIN ?? "http://localhost:3000",
+            ),
+          }
         : { ...domains, DISPATCHER: bindings.dispatchNamespace({ namespace: "production" }) },
     },
   };
