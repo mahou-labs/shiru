@@ -5,6 +5,8 @@ title: MDX features
 import Note from "./_note.mdx";
 import Callout from "./_components/Callout.astro";
 import { release } from "./_data.js";
+import Greeting from "./_components/Greeting.tsx";
+import Counter from "./_components/Counter.jsx";
 
 export const answer = 6 * 7;
 
@@ -15,5 +17,9 @@ The answer is {answer}.
 <Callout label={`Computed ${answer}`}>Callout body from a local component.</Callout>
 
 Latest release: {release.version}.
+
+<Greeting name="Acme" />
+
+<Counter client:load start={3} />
 
 <Aside type="note" title={"Title from " + "an expression"}>Aside with an expression title.</Aside>

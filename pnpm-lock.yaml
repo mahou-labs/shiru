@@ -326,6 +326,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.4
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
       satteri:
         specifier: 0.10.5
         version: 0.10.5
