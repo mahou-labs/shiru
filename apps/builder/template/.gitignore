@@ -1,0 +1,27 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+.nimbus/
+
+# Written by build-site on every build.
+site.json
+src/content/docs/
+public/assets/
+
+.env
+.env.local
+.env.*.local
+.env.production
+.dev.vars
+.dev.vars.*
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
