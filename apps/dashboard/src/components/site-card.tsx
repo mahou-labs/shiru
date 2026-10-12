@@ -16,76 +16,27 @@ import {
   CollapsiblePanel,
   CollapsibleTrigger,
 } from "@shiru/ui/components/collapsible";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   IconArrowUpRightOutlineDuo18,
   IconChevronDownOutlineDuo18,
+  IconPencilOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 
+import { canPublish, usePublish, type PublishState } from "@/hooks/use-publish";
 import { errorMessage } from "@/lib/errors";
-import { orpc } from "@/utils/orpc";
 
 import type { AppRouterClient } from "../../../api/src/routers";
-import { LIVE } from "../../../api/src/sites/names";
-import type { SiteStatus } from "../../../api/src/sites/site-do";
 
 type Outputs = InferClientOutputs<AppRouterClient>["sites"];
 type Site = Outputs["list"][number];
 type PublishError = InferClientErrors<AppRouterClient>["sites"]["publish"];
 
-const POLL_MS = 2000;
-
-/** What the live site serves, plus the draft files a publish would commit. */
-export type PublishState = { changes: number; conflicts: number } & (
-  | { kind: "unpublished" }
-  | { kind: "building"; live: string | null }
-  | { kind: "live"; sha: string; atHead: boolean }
-  | { kind: "failed"; error: string; live: string | null }
-);
-
-export function publishState(status: SiteStatus): PublishState {
-  const conflicts = status.drafts.filter((draft) => draft.conflict).length;
-  const counts = { changes: status.drafts.length - conflicts, conflicts };
-  const target = status.targets[LIVE];
-  const live = target?.deployed?.sha ?? null;
-  switch (target?.kind) {
-    case "building":
-      return { ...counts, kind: "building", live };
-    case "failed":
-      return { ...counts, kind: "failed", error: target.error, live };
-    default:
-      return live
-        ? { ...counts, kind: "live", sha: live, atHead: live === status.headSha }
-        : { ...counts, kind: "unpublished" };
-  }
-}
-
-/** Whether a publish would commit or build anything. A failed build can always be retried. */
-function canPublish(state: PublishState) {
-  if (state.kind === "building") return false;
-  if (state.kind === "live") return state.changes > 0 || !state.atHead;
-  return state.kind === "failed" || state.changes > 0;
-}
-
 const shortSha = (sha: string) => sha.slice(0, 7);
 const files = (count: number) => (count === 1 ? "1 file" : `${count} files`);
 
 export function SiteCard({ site }: { site: Site }) {
-  const queryClient = useQueryClient();
-  const statusOptions = orpc.sites.status.queryOptions({ input: { siteId: site.id } });
-  const { data: status } = useQuery({
-    ...statusOptions,
-    refetchInterval: (query) =>
-      query.state.data?.targets[LIVE]?.kind === "building" ? POLL_MS : false,
-  });
-  const publish = useMutation({
-    ...orpc.sites.publish.mutationOptions(),
-    meta: { silent: true },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: statusOptions.queryKey }),
-  });
-
-  const state = status && publishState(status);
+  const { state, publish } = usePublish(site.id, { silent: true });
   const live = state && (state.kind === "live" ? state.sha : "live" in state ? state.live : null);
   const host = new URL(site.url).host;
 
@@ -132,8 +83,8 @@ export function SiteCard({ site }: { site: Site }) {
           )}
         </CardPanel>
       )}
-      {state && (
-        <CardFooter className="gap-2">
+      <CardFooter className="gap-2">
+        {state && (
           <Button
             loading={publish.isPending}
             disabled={!canPublish(state)}
@@ -141,17 +92,23 @@ export function SiteCard({ site }: { site: Site }) {
           >
             {state.kind === "building" ? "Publishing…" : "Publish"}
           </Button>
-          {live && (
-            <Button
-              variant="outline"
-              render={<a href={site.url} target="_blank" rel="noreferrer" />}
-            >
-              Open site
-              <IconArrowUpRightOutlineDuo18 />
-            </Button>
-          )}
-        </CardFooter>
-      )}
+        )}
+        {site.source.kind === "managed" && (
+          <Button
+            variant="outline"
+            render={<Link to="/sites/$siteId/editor" params={{ siteId: site.id }} />}
+          >
+            <IconPencilOutlineDuo18 />
+            Edit
+          </Button>
+        )}
+        {live && (
+          <Button variant="outline" render={<a href={site.url} target="_blank" rel="noreferrer" />}>
+            Open site
+            <IconArrowUpRightOutlineDuo18 />
+          </Button>
+        )}
+      </CardFooter>
     </Card>
   );
 }

@@ -1,0 +1,316 @@
+import { Alert, AlertDescription, AlertTitle } from "@shiru/ui/components/alert";
+import { Button } from "@shiru/ui/components/button";
+import { Separator } from "@shiru/ui/components/separator";
+import { SidebarTrigger } from "@shiru/ui/components/sidebar";
+import { Skeleton } from "@shiru/ui/components/skeleton";
+import { Spinner } from "@shiru/ui/components/spinner";
+import { Textarea } from "@shiru/ui/components/textarea";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Markdown, MarkdownManager } from "@tiptap/markdown";
+import { EditorContent, useEditor } from "@tiptap/react";
+import { useRef, useState, type ReactNode } from "react";
+
+import { useAutosave, type SaveState } from "@/hooks/use-autosave";
+import { canPublish, usePublish } from "@/hooks/use-publish";
+import { errorMessage } from "@/lib/errors";
+import { orpc } from "@/utils/orpc";
+
+import type { FileStatus } from "../../../api/src/sites/drafts";
+import { createMarked, markdownExtensions, parseBody, type Flavor } from "./markdown";
+import { joinPage, readFields, splitPage, writeFields } from "./page";
+
+type PageEditorProps = { siteId: string; path: string; flavor: Flavor; file?: FileStatus };
+
+/** One page of a site. Mount it keyed by path so nothing carries over between pages. */
+export function PageEditor({ siteId, path, flavor, file }: PageEditorProps) {
+  const { data, error } = useQuery({
+    ...orpc.sites.files.get.queryOptions({ input: { siteId, path } }),
+    meta: { silent: true },
+  });
+
+  if (!data) {
+    return (
+      <EditorFrame path={path} status={null} actions={<PublishButton siteId={siteId} />}>
+        {error ? (
+          <Alert variant="error">
+            <AlertTitle>This page could not be opened</AlertTitle>
+            <AlertDescription>
+              <p>{errorMessage(error)}</p>
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="flex flex-col gap-4" aria-busy="true">
+            <Skeleton className="h-10 w-2/3" />
+            <Skeleton className="h-5 w-1/2" />
+            <Skeleton className="mt-6 h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-4/6" />
+          </div>
+        )}
+      </EditorFrame>
+    );
+  }
+  return (
+    <LoadedPage siteId={siteId} path={path} flavor={flavor} file={file} source={data.content} />
+  );
+}
+
+function LoadedPage({ siteId, path, flavor, file, source }: PageEditorProps & { source: string }) {
+  const queryClient = useQueryClient();
+  const [page] = useState(() => splitPage(source));
+  const [frontmatter, setFrontmatter] = useState(page.frontmatter);
+  // Decided once, so fixing the YAML by hand does not swap the textarea out from under the cursor.
+  const [raw] = useState(() => readFields(page.frontmatter) === null);
+  const fields = readFields(frontmatter);
+  // Until the body is edited it is saved as written, so a title change does not reformat it.
+  const bodyEdited = useRef(false);
+
+  const save = useMutation({
+    ...orpc.sites.files.save.mutationOptions(),
+    onSuccess: (status) => {
+      const tree = orpc.sites.files.tree.queryKey({ input: { siteId } });
+      queryClient.setQueryData(tree, (old) => {
+        if (!old) return old;
+        const files: FileStatus[] = old.files;
+        return { files: files.map((entry) => (entry.path === status.path ? status : entry)) };
+      });
+      void queryClient.invalidateQueries({
+        queryKey: orpc.sites.status.queryKey({ input: { siteId } }),
+      });
+    },
+  });
+
+  const [content] = useState(() =>
+    parseBody(
+      new MarkdownManager({ marked: createMarked(), extensions: markdownExtensions(flavor) }),
+      page.body,
+    ),
+  );
+
+  const editor = useEditor({
+    extensions: [...markdownExtensions(flavor), Markdown.configure({ marked: createMarked() })],
+    content,
+    shouldRerenderOnTransaction: false,
+    editorProps: { attributes: { class: PROSE, "aria-label": "Page content" } },
+    // Only edits after initialization count: content set while the editor is created is the
+    // loaded page, and saving it would rewrite the file without anyone touching it.
+    onUpdate: ({ editor, transaction }) => {
+      if (!transaction.docChanged || !editor.isInitialized) return;
+      bodyEdited.current = true;
+      autosave.edit();
+    },
+  });
+
+  const autosave = useAutosave(
+    () =>
+      joinPage({
+        frontmatter,
+        body: bodyEdited.current && editor ? editor.getMarkdown() : page.body,
+      }),
+    (content: string) => {
+      // The cached file is what this page reopens with, so it must follow the draft.
+      queryClient.setQueryData(
+        orpc.sites.files.get.queryKey({ input: { siteId, path } }),
+        (old) => old && { ...old, content },
+      );
+      return save.mutateAsync({ siteId, path, content });
+    },
+  );
+
+  function changeFrontmatter(next: string | null) {
+    setFrontmatter(next);
+    autosave.edit();
+  }
+
+  return (
+    <EditorFrame
+      path={path}
+      status={<SaveStatus state={autosave.state} onRetry={() => void autosave.flush()} />}
+      actions={
+        <PublishButton
+          siteId={siteId}
+          edited={autosave.state.kind !== "idle" && autosave.state.kind !== "saved"}
+          beforePublish={autosave.flush}
+        />
+      }
+    >
+      {file?.conflict && (
+        <Alert variant="warning" className="mb-8">
+          <AlertTitle>This page changed outside the editor</AlertTitle>
+          <AlertDescription>
+            <p>
+              Someone pushed a new version after you edited it. Your draft is kept, but it will not
+              be published.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+      {raw || !fields ? (
+        <div className="mb-8 flex flex-col gap-2">
+          <label htmlFor="frontmatter" className="font-medium text-sm">
+            Frontmatter
+          </label>
+          <p className="text-muted-foreground text-sm">
+            This frontmatter is not YAML the title and description fields can edit, so it is shown
+            as written.
+          </p>
+          <Textarea
+            id="frontmatter"
+            className="font-mono"
+            value={frontmatter ?? ""}
+            spellCheck={false}
+            onChange={(event) => changeFrontmatter(event.target.value || null)}
+          />
+        </div>
+      ) : (
+        <header className="mb-8 flex flex-col gap-3 border-b pb-8">
+          <input
+            aria-label="Title"
+            placeholder="Untitled"
+            value={fields.title}
+            className="w-full bg-transparent font-heading font-semibold text-4xl tracking-tight outline-none placeholder:text-muted-foreground/60"
+            onChange={(event) =>
+              changeFrontmatter(writeFields(frontmatter, { title: event.target.value }))
+            }
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              editor?.commands.focus("start");
+            }}
+          />
+          <textarea
+            aria-label="Description"
+            placeholder="Add a description"
+            rows={1}
+            value={fields.description}
+            className="field-sizing-content w-full resize-none bg-transparent text-lg text-muted-foreground leading-relaxed outline-none placeholder:text-muted-foreground/60"
+            onChange={(event) =>
+              changeFrontmatter(writeFields(frontmatter, { description: event.target.value }))
+            }
+          />
+        </header>
+      )}
+      <EditorContent editor={editor} />
+    </EditorFrame>
+  );
+}
+
+function EditorFrame({
+  path,
+  status,
+  actions,
+  children,
+}: {
+  path: string;
+  status: ReactNode;
+  actions: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+        <SidebarTrigger className="-ms-1" />
+        <Separator orientation="vertical" className="me-1 h-4" />
+        <span className="truncate font-mono text-muted-foreground text-xs" title={path}>
+          {path}
+        </span>
+        <div className="ms-auto flex shrink-0 items-center gap-3">
+          {status}
+          {actions}
+        </div>
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-3xl px-6 py-12 sm:px-10">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function SaveStatus({ state, onRetry }: { state: SaveState; onRetry: () => void }) {
+  const text = "text-muted-foreground text-xs";
+  switch (state.kind) {
+    case "idle":
+      return null;
+    case "dirty":
+      return <span className={text}>Unsaved changes</span>;
+    case "saving":
+      return (
+        <span className={`${text} inline-flex items-center gap-1.5`}>
+          <Spinner className="size-3" />
+          Saving…
+        </span>
+      );
+    case "saved":
+      return <span className={text}>Draft saved</span>;
+    case "error":
+      return (
+        <span className="inline-flex items-center gap-2 text-destructive-foreground text-xs">
+          Not saved
+          <Button size="xs" variant="outline" onClick={onRetry}>
+            Retry
+          </Button>
+        </span>
+      );
+  }
+}
+
+/** Publishes after the open page's pending edits are saved, which the site status cannot know of yet. */
+function PublishButton({
+  siteId,
+  edited = false,
+  beforePublish = () => Promise.resolve(),
+}: {
+  siteId: string;
+  edited?: boolean;
+  beforePublish?: () => Promise<unknown>;
+}) {
+  const { state, publish } = usePublish(siteId);
+  const [flushing, setFlushing] = useState(false);
+
+  async function onPublish() {
+    setFlushing(true);
+    try {
+      await beforePublish();
+    } catch {
+      // The failed save already explains itself, and publishing now would skip the edit.
+      return;
+    } finally {
+      setFlushing(false);
+    }
+    publish.mutate({ siteId });
+  }
+
+  return (
+    <Button
+      size="sm"
+      loading={flushing || publish.isPending}
+      disabled={!state || state.kind === "building" || (!edited && !canPublish(state))}
+      onClick={() => void onPublish()}
+    >
+      {state?.kind === "building" ? "Publishing…" : "Publish"}
+    </Button>
+  );
+}
+
+/** Reads like the published page: a single measure, generous rhythm, quiet code and quotes. */
+const PROSE = [
+  "min-h-64 text-base/7 text-foreground outline-none",
+  "[&>*:first-child]:mt-0",
+  "[&_h1]:mt-12 [&_h1]:mb-4 [&_h1]:font-heading [&_h1]:font-semibold [&_h1]:text-3xl [&_h1]:tracking-tight",
+  "[&_h2]:mt-12 [&_h2]:mb-4 [&_h2]:font-heading [&_h2]:font-semibold [&_h2]:text-2xl [&_h2]:tracking-tight",
+  "[&_h3]:mt-8 [&_h3]:mb-3 [&_h3]:font-heading [&_h3]:font-semibold [&_h3]:text-xl",
+  "[&_h4]:mt-6 [&_h4]:mb-2 [&_h4]:font-semibold [&_h4]:text-base",
+  "[&_p]:my-4",
+  "[&_a]:font-medium [&_a]:underline [&_a]:decoration-foreground/30 [&_a]:underline-offset-4",
+  "[&_strong]:font-semibold",
+  "[&_ul]:my-4 [&_ul]:list-disc [&_ul]:ps-6 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:ps-6",
+  "[&_li]:my-1 [&_li>p]:my-1 [&_li::marker]:text-muted-foreground",
+  "[&_blockquote]:my-6 [&_blockquote]:border-s-2 [&_blockquote]:ps-4 [&_blockquote]:text-muted-foreground",
+  "[&_hr]:my-10 [&_hr]:border-border",
+  "[&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-muted [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[0.875em]",
+  "[&_pre]:my-6 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:bg-muted/50 [&_pre]:p-4 [&_pre]:text-sm/6",
+  "[&_img]:my-6 [&_img]:rounded-lg",
+  "[&_table]:my-6 [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm",
+  "[&_th]:border-b [&_th]:px-3 [&_th]:py-2 [&_th]:text-start [&_th]:font-semibold",
+  "[&_td]:border-b [&_td]:px-3 [&_td]:py-2 [&_td>p]:my-0 [&_th>p]:my-0",
+].join(" ");
