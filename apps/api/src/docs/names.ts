@@ -1,18 +1,18 @@
 import { z } from "zod";
 
-// Neither a slug nor a label can contain `--`, so `--` always separates a label from its site.
+// Neither a slug nor a label can contain `--`, so `--` always separates a label from its doc.
 const NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-// `preview` is reserved too: a site there could set cookies for every preview host under it.
+// `preview` is reserved too: a doc there could set cookies for every preview host under it.
 const RESERVED_SLUGS: readonly string[] = ["app", "api", "docs", "preview", "t", "www"];
 
-export const SiteSlug = z
+export const DocSlug = z
   .string()
   .max(40)
   .regex(NAME, "Use lowercase letters, digits and single hyphens")
   .refine((slug) => !RESERVED_SLUGS.includes(slug), "This address is reserved")
-  .brand<"SiteSlug">();
-export type SiteSlug = z.infer<typeof SiteSlug>;
+  .brand<"DocSlug">();
+export type DocSlug = z.infer<typeof DocSlug>;
 
 export const TargetLabel = z
   .string()
@@ -23,15 +23,15 @@ export type TargetLabel = z.infer<typeof TargetLabel>;
 
 export const LIVE = TargetLabel.parse("live");
 
-export function workerName(site: SiteSlug, target: TargetLabel) {
-  return target === LIVE ? site : `${site}--${target}`;
+export function workerName(doc: DocSlug, target: TargetLabel) {
+  return target === LIVE ? doc : `${doc}--${target}`;
 }
 
 export type DocsDomains = { docs: string; preview: string };
 
 export type ParsedHostname =
-  | { kind: "site"; slug: SiteSlug }
-  | { kind: "preview"; slug: SiteSlug; label: TargetLabel }
+  | { kind: "doc"; slug: DocSlug }
+  | { kind: "preview"; slug: DocSlug; label: TargetLabel }
   | { kind: "custom"; hostname: string }
   | { kind: "invalid" };
 
@@ -42,17 +42,17 @@ export function parseHostname(host: string, domains: DocsDomains): ParsedHostnam
   if (preview !== null) {
     const [label, slug, ...rest] = preview.split("--");
     const parsedLabel = TargetLabel.safeParse(label);
-    const parsedSlug = SiteSlug.safeParse(slug);
+    const parsedSlug = DocSlug.safeParse(slug);
     if (rest.length > 0 || !parsedLabel.success || !parsedSlug.success) return { kind: "invalid" };
-    // The live target is served at the site's own hostname, never as a preview.
+    // The live target is served at the doc's own hostname, never as a preview.
     if (parsedLabel.data === LIVE) return { kind: "invalid" };
     return { kind: "preview", slug: parsedSlug.data, label: parsedLabel.data };
   }
 
-  const site = subdomain(hostname, domains.docs);
-  if (site !== null) {
-    const parsedSlug = SiteSlug.safeParse(site);
-    return parsedSlug.success ? { kind: "site", slug: parsedSlug.data } : { kind: "invalid" };
+  const doc = subdomain(hostname, domains.docs);
+  if (doc !== null) {
+    const parsedSlug = DocSlug.safeParse(doc);
+    return parsedSlug.success ? { kind: "doc", slug: parsedSlug.data } : { kind: "invalid" };
   }
 
   return { kind: "custom", hostname };

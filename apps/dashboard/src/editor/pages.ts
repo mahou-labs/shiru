@@ -1,6 +1,6 @@
 import { slugify } from "@/lib/slug";
 
-import { SitePath, type FileStatus } from "../../../api/src/sites/drafts";
+import { DocPath, type FileStatus } from "../../../api/src/docs/drafts";
 
 export const PAGES_ROOT = "content/";
 export const HOME = "content/index.mdx";
@@ -25,7 +25,7 @@ export function suggestPath(folder: string, title: string) {
 
 /** Why `path` cannot be a new page next to `files`, or undefined when it can. */
 export function newPagePathError(path: string, files: FileStatus[]): string | undefined {
-  const parsed = SitePath.safeParse(path);
+  const parsed = DocPath.safeParse(path);
   if (!parsed.success) return parsed.error.issues[0]?.message ?? "This path is not valid";
   if (!path.startsWith(PAGES_ROOT)) return "Pages live in content/";
   if (!/[^/]\.mdx?$/.test(path)) return "A page ends in .mdx or .md";

@@ -59,7 +59,7 @@ export class Builder extends DurableObject<Env> {
   }
 
   /** Builds /work/src/<docsRoot> into /work/dist and lists what it wrote. */
-  async build({ siteUrl, docsRoot }: { siteUrl: string; docsRoot: string }): Promise<BuildResult> {
+  async build({ docUrl, docsRoot }: { docUrl: string; docsRoot: string }): Promise<BuildResult> {
     const src = sourceDir(docsRoot);
     if (typeof src !== "string") return { ok: false, errors: [src.error] };
     const container = this.running();
@@ -74,13 +74,13 @@ export class Builder extends DurableObject<Env> {
         src,
         "/work/dist",
       ],
-      { SITE_URL: siteUrl },
+      { SITE_URL: docUrl },
     );
-    const site = parseBuildSiteOutput(build.exitCode, build.stdout, build.stderr);
-    if (!site.ok) return site;
+    const doc = parseBuildSiteOutput(build.exitCode, build.stdout, build.stderr);
+    if (!doc.ok) return doc;
 
     const manifest = await output(container, ["dist-manifest", "/work/dist"]);
-    return manifestResult(site.templateVersion, manifest.exitCode, manifest.stdout);
+    return manifestResult(doc.templateVersion, manifest.exitCode, manifest.stdout);
   }
 
   /** The bytes of one built file, by its manifest path. */

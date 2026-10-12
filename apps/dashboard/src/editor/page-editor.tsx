@@ -16,7 +16,7 @@ import { canPublish, usePublish } from "@/hooks/use-publish";
 import { errorMessage } from "@/lib/errors";
 import { orpc } from "@/utils/orpc";
 
-import type { FileStatus } from "../../../api/src/sites/drafts";
+import type { FileStatus } from "../../../api/src/docs/drafts";
 import { BlockHandle } from "./block-handle";
 import { EditorBubbleMenu } from "./bubble-menu";
 import { createMarked, markdownExtensions, parseBody, type Flavor } from "./markdown";
@@ -26,23 +26,23 @@ import { slashMenu } from "./slash-menu";
 import "./editor.css";
 
 type PageEditorProps = {
-  siteId: string;
+  docId: string;
   path: string;
   flavor: Flavor;
   file?: FileStatus;
   autoFocus?: boolean;
 };
 
-/** One page of a site. Mount it keyed by path so nothing carries over between pages. */
-export function PageEditor({ siteId, path, flavor, file, autoFocus }: PageEditorProps) {
+/** One page of a doc. Mount it keyed by path so nothing carries over between pages. */
+export function PageEditor({ docId, path, flavor, file, autoFocus }: PageEditorProps) {
   const { data, error } = useQuery({
-    ...orpc.sites.files.get.queryOptions({ input: { siteId, path } }),
+    ...orpc.docs.files.get.queryOptions({ input: { docId, path } }),
     meta: { silent: true },
   });
 
   if (!data) {
     return (
-      <EditorFrame path={path} status={null} actions={<PublishButton siteId={siteId} />}>
+      <EditorFrame path={path} status={null} actions={<PublishButton docId={docId} />}>
         {error ? (
           <Alert variant="error">
             <AlertTitle>This page could not be opened</AlertTitle>
@@ -64,7 +64,7 @@ export function PageEditor({ siteId, path, flavor, file, autoFocus }: PageEditor
   }
   return (
     <LoadedPage
-      siteId={siteId}
+      docId={docId}
       path={path}
       flavor={flavor}
       file={file}
@@ -75,7 +75,7 @@ export function PageEditor({ siteId, path, flavor, file, autoFocus }: PageEditor
 }
 
 function LoadedPage({
-  siteId,
+  docId,
   path,
   flavor,
   file,
@@ -92,16 +92,16 @@ function LoadedPage({
   const bodyEdited = useRef(false);
 
   const save = useMutation({
-    ...orpc.sites.files.save.mutationOptions(),
+    ...orpc.docs.files.save.mutationOptions(),
     onSuccess: (status) => {
-      const tree = orpc.sites.files.tree.queryKey({ input: { siteId } });
+      const tree = orpc.docs.files.tree.queryKey({ input: { docId } });
       queryClient.setQueryData(tree, (old) => {
         if (!old) return old;
         const files: FileStatus[] = old.files;
         return { files: files.map((entry) => (entry.path === status.path ? status : entry)) };
       });
       void queryClient.invalidateQueries({
-        queryKey: orpc.sites.status.queryKey({ input: { siteId } }),
+        queryKey: orpc.docs.status.queryKey({ input: { docId } }),
       });
     },
   });
@@ -148,10 +148,10 @@ function LoadedPage({
     (content: string) => {
       // The cached file is what this page reopens with, so it must follow the draft.
       queryClient.setQueryData(
-        orpc.sites.files.get.queryKey({ input: { siteId, path } }),
+        orpc.docs.files.get.queryKey({ input: { docId, path } }),
         (old) => old && { ...old, content },
       );
-      return save.mutateAsync({ siteId, path, content });
+      return save.mutateAsync({ docId, path, content });
     },
   );
 
@@ -166,7 +166,7 @@ function LoadedPage({
       status={<SaveStatus state={autosave.state} onRetry={() => void autosave.flush()} />}
       actions={
         <PublishButton
-          siteId={siteId}
+          docId={docId}
           edited={autosave.state.kind !== "idle" && autosave.state.kind !== "saved"}
           beforePublish={autosave.flush}
         />
@@ -299,17 +299,17 @@ function SaveStatus({ state, onRetry }: { state: SaveState; onRetry: () => void 
   }
 }
 
-/** Publishes after the open page's pending edits are saved, which the site status cannot know of yet. */
+/** Publishes after the open page's pending edits are saved, which the doc status cannot know of yet. */
 function PublishButton({
-  siteId,
+  docId,
   edited = false,
   beforePublish = () => Promise.resolve(),
 }: {
-  siteId: string;
+  docId: string;
   edited?: boolean;
   beforePublish?: () => Promise<unknown>;
 }) {
-  const { state, publish } = usePublish(siteId);
+  const { state, publish } = usePublish(docId);
   const [flushing, setFlushing] = useState(false);
 
   async function onPublish() {
@@ -322,7 +322,7 @@ function PublishButton({
     } finally {
       setFlushing(false);
     }
-    publish.mutate({ siteId });
+    publish.mutate({ docId });
   }
 
   return (

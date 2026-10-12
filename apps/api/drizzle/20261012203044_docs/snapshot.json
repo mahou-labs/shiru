@@ -1,9 +1,9 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "839604ed-4606-4345-bb4e-b8499d382428",
+  "id": "b8e4a084-bdb8-4bac-af33-5065353ae40c",
   "prevIds": [
-    "55bf48bf-45ab-4678-b2ba-ade1fa2b38b9"
+    "f3802b2b-acf1-47af-93fe-a45261b8b9d2"
   ],
   "ddl": [
     {
@@ -43,11 +43,11 @@
       "entityType": "tables"
     },
     {
-      "name": "hostnames",
+      "name": "docs",
       "entityType": "tables"
     },
     {
-      "name": "sites",
+      "name": "hostnames",
       "entityType": "tables"
     },
     {
@@ -710,6 +710,76 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "docs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "organization_id",
+      "entityType": "columns",
+      "table": "docs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "slug",
+      "entityType": "columns",
+      "table": "docs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "docs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'public'",
+      "generated": null,
+      "name": "visibility",
+      "entityType": "columns",
+      "table": "docs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "source",
+      "entityType": "columns",
+      "table": "docs"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "docs"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
       "name": "hostname",
       "entityType": "columns",
       "table": "hostnames"
@@ -720,7 +790,7 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "site_id",
+      "name": "doc_id",
       "entityType": "columns",
       "table": "hostnames"
     },
@@ -733,76 +803,6 @@
       "name": "created_at",
       "entityType": "columns",
       "table": "hostnames"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "id",
-      "entityType": "columns",
-      "table": "sites"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "organization_id",
-      "entityType": "columns",
-      "table": "sites"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "slug",
-      "entityType": "columns",
-      "table": "sites"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "name",
-      "entityType": "columns",
-      "table": "sites"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "'public'",
-      "generated": null,
-      "name": "visibility",
-      "entityType": "columns",
-      "table": "sites"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "source",
-      "entityType": "columns",
-      "table": "sites"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "table": "sites"
     },
     {
       "type": "text",
@@ -931,21 +931,6 @@
     },
     {
       "columns": [
-        "site_id"
-      ],
-      "tableTo": "sites",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "fk_hostnames_site_id_sites_id_fk",
-      "entityType": "fks",
-      "table": "hostnames"
-    },
-    {
-      "columns": [
         "organization_id"
       ],
       "tableTo": "organizations",
@@ -955,9 +940,24 @@
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
-      "name": "fk_sites_organization_id_organizations_id_fk",
+      "name": "fk_docs_organization_id_organizations_id_fk",
       "entityType": "fks",
-      "table": "sites"
+      "table": "docs"
+    },
+    {
+      "columns": [
+        "doc_id"
+      ],
+      "tableTo": "docs",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_hostnames_doc_id_docs_id_fk",
+      "entityType": "fks",
+      "table": "hostnames"
     },
     {
       "columns": [
@@ -1042,20 +1042,20 @@
     },
     {
       "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "docs_pk",
+      "table": "docs",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
         "hostname"
       ],
       "nameExplicit": false,
       "name": "hostnames_pk",
       "table": "hostnames",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
-      "name": "sites_pk",
-      "table": "sites",
       "entityType": "pks"
     },
     {
@@ -1196,20 +1196,6 @@
     {
       "columns": [
         {
-          "value": "site_id",
-          "isExpression": false
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "origin": "manual",
-      "name": "hostnames_siteId_idx",
-      "entityType": "indexes",
-      "table": "hostnames"
-    },
-    {
-      "columns": [
-        {
           "value": "organization_id",
           "isExpression": false
         }
@@ -1217,9 +1203,9 @@
       "isUnique": false,
       "where": null,
       "origin": "manual",
-      "name": "sites_organizationId_idx",
+      "name": "docs_organizationId_idx",
       "entityType": "indexes",
-      "table": "sites"
+      "table": "docs"
     },
     {
       "columns": [
@@ -1231,9 +1217,23 @@
       "isUnique": true,
       "where": "visibility = 'public'",
       "origin": "manual",
-      "name": "sites_public_organizationId_idx",
+      "name": "docs_public_organizationId_idx",
       "entityType": "indexes",
-      "table": "sites"
+      "table": "docs"
+    },
+    {
+      "columns": [
+        {
+          "value": "doc_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "hostnames_docId_idx",
+      "entityType": "indexes",
+      "table": "hostnames"
     },
     {
       "columns": [
@@ -1267,9 +1267,9 @@
         "slug"
       ],
       "nameExplicit": false,
-      "name": "sites_slug_unique",
+      "name": "docs_slug_unique",
       "entityType": "uniques",
-      "table": "sites"
+      "table": "docs"
     }
   ],
   "renames": []

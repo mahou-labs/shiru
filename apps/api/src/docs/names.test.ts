@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { LIVE, parseHostname, SiteSlug, TargetLabel, workerName } from "./names";
+import { LIVE, parseHostname, DocSlug, TargetLabel, workerName } from "./names";
 
 const domains = { docs: "shiru.sh", preview: "preview.shiru.sh" };
 
-describe("SiteSlug", () => {
+describe("DocSlug", () => {
   it.each([
     ["acme", true],
     ["acme-docs", true],
@@ -24,11 +24,11 @@ describe("SiteSlug", () => {
     ["t", false],
     ["www", false],
   ])("%j is valid: %s", (input, valid) => {
-    expect(SiteSlug.safeParse(input).success).toBe(valid);
+    expect(DocSlug.safeParse(input).success).toBe(valid);
   });
 
   it("names the rule a reserved slug breaks", () => {
-    expect(SiteSlug.safeParse("www").error?.issues.map((issue) => issue.message)).toEqual([
+    expect(DocSlug.safeParse("www").error?.issues.map((issue) => issue.message)).toEqual([
       "This address is reserved",
     ]);
   });
@@ -49,13 +49,13 @@ describe("TargetLabel", () => {
 });
 
 describe("workerName", () => {
-  const acme = SiteSlug.parse("acme");
+  const acme = DocSlug.parse("acme");
 
-  it("names the live target after the site", () => {
+  it("names the live target after the doc", () => {
     expect(workerName(acme, LIVE)).toBe("acme");
   });
 
-  it("puts other targets after the site", () => {
+  it("puts other targets after the doc", () => {
     expect(workerName(acme, TargetLabel.parse("pr-12"))).toBe("acme--pr-12");
     expect(workerName(acme, TargetLabel.parse("draft"))).toBe("acme--draft");
   });
@@ -63,8 +63,8 @@ describe("workerName", () => {
 
 describe("parseHostname", () => {
   it.each([
-    ["acme.shiru.sh", { kind: "site", slug: "acme" }],
-    ["ACME.shiru.sh.", { kind: "site", slug: "acme" }],
+    ["acme.shiru.sh", { kind: "doc", slug: "acme" }],
+    ["ACME.shiru.sh.", { kind: "doc", slug: "acme" }],
     ["pr-12--acme.preview.shiru.sh", { kind: "preview", slug: "acme", label: "pr-12" }],
     ["draft--acme-docs.preview.shiru.sh", { kind: "preview", slug: "acme-docs", label: "draft" }],
     ["docs.acme.com", { kind: "custom", hostname: "docs.acme.com" }],

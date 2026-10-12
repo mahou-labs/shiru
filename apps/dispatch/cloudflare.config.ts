@@ -19,9 +19,7 @@ export default defineConfig(({ mode }) => {
         ? {
             ...domains,
             // Overridable so a verify script can point it at its own API server.
-            DEV_SITES_ORIGIN: bindings.text(
-              process.env.DEV_SITES_ORIGIN ?? "http://localhost:3000",
-            ),
+            DEV_DOCS_ORIGIN: bindings.text(process.env.DEV_DOCS_ORIGIN ?? "http://localhost:3000"),
           }
         : { ...domains, DISPATCHER: bindings.dispatchNamespace({ namespace: "production" }) },
     },

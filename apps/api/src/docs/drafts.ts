@@ -4,22 +4,22 @@ import { sourcePathError } from "../builder/protocol";
 import { blobSha, type Change, type TreeEntry } from "./git";
 
 /**
- * A managed site keeps its docs under `docs/` in its repo, so the repo root stays free for a README
- * or CI files once the site moves to GitHub. Paths over the API are relative to it.
+ * A managed doc keeps its docs under `docs/` in its repo, so the repo root stays free for a README
+ * or CI files once the doc moves to GitHub. Paths over the API are relative to it.
  */
 export const DOCS_ROOT = "docs/";
 
 /** A path relative to the docs root, such as `content/guides/setup.mdx`. */
-export const SitePath = z
+export const DocPath = z
   .string()
   .superRefine((path, context) => {
     const error = sourcePathError(path);
     if (error) context.addIssue({ code: "custom", message: error });
   })
-  .brand<"SitePath">();
-export type SitePath = z.infer<typeof SitePath>;
+  .brand<"DocPath">();
+export type DocPath = z.infer<typeof DocPath>;
 
-export const repoPath = (path: SitePath) => `${DOCS_ROOT}${path}`;
+export const repoPath = (path: DocPath) => `${DOCS_ROOT}${path}`;
 
 /** An unpublished edit of one file. `path` is from the repo root. */
 export type Draft = {
@@ -157,13 +157,13 @@ export function afterCommit(collected: Draft[], current: Draft[], tree: Tree): D
   return update;
 }
 
-/** The files a site starts with, so its first publish builds. */
-export function starterDrafts(siteName: string, user: string, now: number): Draft[] {
+/** The files a doc starts with, so its first publish builds. */
+export function starterDrafts(docName: string, user: string, now: number): Draft[] {
   const encoder = new TextEncoder();
   const files = {
-    "docs.config.json": `${JSON.stringify({ version: 1, name: siteName }, null, 2)}\n`,
+    "docs.config.json": `${JSON.stringify({ version: 1, name: docName }, null, 2)}\n`,
     // The name stays in front matter, as a JSON string, because MDX would read `{` or `<` as code.
-    "content/index.mdx": `---\ntitle: ${JSON.stringify(siteName)}\n---\n\nStart writing here.\n`,
+    "content/index.mdx": `---\ntitle: ${JSON.stringify(docName)}\n---\n\nStart writing here.\n`,
   };
   return Object.entries(files).map(([path, content]) => ({
     path: `${DOCS_ROOT}${path}`,

@@ -68,16 +68,16 @@ function sqlStorage(database: DatabaseSync) {
 }
 
 /**
- * Runs the real SiteDO class, one instance per name, on node:sqlite. Calls go through a proxy that
+ * Runs the real Doc class, one instance per name, on node:sqlite. Calls go through a proxy that
  * awaits and structured-clones like an RPC stub. Alarms are recorded, not fired.
  */
-export const siteObjects = {
+export const docObjects = {
   instances: new Map<string, unknown>(),
   alarms: new Map<string, number | null>(),
   getByName(name: string) {
     const instance = async () => {
       if (!this.instances.has(name)) {
-        const { SiteDO } = await import("../sites/site-do");
+        const { Doc } = await import("../docs/doc");
         const database = new DatabaseSync(":memory:");
         const ctx = {
           id: { name },
@@ -94,11 +94,11 @@ export const siteObjects = {
                 throw error;
               }
             },
-            setAlarm: async (time: number) => void siteObjects.alarms.set(name, time),
-            deleteAlarm: async () => void siteObjects.alarms.set(name, null),
+            setAlarm: async (time: number) => void docObjects.alarms.set(name, time),
+            deleteAlarm: async () => void docObjects.alarms.set(name, null),
           },
         };
-        this.instances.set(name, new SiteDO(ctx as never, env as never));
+        this.instances.set(name, new Doc(ctx as never, env as never));
       }
       return this.instances.get(name) as Record<string, (...args: unknown[]) => unknown>;
     };
@@ -137,7 +137,7 @@ export const artifacts = {
   async get(name: string) {
     const repo = this.repos.get(name);
     if (!repo) throw artifactsError("NOT_FOUND", `${name} not found`);
-    // Only the read API the site code calls; anything else is missing at runtime.
+    // Only the read API the doc code calls; anything else is missing at runtime.
     return repoHandle(name, repo) as unknown as ArtifactsRepo;
   },
   receive(name: string, objects: (StoredObject & { sha: string })[], head?: string) {
@@ -219,7 +219,7 @@ export const env = {
   POSTHOG_KEY: "",
   POSTHOG_HOST: "https://us.i.posthog.com",
   ARTIFACTS: artifacts,
-  SITE_DO: siteObjects,
+  DOCS: docObjects,
   EMAIL: {
     send: async (message: SentEmail) => {
       sentEmails.push(message);

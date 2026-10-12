@@ -25,9 +25,9 @@ import { PageTree } from "@/editor/page-tree";
 import { HOME, PAGES_ROOT } from "@/editor/pages";
 import { orpc } from "@/utils/orpc";
 
-import type { FileStatus } from "../../../../../../api/src/sites/drafts";
+import type { FileStatus } from "../../../../../../api/src/docs/drafts";
 
-export const Route = createFileRoute("/_app/sites/$siteId/editor")({
+export const Route = createFileRoute("/_app/docs/$docId/editor")({
   validateSearch: z.object({
     path: z.string().optional().catch(undefined),
   }),
@@ -35,12 +35,12 @@ export const Route = createFileRoute("/_app/sites/$siteId/editor")({
 });
 
 function Editor() {
-  const { siteId } = Route.useParams();
+  const { docId } = Route.useParams();
   const { path } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { data: sites } = useQuery(orpc.sites.list.queryOptions());
-  const { data: tree } = useQuery(orpc.sites.files.tree.queryOptions({ input: { siteId } }));
-  const site = sites?.find((entry) => entry.id === siteId);
+  const { data: docs } = useQuery(orpc.docs.list.queryOptions());
+  const { data: tree } = useQuery(orpc.docs.files.tree.queryOptions({ input: { docId } }));
+  const doc = docs?.find((entry) => entry.id === docId);
   const files: FileStatus[] | undefined = tree?.files;
   const pages = files?.filter((file) => file.status !== "deleted" && flavorOf(file.path) !== null);
   const current = path ?? (pages?.find((file) => file.path === HOME) ?? pages?.[0])?.path;
@@ -52,7 +52,7 @@ function Editor() {
   const [closing, setClosing] = useState<string>();
   const [focusBody, setFocusBody] = useState<string>();
 
-  const remove = useDeletePage(siteId, (deleted) => {
+  const remove = useDeletePage(docId, (deleted) => {
     if (deleted !== current) return;
     // Synchronous, so the editor's unmount flush is already queued when the delete waits on saves.
     flushSync(() => setClosing(deleted));
@@ -70,7 +70,7 @@ function Editor() {
           >
             <IconArrowLeftOutlineDuo18 className="size-4" />
           </Link>
-          <span className="truncate font-medium text-sm">{site?.name ?? "Pages"}</span>
+          <span className="truncate font-medium text-sm">{doc?.name ?? "Pages"}</span>
           <Button
             size="icon-xs"
             variant="ghost"
@@ -86,7 +86,7 @@ function Editor() {
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {pages ? (
             <PageTree
-              siteId={siteId}
+              docId={docId}
               files={pages}
               current={current}
               onCreate={setCreatingIn}
@@ -103,7 +103,7 @@ function Editor() {
       </aside>
       {files && (
         <NewPageDialog
-          siteId={siteId}
+          docId={docId}
           files={files}
           folder={creatingIn}
           onClose={() => setCreatingIn(null)}
@@ -125,7 +125,7 @@ function Editor() {
       {current && flavor && current !== closing ? (
         <PageEditor
           key={current}
-          siteId={siteId}
+          docId={docId}
           path={current}
           flavor={flavor}
           file={pages?.find((file) => file.path === current)}

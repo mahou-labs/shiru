@@ -26,8 +26,8 @@ export default defineConfig({
         // These drive a container, a push over HTTP or a Workflow, which only run under cf dev;
         // scripts/verify-builder.ts and scripts/verify-publish.ts cover them.
         "src/builder/builder.ts",
-        "src/sites/site-do.ts",
-        "src/sites/publish-workflow.ts",
+        "src/docs/doc.ts",
+        "src/docs/publish-workflow.ts",
       ],
       thresholds: { statements: 85, branches: 75, functions: 80, lines: 85 },
     },

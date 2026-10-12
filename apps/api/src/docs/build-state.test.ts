@@ -35,7 +35,7 @@ const reconciled = (workflowId: string, instance: InstanceStatus): BuildEvent =>
 });
 
 function run(events: BuildEvent[]) {
-  let state = initialBuilds("site-1");
+  let state = initialBuilds("doc-1");
   const effects = [];
   for (const event of events) {
     const transition = applyBuildEvent(state, event);
@@ -56,12 +56,12 @@ describe("applyBuildEvent", () => {
     {
       name: "starts the first build",
       events: [requested("a")],
-      effects: [start("site-1--live--1", "a")],
+      effects: [start("doc-1--live--1", "a")],
       seq: 1,
       targets: {
         live: {
           kind: "building",
-          build: { sha: "a", workflowId: "site-1--live--1" },
+          build: { sha: "a", workflowId: "doc-1--live--1" },
           pendingSha: null,
           deployed: null,
         },
@@ -76,14 +76,14 @@ describe("applyBuildEvent", () => {
         requested("b"),
         requested("c"),
         requested("a"),
-        succeeded("site-1--live--1"),
+        succeeded("doc-1--live--1"),
       ],
-      effects: [start("site-1--live--1", "a"), [], [], [], [], [], start("site-1--live--2", "c")],
+      effects: [start("doc-1--live--1", "a"), [], [], [], [], [], start("doc-1--live--2", "c")],
       seq: 2,
       targets: {
         live: {
           kind: "building",
-          build: { sha: "c", workflowId: "site-1--live--2" },
+          build: { sha: "c", workflowId: "doc-1--live--2" },
           pendingSha: null,
           deployed: { sha: "a", templateVersion: "v1" },
         },
@@ -93,12 +93,12 @@ describe("applyBuildEvent", () => {
       name: "ignores the deployed sha unless asked to rebuild",
       events: [
         requested("a"),
-        succeeded("site-1--live--1", "v1"),
+        succeeded("doc-1--live--1", "v1"),
         requested("a"),
         requested("a", LIVE, true),
-        succeeded("site-1--live--2", "v2"),
+        succeeded("doc-1--live--2", "v2"),
       ],
-      effects: [start("site-1--live--1", "a"), CLEAR, [], start("site-1--live--2", "a"), CLEAR],
+      effects: [start("doc-1--live--1", "a"), CLEAR, [], start("doc-1--live--2", "a"), CLEAR],
       seq: 2,
       targets: { live: { kind: "idle", deployed: { sha: "a", templateVersion: "v2" } } },
     },
@@ -106,11 +106,11 @@ describe("applyBuildEvent", () => {
       name: "keeps the deployed version when a build fails",
       events: [
         requested("a"),
-        succeeded("site-1--live--1"),
+        succeeded("doc-1--live--1"),
         requested("b"),
-        failed("site-1--live--2"),
+        failed("doc-1--live--2"),
       ],
-      effects: [start("site-1--live--1", "a"), CLEAR, start("site-1--live--2", "b"), CLEAR],
+      effects: [start("doc-1--live--1", "a"), CLEAR, start("doc-1--live--2", "b"), CLEAR],
       seq: 2,
       targets: {
         live: {
@@ -122,13 +122,13 @@ describe("applyBuildEvent", () => {
     },
     {
       name: "retries a failed sha when asked again",
-      events: [requested("a"), failed("site-1--live--1"), requested("a")],
-      effects: [start("site-1--live--1", "a"), CLEAR, start("site-1--live--2", "a")],
+      events: [requested("a"), failed("doc-1--live--1"), requested("a")],
+      effects: [start("doc-1--live--1", "a"), CLEAR, start("doc-1--live--2", "a")],
       seq: 2,
       targets: {
         live: {
           kind: "building",
-          build: { sha: "a", workflowId: "site-1--live--2" },
+          build: { sha: "a", workflowId: "doc-1--live--2" },
           pendingSha: null,
           deployed: null,
         },
@@ -136,13 +136,13 @@ describe("applyBuildEvent", () => {
     },
     {
       name: "builds the pending sha after a failure",
-      events: [requested("a"), requested("b"), failed("site-1--live--1")],
-      effects: [start("site-1--live--1", "a"), [], start("site-1--live--2", "b")],
+      events: [requested("a"), requested("b"), failed("doc-1--live--1")],
+      effects: [start("doc-1--live--1", "a"), [], start("doc-1--live--2", "b")],
       seq: 2,
       targets: {
         live: {
           kind: "building",
-          build: { sha: "b", workflowId: "site-1--live--2" },
+          build: { sha: "b", workflowId: "doc-1--live--2" },
           pendingSha: null,
           deployed: null,
         },
@@ -153,28 +153,19 @@ describe("applyBuildEvent", () => {
       events: [
         requested("a"),
         requested("b"),
-        succeeded("site-1--live--1"),
-        succeeded("site-1--live--1", "v9"),
-        failed("site-1--live--1"),
-        succeeded("site-1--live--2", "v1", PR),
-        reconciled("site-1--live--1", { status: "unknown" }),
-        reconciled("site-1--live--1", { status: "running" }),
+        succeeded("doc-1--live--1"),
+        succeeded("doc-1--live--1", "v9"),
+        failed("doc-1--live--1"),
+        succeeded("doc-1--live--2", "v1", PR),
+        reconciled("doc-1--live--1", { status: "unknown" }),
+        reconciled("doc-1--live--1", { status: "running" }),
       ],
-      effects: [
-        start("site-1--live--1", "a"),
-        [],
-        start("site-1--live--2", "b"),
-        [],
-        [],
-        [],
-        [],
-        [],
-      ],
+      effects: [start("doc-1--live--1", "a"), [], start("doc-1--live--2", "b"), [], [], [], [], []],
       seq: 2,
       targets: {
         live: {
           kind: "building",
-          build: { sha: "b", workflowId: "site-1--live--2" },
+          build: { sha: "b", workflowId: "doc-1--live--2" },
           pendingSha: null,
           deployed: { sha: "a", templateVersion: "v1" },
         },
@@ -185,10 +176,10 @@ describe("applyBuildEvent", () => {
       events: [
         requested("a"),
         requested("b", PR),
-        succeeded("site-1--live--1"),
-        succeeded("site-1--pr-12--2", "v1", PR),
+        succeeded("doc-1--live--1"),
+        succeeded("doc-1--pr-12--2", "v1", PR),
       ],
-      effects: [start("site-1--live--1", "a"), start("site-1--pr-12--2", "b", "pr-12"), [], CLEAR],
+      effects: [start("doc-1--live--1", "a"), start("doc-1--pr-12--2", "b", "pr-12"), [], CLEAR],
       seq: 2,
       targets: {
         live: { kind: "idle", deployed: { sha: "a", templateVersion: "v1" } },
@@ -196,7 +187,7 @@ describe("applyBuildEvent", () => {
       },
     },
   ])("$name", ({ events, effects, seq, targets }) => {
-    expect(run(events)).toEqual({ state: { siteId: "site-1", seq, targets }, effects });
+    expect(run(events)).toEqual({ state: { docId: "doc-1", seq, targets }, effects });
   });
 });
 
@@ -208,25 +199,25 @@ describe("reconciling a building target", () => {
     { status: "paused" },
     { status: "waitingForPause" },
   ] satisfies InstanceStatus[])("re-arms the alarm while the instance is $status", (instance) => {
-    expect(run([requested("a"), reconciled("site-1--live--1", instance)])).toEqual({
+    expect(run([requested("a"), reconciled("doc-1--live--1", instance)])).toEqual({
       state: {
-        siteId: "site-1",
+        docId: "doc-1",
         seq: 1,
         targets: {
           live: {
             kind: "building",
-            build: { sha: "a", workflowId: "site-1--live--1" },
+            build: { sha: "a", workflowId: "doc-1--live--1" },
             pendingSha: null,
             deployed: null,
           },
         },
       },
-      effects: [start("site-1--live--1", "a"), [{ type: "setAlarm" }]],
+      effects: [start("doc-1--live--1", "a"), [{ type: "setAlarm" }]],
     });
   });
 
   it("applies the output of a complete instance", () => {
-    const complete = reconciled("site-1--live--1", {
+    const complete = reconciled("doc-1--live--1", {
       status: "complete",
       output: { ok: true, templateVersion: "v3" },
     });
@@ -242,51 +233,51 @@ describe("reconciling a building target", () => {
   ] satisfies [InstanceStatus, string][])(
     "fails on %j and drains the pending sha",
     (instance, error) => {
-      expect(
-        run([requested("a"), requested("b"), reconciled("site-1--live--1", instance)]),
-      ).toEqual({
-        state: {
-          siteId: "site-1",
-          seq: 2,
-          targets: {
-            live: {
-              kind: "building",
-              build: { sha: "b", workflowId: "site-1--live--2" },
-              pendingSha: null,
-              deployed: null,
+      expect(run([requested("a"), requested("b"), reconciled("doc-1--live--1", instance)])).toEqual(
+        {
+          state: {
+            docId: "doc-1",
+            seq: 2,
+            targets: {
+              live: {
+                kind: "building",
+                build: { sha: "b", workflowId: "doc-1--live--2" },
+                pendingSha: null,
+                deployed: null,
+              },
             },
           },
+          effects: [start("doc-1--live--1", "a"), [], start("doc-1--live--2", "b")],
         },
-        effects: [start("site-1--live--1", "a"), [], start("site-1--live--2", "b")],
-      });
-      expect(run([requested("a"), reconciled("site-1--live--1", instance)]).state.targets).toEqual({
+      );
+      expect(run([requested("a"), reconciled("doc-1--live--1", instance)]).state.targets).toEqual({
         live: { kind: "failed", deployed: null, error },
       });
     },
   );
 
   it("restarts a build whose instance was never created, with the newest sha", () => {
-    expect(run([requested("a"), reconciled("site-1--live--1", { status: "unknown" })])).toEqual({
+    expect(run([requested("a"), reconciled("doc-1--live--1", { status: "unknown" })])).toEqual({
       state: {
-        siteId: "site-1",
+        docId: "doc-1",
         seq: 2,
         targets: {
           live: {
             kind: "building",
-            build: { sha: "a", workflowId: "site-1--live--2" },
+            build: { sha: "a", workflowId: "doc-1--live--2" },
             pendingSha: null,
             deployed: null,
           },
         },
       },
-      effects: [start("site-1--live--1", "a"), start("site-1--live--2", "a")],
+      effects: [start("doc-1--live--1", "a"), start("doc-1--live--2", "a")],
     });
     expect(
-      run([requested("a"), requested("b"), reconciled("site-1--live--1", { status: "unknown" })])
+      run([requested("a"), requested("b"), reconciled("doc-1--live--1", { status: "unknown" })])
         .state.targets[LIVE],
     ).toEqual({
       kind: "building",
-      build: { sha: "b", workflowId: "site-1--live--2" },
+      build: { sha: "b", workflowId: "doc-1--live--2" },
       pendingSha: null,
       deployed: null,
     });

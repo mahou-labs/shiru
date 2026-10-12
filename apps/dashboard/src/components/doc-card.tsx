@@ -28,26 +28,26 @@ import { errorMessage } from "@/lib/errors";
 
 import type { AppRouterClient } from "../../../api/src/routers";
 
-type Outputs = InferClientOutputs<AppRouterClient>["sites"];
-type Site = Outputs["list"][number];
-type PublishError = InferClientErrors<AppRouterClient>["sites"]["publish"];
+type Outputs = InferClientOutputs<AppRouterClient>["docs"];
+type Doc = Outputs["list"][number];
+type PublishError = InferClientErrors<AppRouterClient>["docs"]["publish"];
 
 const shortSha = (sha: string) => sha.slice(0, 7);
 const files = (count: number) => (count === 1 ? "1 file" : `${count} files`);
 
-export function SiteCard({ site }: { site: Site }) {
-  const { state, publish } = usePublish(site.id, { silent: true });
+export function DocCard({ doc }: { doc: Doc }) {
+  const { state, publish } = usePublish(doc.id, { silent: true });
   const live = state && (state.kind === "live" ? state.sha : "live" in state ? state.live : null);
-  const host = new URL(site.url).host;
+  const host = new URL(doc.url).host;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{site.name}</CardTitle>
+        <CardTitle>{doc.name}</CardTitle>
         <CardDescription>
           {live ? (
             <a
-              href={site.url}
+              href={doc.url}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
@@ -88,22 +88,22 @@ export function SiteCard({ site }: { site: Site }) {
           <Button
             loading={publish.isPending}
             disabled={!canPublish(state)}
-            onClick={() => publish.mutate({ siteId: site.id })}
+            onClick={() => publish.mutate({ docId: doc.id })}
           >
             {state.kind === "building" ? "Publishing…" : "Publish"}
           </Button>
         )}
-        {site.source.kind === "managed" && (
+        {doc.source.kind === "managed" && (
           <Button
             variant="outline"
-            render={<Link to="/sites/$siteId/editor" params={{ siteId: site.id }} />}
+            render={<Link to="/docs/$docId/editor" params={{ docId: doc.id }} />}
           >
             <IconPencilOutlineDuo18 />
             Edit
           </Button>
         )}
         {live && (
-          <Button variant="outline" render={<a href={site.url} target="_blank" rel="noreferrer" />}>
+          <Button variant="outline" render={<a href={doc.url} target="_blank" rel="noreferrer" />}>
             Open site
             <IconArrowUpRightOutlineDuo18 />
           </Button>

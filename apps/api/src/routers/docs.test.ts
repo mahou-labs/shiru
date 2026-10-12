@@ -20,16 +20,16 @@ async function organizationMember(email: string, organization: string) {
   return { client, organizationId: id };
 }
 
-async function createSite(client: ReturnType<typeof createClient>, slug: string, name: string) {
-  const { status, body } = await client.rpc("sites/create", { slug, name, visibility: "public" });
+async function createDoc(client: ReturnType<typeof createClient>, slug: string, name: string) {
+  const { status, body } = await client.rpc("docs/create", { slug, name, visibility: "public" });
   expect(status).toBe(200);
   return body.json as { id: string };
 }
 
-describe("sites.create", () => {
-  it("creates a managed site whose repo is named after the site id", async () => {
+describe("docs.create", () => {
+  it("creates a managed doc whose repo is named after the doc id", async () => {
     const { client, organizationId } = await organizationMember("create@example.com", "Create");
-    const { status, body } = await client.rpc("sites/create", {
+    const { status, body } = await client.rpc("docs/create", {
       slug: "acme",
       name: " Acme ",
       visibility: "public",
@@ -58,10 +58,10 @@ describe("sites.create", () => {
   it("refuses a slug another organization already uses", async () => {
     const first = await organizationMember("taken-a@example.com", "Taken A");
     const second = await organizationMember("taken-b@example.com", "Taken B");
-    await createSite(first.client, "taken", "First");
+    await createDoc(first.client, "taken", "First");
 
     expect(
-      await second.client.rpc("sites/create", {
+      await second.client.rpc("docs/create", {
         slug: "taken",
         name: "Second",
         visibility: "public",
@@ -77,7 +77,7 @@ describe("sites.create", () => {
         },
       },
     });
-    expect((await second.client.rpc("sites/list")).body).toEqual({ json: [] });
+    expect((await second.client.rpc("docs/list")).body).toEqual({ json: [] });
   });
 
   it.each([
@@ -96,7 +96,7 @@ describe("sites.create", () => {
   ])("rejects the slug %s", async (slug, issue) => {
     const { client } = await organizationMember(`invalid-${slug}@example.com`, `Invalid ${slug}`);
     expect(
-      await client.rpc("sites/create", { slug, name: "Invalid", visibility: "public" }),
+      await client.rpc("docs/create", { slug, name: "Invalid", visibility: "public" }),
     ).toEqual({
       status: 400,
       body: {
@@ -120,7 +120,7 @@ describe("sites.create", () => {
     });
 
     expect(
-      await client.rpc("sites/create", {
+      await client.rpc("docs/create", {
         slug: "expired",
         name: "Expired",
         visibility: "public",
@@ -137,19 +137,19 @@ describe("sites.create", () => {
         },
       },
     });
-    expect((await client.rpc("sites/list")).body).toEqual({ json: [] });
+    expect((await client.rpc("docs/list")).body).toEqual({ json: [] });
   });
 });
 
-describe("sites.list", () => {
-  it("returns only the active organization's sites", async () => {
+describe("docs.list", () => {
+  it("returns only the active organization's docs", async () => {
     const a = await organizationMember("list-a@example.com", "List A");
     const b = await organizationMember("list-b@example.com", "List B");
-    const alpha = await createSite(a.client, "alpha", "Alpha");
+    const alpha = await createDoc(a.client, "alpha", "Alpha");
     vi.setSystemTime(JAN_1.getTime() + MINUTE);
-    const beta = await createSite(b.client, "beta", "Beta");
+    const beta = await createDoc(b.client, "beta", "Beta");
 
-    expect(await a.client.rpc("sites/list")).toEqual({
+    expect(await a.client.rpc("docs/list")).toEqual({
       status: 200,
       body: {
         json: [
@@ -167,7 +167,7 @@ describe("sites.list", () => {
         meta: [[1, 0, "createdAt"]],
       },
     });
-    expect(await b.client.rpc("sites/list")).toEqual({
+    expect(await b.client.rpc("docs/list")).toEqual({
       status: 200,
       body: {
         json: [
@@ -188,63 +188,63 @@ describe("sites.list", () => {
   });
 });
 
-describe("one public site per organization", () => {
-  const PUBLIC_SITE_EXISTS = {
+describe("one public doc per organization", () => {
+  const PUBLIC_DOC_EXISTS = {
     status: 409,
     body: {
       json: {
         defined: true,
-        code: "PUBLIC_SITE_EXISTS",
+        code: "PUBLIC_DOC_EXISTS",
         status: 409,
         message: "This organization already has a public docs site",
       },
     },
   };
 
-  it("refuses a second public site under a free address", async () => {
+  it("refuses a second public doc under a free address", async () => {
     const { client } = await organizationMember("second@example.com", "Second");
-    const first = await createSite(client, "second-one", "One");
+    const first = await createDoc(client, "second-one", "One");
 
     expect(
-      await client.rpc("sites/create", { slug: "second-two", name: "Two", visibility: "public" }),
-    ).toEqual(PUBLIC_SITE_EXISTS);
-    expect(await client.rpc("sites/checkSlug", { slug: "second-two" })).toEqual({
+      await client.rpc("docs/create", { slug: "second-two", name: "Two", visibility: "public" }),
+    ).toEqual(PUBLIC_DOC_EXISTS);
+    expect(await client.rpc("docs/checkSlug", { slug: "second-two" })).toEqual({
       status: 200,
       body: { json: { available: true } },
     });
-    const listed = (await client.rpc("sites/list")).body.json as { id: string }[];
+    const listed = (await client.rpc("docs/list")).body.json as { id: string }[];
     expect(listed.map(({ id }) => id)).toEqual([first.id]);
   });
 
-  it("reports the public site, not the address, when both conflict", async () => {
+  it("reports the public doc, not the address, when both conflict", async () => {
     const other = await organizationMember("both-a@example.com", "Both A");
     const { client } = await organizationMember("both-b@example.com", "Both B");
-    await createSite(other.client, "both-taken", "Other");
-    await createSite(client, "both-mine", "Mine");
+    await createDoc(other.client, "both-taken", "Other");
+    await createDoc(client, "both-mine", "Mine");
 
     expect(
-      await client.rpc("sites/create", { slug: "both-taken", name: "Two", visibility: "public" }),
-    ).toEqual(PUBLIC_SITE_EXISTS);
+      await client.rpc("docs/create", { slug: "both-taken", name: "Two", visibility: "public" }),
+    ).toEqual(PUBLIC_DOC_EXISTS);
   });
 
   it("lets exactly one of two concurrent creates through", async () => {
     const { client } = await organizationMember("race@example.com", "Race");
 
     const results = await Promise.all([
-      client.rpc("sites/create", { slug: "race-one", name: "One", visibility: "public" }),
-      client.rpc("sites/create", { slug: "race-two", name: "Two", visibility: "public" }),
+      client.rpc("docs/create", { slug: "race-one", name: "One", visibility: "public" }),
+      client.rpc("docs/create", { slug: "race-two", name: "Two", visibility: "public" }),
     ]);
 
     expect(results.map(({ status }) => status).sort((a, b) => a - b)).toEqual([200, 409]);
-    expect(results.find(({ status }) => status === 409)).toEqual(PUBLIC_SITE_EXISTS);
+    expect(results.find(({ status }) => status === 409)).toEqual(PUBLIC_DOC_EXISTS);
   });
 
-  it("allows a public site in each organization", async () => {
+  it("allows a public doc in each organization", async () => {
     const a = await organizationMember("each-a@example.com", "Each A");
     const b = await organizationMember("each-b@example.com", "Each B");
-    await createSite(a.client, "each-a", "A");
+    await createDoc(a.client, "each-a", "A");
 
-    const created = await b.client.rpc("sites/create", {
+    const created = await b.client.rpc("docs/create", {
       slug: "each-b",
       name: "B",
       visibility: "public",
@@ -252,11 +252,11 @@ describe("one public site per organization", () => {
     expect(created.status).toBe(200);
   });
 
-  it("does not accept internal sites yet", async () => {
+  it("does not accept internal docs yet", async () => {
     const { client } = await organizationMember("internal@example.com", "Internal");
 
     expect(
-      await client.rpc("sites/create", {
+      await client.rpc("docs/create", {
         slug: "internal",
         name: "Internal",
         visibility: "internal",
@@ -285,17 +285,17 @@ describe("one public site per organization", () => {
   });
 });
 
-describe("sites.checkSlug", () => {
+describe("docs.checkSlug", () => {
   it("reports a slug as taken once any organization uses it", async () => {
     const owner = await organizationMember("check-a@example.com", "Check A");
     const { client } = await organizationMember("check-b@example.com", "Check B");
 
-    expect(await client.rpc("sites/checkSlug", { slug: "check" })).toEqual({
+    expect(await client.rpc("docs/checkSlug", { slug: "check" })).toEqual({
       status: 200,
       body: { json: { available: true } },
     });
-    await createSite(owner.client, "check", "Check");
-    expect(await client.rpc("sites/checkSlug", { slug: "check" })).toEqual({
+    await createDoc(owner.client, "check", "Check");
+    expect(await client.rpc("docs/checkSlug", { slug: "check" })).toEqual({
       status: 200,
       body: { json: { available: false } },
     });
@@ -304,7 +304,7 @@ describe("sites.checkSlug", () => {
   it("rejects a reserved slug", async () => {
     const { client } = await organizationMember("check-reserved@example.com", "Check Reserved");
 
-    expect(await client.rpc("sites/checkSlug", { slug: "app" })).toEqual({
+    expect(await client.rpc("docs/checkSlug", { slug: "app" })).toEqual({
       status: 400,
       body: {
         json: {
@@ -321,11 +321,11 @@ describe("sites.checkSlug", () => {
   });
 });
 
-describe("sites.docsDomain", () => {
-  it("returns the domain sites are served under", async () => {
+describe("docs.docsDomain", () => {
+  it("returns the domain docs are served under", async () => {
     const { client } = await organizationMember("domain@example.com", "Domain");
 
-    expect(await client.rpc("sites/docsDomain")).toEqual({
+    expect(await client.rpc("docs/docsDomain")).toEqual({
       status: 200,
       body: { json: "docs.localhost" },
     });

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { SiteSource } from "./source";
+import { DocSource } from "./source";
 
-describe("SiteSource", () => {
+describe("DocSource", () => {
   it("parses a connected GitHub source", () => {
     const github = {
       kind: "github",
@@ -12,7 +12,7 @@ describe("SiteSource", () => {
       docsRoot: "docs/",
       editorWrites: "pull_request",
     };
-    expect(SiteSource.parse(github)).toEqual(github);
+    expect(DocSource.parse(github)).toEqual(github);
   });
 
   it.each([
@@ -27,6 +27,6 @@ describe("SiteSource", () => {
       editorWrites: "merge",
     },
   ])("rejects %j", (source) => {
-    expect(SiteSource.safeParse(source).success).toBe(false);
+    expect(DocSource.safeParse(source).success).toBe(false);
   });
 });

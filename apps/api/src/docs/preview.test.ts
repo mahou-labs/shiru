@@ -9,7 +9,7 @@ function build(paths: string[]) {
   return async (path: string) => files.get(path) ?? null;
 }
 
-const site = build([
+const doc = build([
   "/index.html",
   "/guides/setup/index.html",
   "/guides/setup/index.md",
@@ -17,7 +17,7 @@ const site = build([
   "/404.html",
 ]);
 
-async function serve(path: string, read = site) {
+async function serve(path: string, read = doc) {
   const served = await serveAsset(path, read);
   return served.kind === "file"
     ? { status: served.status, path: served.path, body: new TextDecoder().decode(served.body) }

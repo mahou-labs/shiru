@@ -26,19 +26,19 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { orpc } from "@/utils/orpc";
 
-import type { FileStatus, SitePath } from "../../../api/src/sites/drafts";
+import type { FileStatus, DocPath } from "../../../api/src/docs/drafts";
 import { newPagePathError, newPageSource, routeOf, suggestPath, withFile } from "./pages";
 import { settled } from "./settled";
 
 /** Asks for a title and a path in `folder`, then creates the page as a draft. */
 export function NewPageDialog({
-  siteId,
+  docId,
   files,
   folder,
   onClose,
   onCreated,
 }: {
-  siteId: string;
+  docId: string;
   files: FileStatus[];
   /** The folder the page goes in, ending in `/`; null keeps the dialog closed. */
   folder: string | null;
@@ -52,7 +52,7 @@ export function NewPageDialog({
           <DialogTitle>New page</DialogTitle>
         </DialogHeader>
         {folder !== null && (
-          <NewPageForm siteId={siteId} files={files} folder={folder} onCreated={onCreated} />
+          <NewPageForm docId={docId} files={files} folder={folder} onCreated={onCreated} />
         )}
       </DialogPopup>
     </Dialog>
@@ -60,12 +60,12 @@ export function NewPageDialog({
 }
 
 function NewPageForm({
-  siteId,
+  docId,
   files,
   folder,
   onCreated,
 }: {
-  siteId: string;
+  docId: string;
   files: FileStatus[];
   folder: string;
   onCreated: (path: string) => void;
@@ -77,29 +77,27 @@ function NewPageForm({
   const pathError = path ? newPagePathError(path, files) : undefined;
 
   const create = useMutation({
-    ...orpc.sites.files.save.mutationOptions(),
+    ...orpc.docs.files.save.mutationOptions(),
     meta: { silent: true },
     onSuccess: (status, { path, content }) => {
       queryClient.setQueryData(
-        orpc.sites.files.tree.queryKey({ input: { siteId } }),
+        orpc.docs.files.tree.queryKey({ input: { docId } }),
         (old) => old && { files: withFile(old.files, status) },
       );
       // The editor opens with what was just written instead of waiting on a fetch.
-      queryClient.setQueryData(orpc.sites.files.get.queryKey({ input: { siteId, path } }), {
-        path: path as SitePath,
+      queryClient.setQueryData(orpc.docs.files.get.queryKey({ input: { docId, path } }), {
+        path: path as DocPath,
         content,
       });
       void queryClient.invalidateQueries({
-        queryKey: orpc.sites.status.queryKey({ input: { siteId } }),
+        queryKey: orpc.docs.status.queryKey({ input: { docId } }),
       });
       onCreated(path);
     },
   });
 
   return (
-    <Form
-      onFormSubmit={() => create.mutate({ siteId, path, content: newPageSource(title.trim()) })}
-    >
+    <Form onFormSubmit={() => create.mutate({ docId, path, content: newPageSource(title.trim()) })}>
       <DialogPanel className="flex flex-col gap-4">
         {create.error && (
           <Alert variant="error">
@@ -153,9 +151,9 @@ function NewPageForm({
  * editor flushes as it unmounts, cannot write the page back after the delete. `leave` must unmount
  * the page's editor synchronously when it is open.
  */
-export function useDeletePage(siteId: string, leave: (path: string) => void) {
+export function useDeletePage(docId: string, leave: (path: string) => void) {
   const queryClient = useQueryClient();
-  const tree = orpc.sites.files.tree.queryKey({ input: { siteId } });
+  const tree = orpc.docs.files.tree.queryKey({ input: { docId } });
 
   return useMutation({
     // Dropped rather than marked deleted, so a save landing first cannot map it back into view.
@@ -169,30 +167,30 @@ export function useDeletePage(siteId: string, leave: (path: string) => void) {
     },
     mutationFn: async (path: string) => {
       await settled(queryClient.getMutationCache(), {
-        mutationKey: orpc.sites.files.save.mutationKey(),
+        mutationKey: orpc.docs.files.save.mutationKey(),
         predicate: (mutation) => {
-          const input = mutation.state.variables as { siteId?: string; path?: string } | undefined;
-          return input?.siteId === siteId && input.path === path;
+          const input = mutation.state.variables as { docId?: string; path?: string } | undefined;
+          return input?.docId === docId && input.path === path;
         },
       });
-      return orpc.sites.files.delete.call({ siteId, path });
+      return orpc.docs.files.delete.call({ docId, path });
     },
     onSuccess: (_result, path) => {
       queryClient.removeQueries({
-        queryKey: orpc.sites.files.get.queryKey({ input: { siteId, path } }),
+        queryKey: orpc.docs.files.get.queryKey({ input: { docId, path } }),
       });
     },
     onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: tree }),
         queryClient.invalidateQueries({
-          queryKey: orpc.sites.status.queryKey({ input: { siteId } }),
+          queryKey: orpc.docs.status.queryKey({ input: { docId } }),
         }),
       ]),
   });
 }
 
-/** Confirms deleting `file`, naming it and saying whether the live site keeps it until publish. */
+/** Confirms deleting `file`, naming it and saying whether the live doc keeps it until publish. */
 export function DeletePageDialog({
   file,
   onClose,

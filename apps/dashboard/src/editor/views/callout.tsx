@@ -23,7 +23,7 @@ import { FixedProp, PropField } from "./fields";
 export const CALLOUT_TYPES = ["note", "tip", "caution", "danger"] as const;
 export type CalloutType = (typeof CALLOUT_TYPES)[number];
 
-/** The only place the editor uses color: each callout type keeps its semantic tint, as on the site. */
+/** The only place the editor uses color: each callout type keeps its semantic tint, as on the doc. */
 const TONES: Record<
   CalloutType,
   { label: string; Icon: ComponentType<{ className?: string }>; className: string }

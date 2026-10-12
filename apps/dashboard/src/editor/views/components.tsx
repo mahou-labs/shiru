@@ -215,7 +215,7 @@ export function CardGridView(props: ReactNodeViewProps) {
   );
 }
 
-/** `<Card title icon>`. The icon is an Iconify name, edited as text since it renders on the site. */
+/** `<Card title icon>`. The icon is an Iconify name, edited as text since it renders on the doc. */
 export function CardView(props: ReactNodeViewProps) {
   const { node, updateAttributes } = props;
   const attrs = node.attrs as ComponentAttrs;

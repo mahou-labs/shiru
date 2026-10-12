@@ -2,26 +2,26 @@ import { env, exports } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
-import { sites } from "../schema/sites";
-import { LIVE, SiteSlug } from "../sites/names";
-import { contentType, serveAsset } from "../sites/preview";
-import type { SiteDO } from "../sites/site-do";
+import { docs } from "../schema/docs";
+import { LIVE, DocSlug } from "../docs/names";
+import { contentType, serveAsset } from "../docs/preview";
+import type { Doc } from "../docs/doc";
 import { db } from "../utils/db";
 import type { Builder } from "./builder";
 import type { SourceFile } from "./protocol";
 
 /**
  * Development only. `/dev/builder` lets scripts/verify-builder.ts drive a Builder directly, and
- * `/dev/sites/<slug>/` serves a site's live build out of its Builder container, since there is no
+ * `/dev/docs/<slug>/` serves a doc's live build out of its Builder container, since there is no
  * local Workers for Platforms. The dispatch Worker forwards `<slug>.docs.localhost:3003` here.
  */
 export const devRoute = new Hono();
 
-// Builder comes from this Worker's own exports (see publish-workflow.ts) and SiteDO from a binding
+// Builder comes from this Worker's own exports (see publish-workflow.ts) and Doc from a binding
 // naming this Worker by string, so neither is typed.
 const builder = (name: string) =>
   (exports.Builder as DurableObjectNamespace<Builder>).getByName(name);
-const siteObject = (id: string) => (env.SITE_DO as DurableObjectNamespace<SiteDO>).getByName(id);
+const docObject = (id: string) => (env.DOCS as DurableObjectNamespace<Doc>).getByName(id);
 
 devRoute.use(async (c, next) => {
   if (env.ENVIRONMENT !== "development") return c.notFound();
@@ -34,7 +34,7 @@ devRoute.post("/builder/:name/reset", async (c) => {
 });
 
 devRoute.post("/builder/:name/build", async (c) => {
-  const input = await c.req.json<{ siteUrl: string; docsRoot: string }>();
+  const input = await c.req.json<{ docUrl: string; docsRoot: string }>();
   return c.json(await builder(c.req.param("name")).build(input));
 });
 
@@ -43,18 +43,18 @@ devRoute.get("/builder/:name/asset", async (c) => {
   return new Response(bytes);
 });
 
-devRoute.get("/sites/:slug", (c) => c.redirect(`${c.req.param("slug")}/`, 307));
+devRoute.get("/docs/:slug", (c) => c.redirect(`${c.req.param("slug")}/`, 307));
 
-devRoute.get("/sites/:slug/*", async (c) => {
+devRoute.get("/docs/:slug/*", async (c) => {
   const slug = c.req.param("slug");
-  const parsed = SiteSlug.safeParse(slug);
-  const [site] = parsed.success
-    ? await db.select({ id: sites.id }).from(sites).where(eq(sites.slug, parsed.data))
+  const parsed = DocSlug.safeParse(slug);
+  const [doc] = parsed.success
+    ? await db.select({ id: docs.id }).from(docs).where(eq(docs.slug, parsed.data))
     : [];
-  if (!site) return c.text("No site at this address", 404);
+  if (!doc) return c.text("No site at this address", 404);
 
-  const path = new URL(c.req.url).pathname.slice(`/dev/sites/${slug}`.length);
-  const container = builder(`build-${site.id}-${LIVE}`);
+  const path = new URL(c.req.url).pathname.slice(`/dev/docs/${slug}`.length);
+  const container = builder(`build-${doc.id}-${LIVE}`);
   let served;
   try {
     served = await serveAsset(path, async (file) => {
@@ -67,7 +67,7 @@ devRoute.get("/sites/:slug/*", async (c) => {
       }
     });
   } catch {
-    return c.text(await rebuild(site.id), 503);
+    return c.text(await rebuild(doc.id), 503);
   }
 
   if (served.kind === "redirect") {
@@ -81,11 +81,11 @@ devRoute.get("/sites/:slug/*", async (c) => {
 });
 
 // Containers stop when idle, taking the build with them. Rebuild what was live.
-async function rebuild(siteId: string) {
-  const site = siteObject(siteId);
-  const live = (await site.status()).targets[LIVE];
+async function rebuild(docId: string) {
+  const doc = docObject(docId);
+  const live = (await doc.status()).targets[LIVE];
   if (live?.kind === "building") return "This site is building. Reload in a few seconds.";
   if (!live?.deployed) return "This site has not been published yet.";
-  await site.build(LIVE, live.deployed.sha, true);
+  await doc.build(LIVE, live.deployed.sha, true);
   return "The build container for this site had stopped, so it is rebuilding. Reload in a few seconds.";
 }

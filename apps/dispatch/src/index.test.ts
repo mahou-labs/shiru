@@ -6,7 +6,7 @@ import dispatch, { route } from "./index";
 const domains = { docs: "docs.localhost", preview: "preview.docs.localhost" } as const;
 
 describe("route", () => {
-  it("dispatches a site hostname to the site's live Worker", () => {
+  it("dispatches a doc hostname to the doc's live Worker", () => {
     expect(route("acme.docs.localhost", domains)).toEqual({
       kind: "dispatch",
       slug: "acme",
@@ -67,7 +67,7 @@ describe("fetch in production", () => {
   const env: Env = { DISPATCHER, DOCS_DOMAIN: domains.docs, PREVIEW_DOMAIN: domains.preview };
   const get = async (url: string) => read(await dispatch.fetch(new Request(url), env));
 
-  it("passes a site's response through unchanged", async () => {
+  it("passes a doc's response through unchanged", async () => {
     expect(await get("https://acme.docs.localhost/guides/setup/index.md")).toEqual({
       status: 200,
       body: "acme served /guides/setup/index.md",
@@ -95,7 +95,7 @@ describe("fetch in production", () => {
     expect((await get("https://api.docs.localhost/")).status).toBe(404);
   });
 
-  it("does not hide other user Worker failures as a missing site", async () => {
+  it("does not hide other user Worker failures as a missing doc", async () => {
     await expect(
       dispatch.fetch(new Request("https://broken.docs.localhost/"), env),
     ).rejects.toThrow("boom");
@@ -105,7 +105,7 @@ describe("fetch in production", () => {
 describe("fetch in development", () => {
   const received: { method?: string; url?: string; host?: string; accept?: string }[] = [];
 
-  // Stands in for the API Worker's dev route, GET /dev/sites/:slug/*.
+  // Stands in for the API Worker's dev route, GET /dev/docs/:slug/*.
   const origin = createServer((request: IncomingMessage, response) => {
     received.push({
       method: request.method,
@@ -113,9 +113,9 @@ describe("fetch in development", () => {
       host: request.headers.host,
       accept: request.headers.accept,
     });
-    if (request.url === "/dev/sites/acme/guides") {
+    if (request.url === "/dev/docs/acme/guides") {
       response.writeHead(301, { location: "guides/" }).end();
-    } else if (request.url === "/dev/sites/acme/guides/setup/index.md?ref=nav") {
+    } else if (request.url === "/dev/docs/acme/guides/setup/index.md?ref=nav") {
       response.writeHead(200, { "content-type": "text/markdown" }).end("# Setup");
     } else {
       response.writeHead(404, { "content-type": "text/plain" }).end("No live build");
@@ -128,7 +128,7 @@ describe("fetch in development", () => {
     const { port } = origin.address() as AddressInfo;
     // A free port, not the config's localhost:3000, which the real dev API may be using.
     env = {
-      DEV_SITES_ORIGIN: `http://127.0.0.1:${port}`,
+      DEV_DOCS_ORIGIN: `http://127.0.0.1:${port}`,
       DOCS_DOMAIN: domains.docs,
       PREVIEW_DOMAIN: domains.preview,
     } as unknown as Env;
@@ -138,7 +138,7 @@ describe("fetch in development", () => {
   const get = async (url: string) =>
     read(await dispatch.fetch(new Request(url, { headers: { accept: "text/markdown" } }), env));
 
-  it("forwards a site request to the API's dev route and passes the response through", async () => {
+  it("forwards a doc request to the API's dev route and passes the response through", async () => {
     received.length = 0;
     expect(await get("http://acme.docs.localhost:3003/guides/setup/index.md?ref=nav")).toEqual({
       status: 200,
@@ -149,8 +149,8 @@ describe("fetch in development", () => {
     expect(received).toEqual([
       {
         method: "GET",
-        url: "/dev/sites/acme/guides/setup/index.md?ref=nav",
-        host: env.DEV_SITES_ORIGIN?.replace("http://", ""),
+        url: "/dev/docs/acme/guides/setup/index.md?ref=nav",
+        host: env.DEV_DOCS_ORIGIN?.replace("http://", ""),
         accept: "text/markdown",
       },
     ]);

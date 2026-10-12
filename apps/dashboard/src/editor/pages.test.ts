@@ -70,7 +70,7 @@ describe("newPagePathError", () => {
     );
   });
 
-  test("rejects what the API's SitePath rejects", () => {
+  test("rejects what the API's DocPath rejects", () => {
     expect(newPagePathError("content//a.mdx", files)).toBe(
       "content//a.mdx has an empty, . or .. segment",
     );

@@ -1,6 +1,6 @@
 /**
- * Serves a built site the way Workers static assets do with `html_handling: "auto-trailing-slash"`
- * and `not_found_handling: "404-page"`, so a site previewed locally behaves like the deployed one.
+ * Serves a built doc the way Workers static assets do with `html_handling: "auto-trailing-slash"`
+ * and `not_found_handling: "404-page"`, so a doc previewed locally behaves like the deployed one.
  */
 
 export type Served =
@@ -44,7 +44,7 @@ export async function serveAsset(path: string, read: ReadFile): Promise<Served> 
 
 /**
  * The Location that takes a browser from `from` to `to`, relative to `from`. A relative Location
- * works both at /dev/sites/<slug>/… on the API and at the site's own hostname behind dispatch.
+ * works both at /dev/docs/<slug>/… on the API and at the doc's own hostname behind dispatch.
  */
 export function relativeLocation(from: string, to: string) {
   const fromDir = from.split("/").slice(1, -1);

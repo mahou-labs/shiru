@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const SiteSource = z.discriminatedUnion("kind", [
+export const DocSource = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("managed"), artifactsRepo: z.string() }),
   z.object({
     kind: z.literal("github"),
@@ -11,4 +11,4 @@ export const SiteSource = z.discriminatedUnion("kind", [
     editorWrites: z.enum(["direct", "pull_request"]),
   }),
 ]);
-export type SiteSource = z.infer<typeof SiteSource>;
+export type DocSource = z.infer<typeof DocSource>;

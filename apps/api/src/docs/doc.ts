@@ -7,7 +7,7 @@ import {
   initialBuilds,
   type InstanceStatus,
   parseInstanceStatus,
-  type SiteBuilds,
+  type DocBuilds,
 } from "./build-state";
 import {
   afterCommit,
@@ -21,7 +21,7 @@ import {
   putDraft,
   reconcileDrafts,
   repoPath,
-  SitePath,
+  DocPath,
   starterDrafts,
   type Tree,
   toTree,
@@ -40,7 +40,7 @@ import {
 import { LIVE, type TargetLabel } from "./names";
 import type { PublishParams } from "./publish-workflow";
 
-export type SiteInfo = { siteId: string; name: string; repo: string; siteUrl: string };
+export type DocInfo = { docId: string; name: string; repo: string; docUrl: string };
 
 export type PublishResult =
   | { kind: "published"; sha: string; skipped: string[] }
@@ -48,9 +48,9 @@ export type PublishResult =
   // The branch moved under every attempt.
   | { kind: "conflict" };
 
-export type SiteStatus = {
+export type DocStatus = {
   headSha: string | null;
-  targets: SiteBuilds["targets"];
+  targets: DocBuilds["targets"];
   drafts: {
     path: string;
     op: Draft["op"];
@@ -75,11 +75,11 @@ type DraftRow = {
 };
 
 /**
- * One per site, named by site id. It owns the site's drafts, caches the repo at head so the
- * editor never reads git on the hot path, commits drafts to the site's Artifacts repo, and keeps
+ * One per doc, named by doc id. It owns the doc's drafts, caches the repo at head so the
+ * editor never reads git on the hot path, commits drafts to the doc's Artifacts repo, and keeps
  * one build per target at a time through the reducer in build-state.ts.
  */
-export class SiteDO extends DurableObject<Env> {
+export class Doc extends DurableObject<Env> {
   private sql: SqlStorage;
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -105,17 +105,17 @@ export class SiteDO extends DurableObject<Env> {
   }
 
   /**
-   * Records the site and, the first time, creates its repo and reads head. Safe to call before
-   * every request: after the first call it only refreshes the site's name and URL.
+   * Records the doc and, the first time, creates its repo and reads head. Safe to call before
+   * every request: after the first call it only refreshes the doc's name and URL.
    */
-  async init(site: SiteInfo): Promise<void> {
-    this.setMeta("site", JSON.stringify(site));
+  async init(doc: DocInfo): Promise<void> {
+    this.setMeta("doc", JSON.stringify(doc));
     if (this.meta("remote") !== null) return;
 
-    const remote = await this.ensureRepo(site.repo);
+    const remote = await this.ensureRepo(doc.repo);
     await this.refresh();
     if (this.meta("head_sha") === null && this.loadDrafts().length === 0) {
-      for (const draft of starterDrafts(site.name, "shiru", Date.now())) this.writeDraft(draft);
+      for (const draft of starterDrafts(doc.name, "shiru", Date.now())) this.writeDraft(draft);
     }
     this.setMeta("remote", remote);
   }
@@ -127,7 +127,7 @@ export class SiteDO extends DurableObject<Env> {
   async getFile(
     path: string,
   ): Promise<{ kind: "file"; content: Uint8Array } | { kind: "not_found" }> {
-    const file = repoPath(SitePath.parse(path));
+    const file = repoPath(DocPath.parse(path));
     const draft = this.loadDraft(file);
     if (draft)
       return draft.op === "put" ? { kind: "file", content: draft.content } : { kind: "not_found" };
@@ -137,7 +137,7 @@ export class SiteDO extends DurableObject<Env> {
   }
 
   saveDraft(path: string, content: Uint8Array, user: Person): FileStatus {
-    const file = repoPath(SitePath.parse(path));
+    const file = repoPath(DocPath.parse(path));
     const previous = this.loadDraft(file);
     const tree = this.loadTree();
     const draft = putDraft(previous, tree, file, content, user.email, this.stamp(previous));
@@ -146,7 +146,7 @@ export class SiteDO extends DurableObject<Env> {
   }
 
   deleteFile(path: string, user: Person): { kind: "deleted" } | { kind: "not_found" } {
-    const file = repoPath(SitePath.parse(path));
+    const file = repoPath(DocPath.parse(path));
     const previous = this.loadDraft(file);
     const outcome = deleteDraft(previous, this.loadTree(), file, user.email, this.stamp(previous));
     if (outcome.kind === "not_found") return outcome;
@@ -156,7 +156,7 @@ export class SiteDO extends DurableObject<Env> {
   }
 
   discardDraft(path: string): { kind: "discarded" } | { kind: "not_found" } {
-    const file = repoPath(SitePath.parse(path));
+    const file = repoPath(DocPath.parse(path));
     const { rowsWritten } = this.sql.exec("DELETE FROM drafts WHERE path = ?", file);
     return rowsWritten > 0 ? { kind: "discarded" } : { kind: "not_found" };
   }
@@ -215,7 +215,7 @@ export class SiteDO extends DurableObject<Env> {
     await this.apply({ type: "finished", target, workflowId, result });
   }
 
-  status(): SiteStatus {
+  status(): DocStatus {
     return {
       headSha: this.meta("head_sha"),
       targets: this.builds().targets,
@@ -264,13 +264,13 @@ export class SiteDO extends DurableObject<Env> {
           await this.ctx.storage.deleteAlarm();
           break;
         case "startWorkflow": {
-          const site = this.site();
+          const doc = this.doc();
           const params: PublishParams = {
-            siteId: site.siteId,
-            repo: site.repo,
+            docId: doc.docId,
+            repo: doc.repo,
             target: effect.target,
             sha: effect.sha,
-            siteUrl: site.siteUrl,
+            docUrl: doc.docUrl,
             docsRoot: DOCS_ROOT,
           };
           try {
@@ -287,7 +287,7 @@ export class SiteDO extends DurableObject<Env> {
 
   /** Moves the cache to the branch's current head, flagging drafts the move conflicts with. */
   private async refresh() {
-    const repo = await this.env.ARTIFACTS.get(this.site().repo);
+    const repo = await this.env.ARTIFACTS.get(this.doc().repo);
     const [latest] = await repo.log({ limit: 1 });
     const head = latest?.hash ?? null;
     if (head === this.meta("head_sha")) return;
@@ -312,7 +312,7 @@ export class SiteDO extends DurableObject<Env> {
   }
 
   private async push(head: string | null, commit: BuiltCommit): Promise<PushResult> {
-    const repo = await this.env.ARTIFACTS.get(this.site().repo);
+    const repo = await this.env.ARTIFACTS.get(this.doc().repo);
     const { plaintext } = await repo.createToken("write", TOKEN_TTL_SECONDS);
     const response = await fetch(`${this.meta("remote")}/git-receive-pack`, {
       method: "POST",
@@ -349,7 +349,7 @@ export class SiteDO extends DurableObject<Env> {
       .exec<{ content: ArrayBuffer }>("SELECT content FROM blobs WHERE blob_sha = ?", sha)
       .toArray();
     if (row) return new Uint8Array(row.content);
-    const content = await readBlob(await this.env.ARTIFACTS.get(this.site().repo), sha);
+    const content = await readBlob(await this.env.ARTIFACTS.get(this.doc().repo), sha);
     this.storeBlob(sha, content);
     return content;
   }
@@ -438,15 +438,15 @@ export class SiteDO extends DurableObject<Env> {
     return overlay(toTree(entry ? [entry] : []), [draft])[0]!;
   }
 
-  private builds(): SiteBuilds {
+  private builds(): DocBuilds {
     const stored = this.meta("builds");
-    return stored ? (JSON.parse(stored) as SiteBuilds) : initialBuilds(this.site().siteId);
+    return stored ? (JSON.parse(stored) as DocBuilds) : initialBuilds(this.doc().docId);
   }
 
-  private site(): SiteInfo {
-    const stored = this.meta("site");
-    if (!stored) throw new Error("init was never called for this site");
-    return JSON.parse(stored) as SiteInfo;
+  private doc(): DocInfo {
+    const stored = this.meta("doc");
+    if (!stored) throw new Error("init was never called for this doc");
+    return JSON.parse(stored) as DocInfo;
   }
 
   private meta(key: string): string | null {

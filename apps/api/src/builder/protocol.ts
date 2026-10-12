@@ -29,7 +29,7 @@ export function sourcePathError(path: string): string | undefined {
   return segmentsError(path.split("/"), path);
 }
 
-/** The absolute directory build-site reads, from a site's `docsRoot` ("" or "." for the repository root). */
+/** The absolute directory build-site reads, from a doc's `docsRoot` ("" or "." for the repository root). */
 export function sourceDir(docsRoot: string): string | { error: string } {
   const root = docsRoot.replace(/\/+$/, "");
   if (root === "" || root === ".") return "/work/src";

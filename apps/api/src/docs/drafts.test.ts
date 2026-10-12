@@ -8,7 +8,7 @@ import {
   overlay,
   putDraft,
   reconcileDrafts,
-  SitePath,
+  DocPath,
   starterDrafts,
   toTree,
 } from "./drafts";
@@ -36,13 +36,13 @@ function put(path: string, content: string, base: string | null, updatedAt = 1):
   };
 }
 
-describe("SitePath", () => {
+describe("DocPath", () => {
   it("accepts a relative path and refuses one that escapes the docs root", () => {
-    expect(SitePath.safeParse("content/index.mdx").success).toBe(true);
-    expect(SitePath.safeParse("../secrets").error?.issues[0]?.message).toBe(
+    expect(DocPath.safeParse("content/index.mdx").success).toBe(true);
+    expect(DocPath.safeParse("../secrets").error?.issues[0]?.message).toBe(
       "../secrets has an empty, . or .. segment",
     );
-    expect(SitePath.safeParse("/etc/passwd").error?.issues[0]?.message).toBe(
+    expect(DocPath.safeParse("/etc/passwd").error?.issues[0]?.message).toBe(
       "/etc/passwd must be relative",
     );
   });
@@ -164,7 +164,7 @@ describe("afterCommit", () => {
 });
 
 describe("starterDrafts", () => {
-  it("writes a config and a home page named after the site", () => {
+  it("writes a config and a home page named after the doc", () => {
     const decoded = starterDrafts('Acme {docs} <"beta">', "ada", 3).map((draft) => [
       draft.path,
       draft.op === "put" ? new TextDecoder().decode(draft.content) : null,

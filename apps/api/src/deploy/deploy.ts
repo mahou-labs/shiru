@@ -21,12 +21,12 @@ export type DeployFailure = {
 export type DeployResult = { ok: true; uploaded: number; reused: number } | DeployFailure;
 
 /**
- * How the site Worker is shaped. `assets-only` has no script, the way Wrangler
+ * How the doc Worker is shaped. `assets-only` has no script, the way Wrangler
  * uploads a Worker without `main`. The docs only show dispatch namespace
  * Workers with a main module, so `assets-with-module` adds one that forwards
  * to `env.ASSETS` in case the live check finds assets-only is refused.
  */
-export type SiteWorkerShape = "assets-only" | "assets-with-module";
+export type DocWorkerShape = "assets-only" | "assets-with-module";
 
 export const COMPATIBILITY_DATE = "2026-10-01";
 
@@ -39,12 +39,12 @@ const MODULE_NAME = "worker.js";
 const MODULE_SOURCE = "export default { fetch: (request, env) => env.ASSETS.fetch(request) };\n";
 
 /**
- * Uploads a built site's files and points `scriptName` at them. Files
+ * Uploads a built doc's files and points `scriptName` at them. Files
  * Cloudflare already holds (by hash, across the namespace) are not sent again,
  * so running it twice with the same manifest uploads nothing the second time.
  * Transport errors and `readAsset` failures throw, so a Workflow step retries them.
  */
-export async function deploySite({
+export async function deployDoc({
   account,
   scriptName,
   manifest,
@@ -56,7 +56,7 @@ export async function deploySite({
   scriptName: string;
   manifest: ManifestEntry[];
   readAsset: (path: string) => Promise<Uint8Array>;
-  shape?: SiteWorkerShape;
+  shape?: DocWorkerShape;
   fetch?: typeof globalThis.fetch;
 }): Promise<DeployResult> {
   const { assets, configFiles } = splitManifest(manifest);
@@ -131,8 +131,8 @@ export async function deploySite({
   return { ok: true, uploaded, reused: Object.keys(assets).length - uploaded };
 }
 
-/** Deletes a site Worker. A Worker that is already gone counts as deleted. */
-export async function deleteSite({
+/** Deletes a doc Worker. A Worker that is already gone counts as deleted. */
+export async function deleteDoc({
   account,
   scriptName,
   fetch = globalThis.fetch,
@@ -182,7 +182,7 @@ type AssetsConfig = {
 };
 
 /** The multipart body of the script PUT. */
-export function scriptForm(jwt: string, config: AssetsConfig, shape: SiteWorkerShape): FormData {
+export function scriptForm(jwt: string, config: AssetsConfig, shape: DocWorkerShape): FormData {
   const form = new FormData();
   const metadata = { assets: { jwt, config }, compatibility_date: COMPATIBILITY_DATE };
   if (shape === "assets-only") {

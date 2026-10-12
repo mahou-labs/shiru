@@ -5,7 +5,7 @@ import { waitlistEntries } from "../schema/waitlist";
 import { getOrganizationAccess } from "../utils/billing";
 import { db } from "../utils/db";
 import { authedProcedure, organizationProcedure, publicProcedure } from "../utils/orpc";
-import { sitesRouter } from "./sites";
+import { docsRouter } from "./docs";
 
 export const appRouter = {
   healthCheck: publicProcedure.handler(() => "OK"),
@@ -16,7 +16,7 @@ export const appRouter = {
   subscription: organizationProcedure.handler(({ context }) =>
     getOrganizationAccess(context.organizationId),
   ),
-  sites: sitesRouter,
+  docs: docsRouter,
   waitlist: {
     join: publicProcedure
       .input(z.object({ email: z.string().trim().toLowerCase().pipe(z.email()) }))

@@ -1,6 +1,6 @@
-// Publishes a site end to end on this machine: the real HTTP API, the SiteDO, a commit to the
+// Publishes a doc end to end on this machine: the real HTTP API, the Doc, a commit to the
 // shiru-staging Artifacts namespace, the PublishWorkflow and the Builder container, then reads the
-// built pages back through /dev/sites and through the dispatch Worker. Needs Docker, the cf CLI
+// built pages back through /dev/docs and through the dispatch Worker. Needs Docker, the cf CLI
 // signed in, git, and apps/api/.env.
 //
 // Usage: node scripts/verify-publish.ts [--port 3010] [--dispatch-port 3013] [--state <dir>]
@@ -51,7 +51,7 @@ const containers = () =>
       .filter(Boolean),
   );
 
-// The server's output, for the verification email and the SiteDO's stale-ref log line.
+// The server's output, for the verification email and the Doc's stale-ref log line.
 let log = "";
 const containersBefore = containers();
 const server = spawn("npx", ["varlock", "run", "--", "npx", "cf", "dev", "--persist-to", state], {
@@ -104,9 +104,9 @@ type Status = {
 };
 
 /** Waits for live to serve head; `since` is when the publish request was sent. */
-async function waitForLive(siteId: string, since = performance.now()) {
+async function waitForLive(docId: string, since = performance.now()) {
   const status = await waitFor("the live build", BUILD_TIMEOUT_MS, async () => {
-    const status = await rpc<Status>("sites/status", { siteId });
+    const status = await rpc<Status>("docs/status", { docId });
     const live = status.targets.live;
     if (live?.kind === "failed") throw new Error(`build failed: ${live.error}`);
     return live?.kind === "idle" && live.deployed?.sha === status.headSha ? status : undefined;
@@ -114,8 +114,8 @@ async function waitForLive(siteId: string, since = performance.now()) {
   return { status, seconds: (performance.now() - since) / 1000 };
 }
 
-async function page(sitePath: string) {
-  const response = await fetch(`${base}/dev/sites/${slug}${sitePath}`, { redirect: "manual" });
+async function page(docPath: string) {
+  const response = await fetch(`${base}/dev/docs/${slug}${docPath}`, { redirect: "manual" });
   return {
     status: response.status,
     type: response.headers.get("content-type"),
@@ -239,41 +239,41 @@ try {
     await post("/auth/organization/create", { name: `Verify ${run}`, slug: `verify-${run}` })
   ).json()) as { id: string };
   await post("/auth/organization/set-active", { organizationId: organization.id });
-  const site = await rpc<{ id: string; slug: string }>("sites/create", {
+  const doc = await rpc<{ id: string; slug: string }>("docs/create", {
     slug,
     name: "Verify Docs",
     visibility: "public",
   });
-  slug = site.slug;
-  repos.push(site.id);
-  const siteId = site.id;
+  slug = doc.slug;
+  repos.push(doc.id);
+  const docId = doc.id;
 
-  const tree = await rpc<{ files: { path: string; status: string }[] }>("sites/files/tree", {
-    siteId,
+  const tree = await rpc<{ files: { path: string; status: string }[] }>("docs/files/tree", {
+    docId,
   });
-  check("a new site starts with a config and a home page", tree.files, [
+  check("a new doc starts with a config and a home page", tree.files, [
     { path: "content/index.mdx", status: "added", conflict: false },
     { path: "docs.config.json", status: "added", conflict: false },
   ]);
 
-  await rpc("sites/files/save", {
-    siteId,
+  await rpc("docs/files/save", {
+    docId,
     path: "content/index.mdx",
     content: "---\ntitle: Verify Docs\n---\n\nThe home page says hello.\n",
   });
-  await rpc("sites/files/save", {
-    siteId,
+  await rpc("docs/files/save", {
+    docId,
     path: "content/guides/setup.mdx",
     content: "---\ntitle: Setup\n---\n\nInstall the verify tool first.\n",
   });
 
   const firstStart = performance.now();
-  const published = await rpc<{ kind: string; sha: string }>("sites/publish", { siteId });
+  const published = await rpc<{ kind: string; sha: string }>("docs/publish", { docId });
   check("first publish commits", published.kind, "published");
-  const first = await waitForLive(siteId, firstStart);
+  const first = await waitForLive(docId, firstStart);
   console.log(`publish to live (measured here): ${first.seconds.toFixed(1)}s`);
   check("live is built from the head commit", first.status.headSha, published.sha);
-  check("Artifacts head matches the SiteDO head", remoteHead(siteId)[0]?.hash, published.sha);
+  check("Artifacts head matches the Doc head", remoteHead(docId)[0]?.hash, published.sha);
 
   const home = await page("/");
   check(
@@ -283,7 +283,7 @@ try {
   );
   dispatch = spawn("npx", ["cf", "dev"], {
     cwd: path.resolve(api, "../dispatch"),
-    env: { ...process.env, DISPATCH_PORT: args["dispatch-port"], DEV_SITES_ORIGIN: base },
+    env: { ...process.env, DISPATCH_PORT: args["dispatch-port"], DEV_DOCS_ORIGIN: base },
     detached: true,
     stdio: "ignore",
   });
@@ -293,7 +293,7 @@ try {
     return response.ok ? { status: response.status, text: await response.text() } : undefined;
   });
   check(
-    "the dispatch Worker serves the home page on the site's subdomain",
+    "the dispatch Worker serves the home page on the doc's subdomain",
     [viaDispatch.status, viaDispatch.text.includes("The home page says hello.")],
     [200, true],
   );
@@ -317,23 +317,23 @@ try {
     [307, "setup/"],
   );
 
-  const outOfBand = pushOutOfBand(siteId, {
+  const outOfBand = pushOutOfBand(docId, {
     "docs/content/index.mdx": "---\ntitle: Verify Docs\n---\n\nChanged outside the editor.\n",
     "docs/content/extra.mdx": "---\ntitle: Extra\n---\n\nAdded outside the editor.\n",
   });
-  await rpc("sites/files/save", {
-    siteId,
+  await rpc("docs/files/save", {
+    docId,
     path: "content/index.mdx",
     content: "---\ntitle: Verify Docs\n---\n\nEdited in the editor.\n",
   });
-  await rpc("sites/files/save", {
-    siteId,
+  await rpc("docs/files/save", {
+    docId,
     path: "content/new.mdx",
     content: "---\ntitle: New\n---\n\nA new page.\n",
   });
   const logBefore = log.length;
-  const afterStale = await rpc<{ kind: string; sha: string; skipped: string[] }>("sites/publish", {
-    siteId,
+  const afterStale = await rpc<{ kind: string; sha: string; skipped: string[] }>("docs/publish", {
+    docId,
   });
   check(
     "a publish after an outside push commits what does not conflict",
@@ -345,10 +345,10 @@ try {
     log.slice(logBefore).includes("(stale ref); refreshing"),
     true,
   );
-  check("the retried commit sits on the outside commit", remoteHead(siteId)[0]?.parents, [
+  check("the retried commit sits on the outside commit", remoteHead(docId)[0]?.parents, [
     outOfBand,
   ]);
-  const conflicted = await rpc<Status>("sites/status", { siteId });
+  const conflicted = await rpc<Status>("docs/status", { docId });
   check("the editor's edit of the changed page is a conflict", conflicted.drafts, [
     {
       path: "content/index.mdx",
@@ -358,7 +358,7 @@ try {
       updatedBy: email,
     },
   ]);
-  await waitForLive(siteId);
+  await waitForLive(docId);
   check(
     "the outside page is live",
     (await page("/extra/")).text.includes("Added outside the editor."),
@@ -366,19 +366,19 @@ try {
   );
   check("the new page is live", (await page("/new/")).text.includes("A new page."), true);
 
-  await rpc("sites/files/discard", { siteId, path: "content/index.mdx" });
-  await rpc("sites/files/save", {
-    siteId,
+  await rpc("docs/files/discard", { docId, path: "content/index.mdx" });
+  await rpc("docs/files/save", {
+    docId,
     path: "content/index.mdx",
     content: "---\ntitle: Verify Docs\n---\n\nThe second version.\n",
   });
-  await rpc("sites/files/delete", { siteId, path: "content/guides/setup.mdx" });
+  await rpc("docs/files/delete", { docId, path: "content/guides/setup.mdx" });
   const secondStart = performance.now();
-  const second = await rpc<{ kind: string; sha: string }>("sites/publish", { siteId });
+  const second = await rpc<{ kind: string; sha: string }>("docs/publish", { docId });
   check("head moved", [second.kind, second.sha !== afterStale.sha], ["published", true]);
-  const secondLive = await waitForLive(siteId, secondStart);
+  const secondLive = await waitForLive(docId, secondStart);
   console.log(`second publish to live (measured here): ${secondLive.seconds.toFixed(1)}s`);
-  check("Artifacts head matches after the second publish", remoteHead(siteId)[0]?.hash, second.sha);
+  check("Artifacts head matches after the second publish", remoteHead(docId)[0]?.hash, second.sha);
   check(
     "the edited home page is live",
     (await page("/")).text.includes("The second version."),

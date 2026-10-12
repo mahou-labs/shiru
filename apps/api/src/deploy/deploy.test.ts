@@ -4,8 +4,8 @@ import { z } from "zod";
 import type { ManifestEntry } from "../builder/protocol";
 import {
   contentType,
-  deleteSite,
-  deploySite,
+  deleteDoc,
+  deployDoc,
   type DispatchAccount,
   parseResponse,
   splitManifest,
@@ -166,7 +166,7 @@ const HASH = {
   redirects: "0123456789abcdef0123456789abcd06",
 };
 
-function site(files: Record<string, string>) {
+function doc(files: Record<string, string>) {
   const encoder = new TextEncoder();
   const reads: string[] = [];
   return {
@@ -221,12 +221,12 @@ const assetsOnlyMetadata = (jwt: string) => ({
   }),
 });
 
-describe("deploySite", () => {
+describe("deployDoc", () => {
   it("uploads every file on a first deploy and attaches them to the Worker", async () => {
     const cf = new FakeCloudflare();
-    const { readAsset } = site(files);
+    const { readAsset } = doc(files);
 
-    const result = await deploySite({
+    const result = await deployDoc({
       account,
       scriptName: "acme",
       manifest,
@@ -292,11 +292,11 @@ describe("deploySite", () => {
 
   it("uploads nothing when the same build is deployed again", async () => {
     const cf = new FakeCloudflare();
-    await deploySite({ account, scriptName: "acme", manifest, ...site(files), fetch: cf.fetch });
+    await deployDoc({ account, scriptName: "acme", manifest, ...doc(files), fetch: cf.fetch });
     cf.requests = [];
-    const second = site(files);
+    const second = doc(files);
 
-    const result = await deploySite({
+    const result = await deployDoc({
       account,
       scriptName: "acme",
       manifest,
@@ -317,12 +317,12 @@ describe("deploySite", () => {
 
   it("uploads only the changed file, and reuses files another Worker uploaded", async () => {
     const cf = new FakeCloudflare();
-    await deploySite({ account, scriptName: "acme", manifest, ...site(files), fetch: cf.fetch });
+    await deployDoc({ account, scriptName: "acme", manifest, ...doc(files), fetch: cf.fetch });
     cf.requests = [];
     const changedHash = "0123456789abcdef0123456789abcd99";
-    const preview = site({ ...files, "/index.html": "<h1>New</h1>" });
+    const preview = doc({ ...files, "/index.html": "<h1>New</h1>" });
 
-    const result = await deploySite({
+    const result = await deployDoc({
       account,
       scriptName: "acme--draft",
       manifest: manifest.map((entry) =>
@@ -353,11 +353,11 @@ describe("deploySite", () => {
 
   it("omits _headers and _redirects from the config when the build has none", async () => {
     const cf = new FakeCloudflare();
-    const result = await deploySite({
+    const result = await deployDoc({
       account,
       scriptName: "acme",
       manifest: [{ path: "/index.html", size: 13, hash: HASH.index }],
-      ...site(files),
+      ...doc(files),
       fetch: cf.fetch,
     });
 
@@ -373,11 +373,11 @@ describe("deploySite", () => {
 
   it("adds a main module that forwards to the assets binding when asked", async () => {
     const cf = new FakeCloudflare();
-    const result = await deploySite({
+    const result = await deployDoc({
       account,
       scriptName: "acme",
       manifest: [{ path: "/index.html", size: 13, hash: HASH.index }],
-      ...site(files),
+      ...doc(files),
       shape: "assets-with-module",
       fetch: cf.fetch,
     });
@@ -417,11 +417,11 @@ describe("deploySite", () => {
       result: null,
     });
 
-    const result = await deploySite({
+    const result = await deployDoc({
       account,
       scriptName: "acme",
       manifest,
-      ...site(files),
+      ...doc(files),
       fetch: cf.fetch,
     });
 
@@ -443,11 +443,11 @@ describe("deploySite", () => {
     cf.bucketSize = 1;
     cf.failNext("POST", "/assets/upload?base64=true", 502, "<html>Bad gateway</html>");
 
-    const result = await deploySite({
+    const result = await deployDoc({
       account,
       scriptName: "acme",
       manifest,
-      ...site(files),
+      ...doc(files),
       fetch: cf.fetch,
     });
 
@@ -465,19 +465,19 @@ describe("deploySite", () => {
   it("converges on a retry after a failed upload", async () => {
     const cf = new FakeCloudflare();
     cf.failNext("POST", "/assets/upload?base64=true", 500, errorBody(10013, "internal error"));
-    const failed = await deploySite({
+    const failed = await deployDoc({
       account,
       scriptName: "acme",
       manifest,
-      ...site(files),
+      ...doc(files),
       fetch: cf.fetch,
     });
 
-    const retried = await deploySite({
+    const retried = await deployDoc({
       account,
       scriptName: "acme",
       manifest,
-      ...site(files),
+      ...doc(files),
       fetch: cf.fetch,
     });
 
@@ -498,11 +498,11 @@ describe("deploySite", () => {
     const cf = new FakeCloudflare();
     cf.returnCompletionToken = false;
 
-    const result = await deploySite({
+    const result = await deployDoc({
       account,
       scriptName: "acme",
       manifest,
-      ...site(files),
+      ...doc(files),
       fetch: cf.fetch,
     });
 
@@ -519,11 +519,11 @@ describe("deploySite", () => {
     const cf = new FakeCloudflare();
     cf.extraBucketHash = "ffffffffffffffffffffffffffffffff";
 
-    const result = await deploySite({
+    const result = await deployDoc({
       account,
       scriptName: "acme",
       manifest,
-      ...site(files),
+      ...doc(files),
       fetch: cf.fetch,
     });
 
@@ -541,11 +541,11 @@ describe("deploySite", () => {
     const cf = new FakeCloudflare();
     cf.failNext("PUT", "/scripts/acme", 400, errorBody(10021, "Uncaught SyntaxError"));
 
-    const result = await deploySite({
+    const result = await deployDoc({
       account,
       scriptName: "acme",
       manifest,
-      ...site(files),
+      ...doc(files),
       fetch: cf.fetch,
     });
 
@@ -561,25 +561,25 @@ describe("deploySite", () => {
   it("throws when a file cannot be read, so the Workflow step retries", async () => {
     const cf = new FakeCloudflare();
     await expect(
-      deploySite({ account, scriptName: "acme", manifest, ...site({}), fetch: cf.fetch }),
+      deployDoc({ account, scriptName: "acme", manifest, ...doc({}), fetch: cf.fetch }),
     ).rejects.toThrow("no /guide/index.html");
   });
 });
 
-describe("deleteSite", () => {
+describe("deleteDoc", () => {
   it("deletes the Worker, and treats a Worker that is already gone as deleted", async () => {
     const cf = new FakeCloudflare();
-    await deploySite({
+    await deployDoc({
       account,
       scriptName: "acme--pr-12",
       manifest,
-      ...site(files),
+      ...doc(files),
       fetch: cf.fetch,
     });
     cf.requests = [];
 
-    const first = await deleteSite({ account, scriptName: "acme--pr-12", fetch: cf.fetch });
-    const second = await deleteSite({ account, scriptName: "acme--pr-12", fetch: cf.fetch });
+    const first = await deleteDoc({ account, scriptName: "acme--pr-12", fetch: cf.fetch });
+    const second = await deleteDoc({ account, scriptName: "acme--pr-12", fetch: cf.fetch });
 
     expect([first, second]).toEqual([{ ok: true }, { ok: true }]);
     expect(cf.requests).toEqual([
@@ -601,7 +601,7 @@ describe("deleteSite", () => {
     const cf = new FakeCloudflare();
     cf.failNext("DELETE", "/scripts/acme", 403, errorBody(10000, "Authentication error"));
 
-    expect(await deleteSite({ account, scriptName: "acme", fetch: cf.fetch })).toEqual({
+    expect(await deleteDoc({ account, scriptName: "acme", fetch: cf.fetch })).toEqual({
       ok: false,
       step: "delete",
       status: 403,

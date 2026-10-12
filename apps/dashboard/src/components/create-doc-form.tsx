@@ -19,9 +19,9 @@ import { slugify, useDebouncedValue } from "@/lib/slug";
 import { orpc } from "@/utils/orpc";
 
 import type { AppRouterClient } from "../../../api/src/routers";
-import { SiteSlug } from "../../../api/src/sites/names";
+import { DocSlug } from "../../../api/src/docs/names";
 
-type CreateSiteError = InferClientErrors<AppRouterClient>["sites"]["create"];
+type CreateDocError = InferClientErrors<AppRouterClient>["docs"]["create"];
 
 const MAX_SLUG_LENGTH = 40;
 
@@ -32,12 +32,12 @@ type Availability =
   | { kind: "taken" };
 
 function useSlugAvailability(slug: string): Availability {
-  const parsed = SiteSlug.safeParse(slug);
+  const parsed = DocSlug.safeParse(slug);
   const debouncedSlug = useDebouncedValue(slug, 400);
   const settled = parsed.success && slug === debouncedSlug;
 
   const { data } = useQuery({
-    ...orpc.sites.checkSlug.queryOptions({ input: { slug: debouncedSlug } }),
+    ...orpc.docs.checkSlug.queryOptions({ input: { slug: debouncedSlug } }),
     enabled: settled,
     staleTime: 30_000,
     meta: { silent: true },
@@ -50,25 +50,25 @@ function useSlugAvailability(slug: string): Availability {
   return data.available ? { kind: "available" } : { kind: "taken" };
 }
 
-export function CreateSiteForm({ onCreated }: { onCreated: () => void }) {
+export function CreateDocForm({ onCreated }: { onCreated: () => void }) {
   const queryClient = useQueryClient();
-  const { data: domain } = useQuery(orpc.sites.docsDomain.queryOptions({ staleTime: Infinity }));
+  const { data: domain } = useQuery(orpc.docs.docsDomain.queryOptions({ staleTime: Infinity }));
   const [name, setName] = useState("");
   const [slugInput, setSlugInput] = useState<string>();
   const slug = slugInput ?? slugify(name).slice(0, MAX_SLUG_LENGTH).replace(/-+$/, "");
   const availability = useSlugAvailability(slug);
 
   const create = useMutation({
-    ...orpc.sites.create.mutationOptions(),
+    ...orpc.docs.create.mutationOptions(),
     meta: { silent: true },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: orpc.sites.key() });
+      await queryClient.invalidateQueries({ queryKey: orpc.docs.key() });
       onCreated();
     },
     onError: async (error) => {
       if (!isDefinedError(error)) return;
-      if (error.code === "SLUG_TAKEN" || error.code === "PUBLIC_SITE_EXISTS") {
-        await queryClient.invalidateQueries({ queryKey: orpc.sites.key() });
+      if (error.code === "SLUG_TAKEN" || error.code === "PUBLIC_DOC_EXISTS") {
+        await queryClient.invalidateQueries({ queryKey: orpc.docs.key() });
       }
     },
   });
@@ -142,7 +142,7 @@ export function CreateSiteForm({ onCreated }: { onCreated: () => void }) {
   );
 }
 
-function SubmitError({ error }: { error: CreateSiteError }) {
+function SubmitError({ error }: { error: CreateDocError }) {
   if (!isDefinedError(error)) {
     return (
       <Alert variant="error">
@@ -151,7 +151,7 @@ function SubmitError({ error }: { error: CreateSiteError }) {
     );
   }
   switch (error.code) {
-    case "PUBLIC_SITE_EXISTS":
+    case "PUBLIC_DOC_EXISTS":
       return (
         <Alert variant="warning">
           <AlertTitle>This organization already has a public docs site</AlertTitle>

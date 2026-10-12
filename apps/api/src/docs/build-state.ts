@@ -14,10 +14,10 @@ export type TargetState =
     }
   | { kind: "failed"; deployed: Deployed; error: string };
 
-// One coordinator per site, not per target: a Durable Object has a single alarm, and workflow ids
+// One coordinator per doc, not per target: a Durable Object has a single alarm, and workflow ids
 // come from one sequence so a deleted and recreated target never reuses an old instance id.
-export type SiteBuilds = {
-  siteId: string;
+export type DocBuilds = {
+  docId: string;
   seq: number;
   targets: Partial<Record<TargetLabel, TargetState>>;
 };
@@ -42,13 +42,13 @@ export type BuildEffect =
   | { type: "setAlarm" }
   | { type: "clearAlarm" };
 
-type Transition = { state: SiteBuilds; effects: BuildEffect[] };
+type Transition = { state: DocBuilds; effects: BuildEffect[] };
 
-export function initialBuilds(siteId: string): SiteBuilds {
-  return { siteId, seq: 0, targets: {} };
+export function initialBuilds(docId: string): DocBuilds {
+  return { docId, seq: 0, targets: {} };
 }
 
-export function applyBuildEvent(state: SiteBuilds, event: BuildEvent): Transition {
+export function applyBuildEvent(state: DocBuilds, event: BuildEvent): Transition {
   switch (event.type) {
     case "requested":
       return request(state, event.target, event.sha, event.rebuild ?? false);
@@ -59,15 +59,15 @@ export function applyBuildEvent(state: SiteBuilds, event: BuildEvent): Transitio
   }
 }
 
-function targetState(state: SiteBuilds, target: TargetLabel): TargetState {
+function targetState(state: DocBuilds, target: TargetLabel): TargetState {
   return state.targets[target] ?? { kind: "idle", deployed: null };
 }
 
-function withTarget(state: SiteBuilds, target: TargetLabel, next: TargetState): SiteBuilds {
+function withTarget(state: DocBuilds, target: TargetLabel, next: TargetState): DocBuilds {
   return { ...state, targets: { ...state.targets, [target]: next } };
 }
 
-function request(state: SiteBuilds, target: TargetLabel, sha: string, rebuild: boolean) {
+function request(state: DocBuilds, target: TargetLabel, sha: string, rebuild: boolean) {
   const current = targetState(state, target);
   const unchanged: Transition = { state, effects: [] };
 
@@ -78,7 +78,7 @@ function request(state: SiteBuilds, target: TargetLabel, sha: string, rebuild: b
   if (current.kind === "idle" && current.deployed?.sha === sha && !rebuild) return unchanged;
 
   const seq = state.seq + 1;
-  const workflowId = `${state.siteId}--${target}--${seq}`;
+  const workflowId = `${state.docId}--${target}--${seq}`;
   return {
     state: withTarget({ ...state, seq }, target, {
       kind: "building",
@@ -91,7 +91,7 @@ function request(state: SiteBuilds, target: TargetLabel, sha: string, rebuild: b
 }
 
 function finish(
-  state: SiteBuilds,
+  state: DocBuilds,
   target: TargetLabel,
   workflowId: string,
   result: BuildResult,
@@ -121,7 +121,7 @@ function finish(
 }
 
 function reconcile(
-  state: SiteBuilds,
+  state: DocBuilds,
   target: TargetLabel,
   workflowId: string,
   instance: InstanceStatus,
@@ -149,7 +149,7 @@ function reconcile(
 
 // The DO records the workflow id before it calls `create`, so a missing instance means `create`
 // never ran. Start again, with the newest requested sha, rather than fail a build nobody ran.
-function restart(state: SiteBuilds, target: TargetLabel, workflowId: string): Transition {
+function restart(state: DocBuilds, target: TargetLabel, workflowId: string): Transition {
   const current = targetState(state, target);
   if (current.kind !== "building" || current.build.workflowId !== workflowId) {
     return { state, effects: [] };

@@ -9,7 +9,7 @@ import {
   IconTrashOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 
-import type { FileStatus } from "../../../api/src/sites/drafts";
+import type { FileStatus } from "../../../api/src/docs/drafts";
 import { isHome, PAGES_ROOT } from "./pages";
 
 export type TreeNode =
@@ -45,7 +45,7 @@ function sortTree(nodes: TreeNode[]): TreeNode[] {
 }
 
 type TreeActions = {
-  siteId: string;
+  docId: string;
   current: string | undefined;
   /** Opens the new page dialog for a folder, a path ending in `/`. */
   onCreate: (folder: string) => void;
@@ -70,7 +70,7 @@ function TreeLevel({
   depth,
   ...actions
 }: TreeActions & { nodes: TreeNode[]; folder: string; depth: number }) {
-  const { siteId, current, onCreate, onDelete } = actions;
+  const { docId, current, onCreate, onDelete } = actions;
   const indent = { paddingInlineStart: `${0.5 + depth * 1}rem` };
   return (
     <ul className="flex flex-col gap-px">
@@ -106,8 +106,8 @@ function TreeLevel({
         ) : (
           <li key={node.file.path} className="group/row relative">
             <Link
-              to="/sites/$siteId/editor"
-              params={{ siteId }}
+              to="/docs/$docId/editor"
+              params={{ docId }}
               search={{ path: node.file.path }}
               aria-current={node.file.path === current ? "page" : undefined}
               title={node.file.path}

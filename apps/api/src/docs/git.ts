@@ -219,7 +219,7 @@ async function walk(repo: RepoReader, tree: string, prefix: string): Promise<Tre
     entries.map(async (entry) => {
       const path = `${prefix}${entry.name}`;
       if (entry.type === "tree") return walk(repo, entry.hash, `${path}/`);
-      // Submodules have no bytes in this repo; a docs site never needs one.
+      // Submodules have no bytes in this repo; docs never need one.
       if (entry.type === "gitlink") return [];
       return [{ path, sha: entry.hash, mode: entry.mode }];
     }),
