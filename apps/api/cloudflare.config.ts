@@ -41,6 +41,15 @@ export default defineConfig(({ mode }) => {
         ),
         ENVIRONMENT: bindings.text(development ? "development" : "production"),
         EMAIL: bindings.sendEmail({ dev: { remote: false } }),
+        // Per-IP limits enforced in src/utils/rate-limit.ts. Namespace ids are unique per account.
+        API_RATE_LIMITER: bindings.rateLimit({
+          namespace: "1001",
+          simple: { limit: 300, period: 60 },
+        }),
+        PUBLIC_WRITE_RATE_LIMITER: bindings.rateLimit({
+          namespace: "1002",
+          simple: { limit: 10, period: 60 },
+        }),
         // No PostHog project yet. Switch to bindings.secret() in production once a key exists.
         POSTHOG_KEY: bindings.text(""),
         POSTHOG_HOST: bindings.text("https://us.i.posthog.com"),

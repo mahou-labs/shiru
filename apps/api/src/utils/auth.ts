@@ -81,12 +81,24 @@ export const auth = betterAuth({
       maxAge: 60 * 5,
     },
   },
+  rateLimit: {
+    enabled: production,
+    // Workers isolates don't share memory, so counters live in D1.
+    storage: "database",
+    customRules: {
+      // Polled by the dashboard on every navigation; the Worker-level limiter covers it.
+      "/get-session": false,
+    },
+  },
   user: {
     deleteUser: {
       enabled: true,
     },
   },
   advanced: {
+    ipAddress: {
+      ipAddressHeaders: ["cf-connecting-ip"],
+    },
     database: {
       generateId: () => uuidv7(),
     },

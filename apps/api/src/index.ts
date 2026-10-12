@@ -13,6 +13,7 @@ import { appRouter } from "./routers";
 import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
 import { captureException } from "./utils/posthog";
+import { rateLimit } from "./utils/rate-limit";
 
 const app = new Hono();
 
@@ -26,6 +27,8 @@ app.use(
     credentials: true,
   }),
 );
+
+app.use(rateLimit);
 
 app.onError((error, c) => {
   captureException(error);

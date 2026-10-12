@@ -13,6 +13,18 @@ export const polarCustomers: PolarCustomer[] = [];
 export const polarCheckouts: Record<string, unknown>[] = [];
 const pendingWork: Promise<unknown>[] = [];
 
+// Counts requests per key for the whole test file; the limits match cloudflare.config.ts.
+export const rateLimitCounts = new Map<string, number>();
+function rateLimiter(name: string, limit: number) {
+  return {
+    limit: async ({ key }: { key: string }) => {
+      const count = (rateLimitCounts.get(`${name}:${key}`) ?? 0) + 1;
+      rateLimitCounts.set(`${name}:${key}`, count);
+      return { success: count <= limit };
+    },
+  };
+}
+
 const client = new DatabaseSync(":memory:");
 const statements = await generateMigration(
   await generateDrizzleJson({}),
@@ -33,6 +45,8 @@ export const env = {
   POLAR_MONTHLY_PRODUCT_ID: "prod_test_monthly",
   POLAR_YEARLY_PRODUCT_ID: "prod_test_yearly",
   ENVIRONMENT: "development",
+  API_RATE_LIMITER: rateLimiter("api", 300),
+  PUBLIC_WRITE_RATE_LIMITER: rateLimiter("public-write", 10),
   POSTHOG_KEY: "",
   POSTHOG_HOST: "https://us.i.posthog.com",
   EMAIL: {
