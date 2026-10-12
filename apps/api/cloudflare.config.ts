@@ -63,11 +63,25 @@ export default defineConfig(({ mode }) => {
         POSTHOG_KEY: bindings.text(""),
         POSTHOG_HOST: bindings.text("https://us.i.posthog.com"),
         BUILDER: bindings.durableObject({ worker: "shiru-api", exportName: "Builder" }),
+        SITE_DO: bindings.durableObject({ worker: "shiru-api", exportName: "SiteDO" }),
+        PUBLISH_WORKFLOW: bindings.workflow({
+          name: "shiru-publish",
+          worker: "shiru-api",
+          exportName: "PublishWorkflow",
+        }),
+        // One repo per managed site. Artifacts has no local simulation, so development uses a
+        // real staging namespace; the production namespace is created at first deploy.
+        ARTIFACTS: bindings.artifacts({
+          namespace: development ? "shiru-staging" : "shiru-sites",
+          dev: { remote: true },
+        }),
       },
       exports: {
         // The previous app on this Worker ran a Durable Object; retiring it lets this code deploy.
         BuilderSandbox: exports.durableObject({ state: "deleted" }),
         Builder: exports.durableObject({ storage: "sqlite", container: builder }),
+        SiteDO: exports.durableObject({ storage: "sqlite" }),
+        PublishWorkflow: exports.workflow({ name: "shiru-publish" }),
       },
     },
     containers: [builder],

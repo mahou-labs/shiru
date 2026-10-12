@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { TargetLabel } from "./names";
 
 export type Deployed = { sha: string; templateVersion: string } | null;
@@ -154,4 +156,40 @@ function restart(state: SiteBuilds, target: TargetLabel, workflowId: string): Tr
   }
   const idle = withTarget(state, target, { kind: "idle", deployed: current.deployed });
   return request(idle, target, current.pendingSha ?? current.build.sha, true);
+}
+
+const buildResult = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), templateVersion: z.string() }),
+  z.object({ ok: z.literal(false), error: z.string() }),
+]);
+
+/** Reads a Workflow instance's status from the binding. Its output is the run's return value. */
+export function parseInstanceStatus(raw: {
+  status: string;
+  error?: { message: string };
+  output?: unknown;
+}): InstanceStatus {
+  switch (raw.status) {
+    case "queued":
+    case "running":
+    case "waiting":
+    case "paused":
+    case "waitingForPause":
+      return { status: raw.status };
+    // Rollback handlers are running; the instance then settles as errored or terminated.
+    case "rollingBack":
+      return { status: "running" };
+    case "complete": {
+      const output = buildResult.safeParse(raw.output);
+      return output.success
+        ? { status: "complete", output: output.data }
+        : { status: "errored", error: "The build finished without a result" };
+    }
+    case "errored":
+      return { status: "errored", error: raw.error?.message ?? "The build failed" };
+    case "terminated":
+      return { status: "terminated" };
+    default:
+      return { status: "unknown" };
+  }
 }
