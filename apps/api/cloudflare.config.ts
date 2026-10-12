@@ -62,7 +62,6 @@ export default defineConfig(({ mode }) => {
         // No PostHog project yet. Switch to bindings.secret() in production once a key exists.
         POSTHOG_KEY: bindings.text(""),
         POSTHOG_HOST: bindings.text("https://us.i.posthog.com"),
-        BUILDER: bindings.durableObject({ worker: "shiru-api", exportName: "Builder" }),
         SITE_DO: bindings.durableObject({ worker: "shiru-api", exportName: "SiteDO" }),
         PUBLISH_WORKFLOW: bindings.workflow({
           name: "shiru-publish",

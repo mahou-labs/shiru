@@ -1,4 +1,9 @@
-import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
+import {
+  exports,
+  WorkflowEntrypoint,
+  type WorkflowEvent,
+  type WorkflowStep,
+} from "cloudflare:workers";
 
 import type { Builder } from "../builder/builder";
 import type { BuildResult } from "./build-state";
@@ -24,8 +29,9 @@ export class PublishWorkflow extends WorkflowEntrypoint<Env, PublishParams> {
     step: WorkflowStep,
   ): Promise<BuildResult> {
     const { siteId, repo, target, sha, siteUrl, docsRoot } = event.payload;
-    // The bindings name this Worker by string, so cf/config cannot infer the classes.
-    const builders = this.env.BUILDER as DurableObjectNamespace<Builder>;
+    // Builder is reached through this Worker's own exports: a binding would carry a script_name,
+    // and Wrangler refuses a container on a Durable Object bound that way. Neither is typed.
+    const builders = exports.Builder as DurableObjectNamespace<Builder>;
     const sites = this.env.SITE_DO as DurableObjectNamespace<SiteDO>;
 
     let result: BuildResult;

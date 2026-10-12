@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env, exports } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
@@ -17,8 +17,10 @@ import type { SourceFile } from "./protocol";
  */
 export const devRoute = new Hono();
 
-// The bindings name this Worker by string, so cf/config cannot infer the classes.
-const builder = (name: string) => (env.BUILDER as DurableObjectNamespace<Builder>).getByName(name);
+// Builder comes from this Worker's own exports (see publish-workflow.ts) and SiteDO from a binding
+// naming this Worker by string, so neither is typed.
+const builder = (name: string) =>
+  (exports.Builder as DurableObjectNamespace<Builder>).getByName(name);
 const siteObject = (id: string) => (env.SITE_DO as DurableObjectNamespace<SiteDO>).getByName(id);
 
 devRoute.use(async (c, next) => {

@@ -12,6 +12,7 @@ vi.mock("cloudflare:workers", async () => {
   }
   return {
     env,
+    exports: {},
     waitUntil,
     DurableObject,
     WorkerEntrypoint: class {},
