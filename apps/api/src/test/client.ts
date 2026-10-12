@@ -1,5 +1,5 @@
 import app from "../index";
-import { flushWaitUntil, sentEmails } from "./bindings";
+import { env, flushWaitUntil, sentEmails } from "./bindings";
 
 const API = "http://localhost:3000";
 const DASHBOARD = "http://localhost:3001";
@@ -58,6 +58,70 @@ export function createClient() {
       });
       await request(verificationLink(email));
     },
+  };
+}
+
+// Signs the way Polar does (Standard Webhooks, keyed with the secret's UTF-8 bytes).
+export async function postPolarWebhook(type: string, data: Record<string, unknown>) {
+  const body = JSON.stringify({ type, timestamp: new Date().toISOString(), data });
+  const id = `msg_${crypto.randomUUID()}`;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(env.POLAR_WEBHOOK_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`${id}.${timestamp}.${body}`),
+  );
+  const response = await app.request(new URL("/auth/polar/webhooks", API), {
+    method: "POST",
+    body,
+    headers: {
+      "content-type": "application/json",
+      "webhook-id": id,
+      "webhook-timestamp": String(timestamp),
+      "webhook-signature": `v1,${Buffer.from(signature).toString("base64")}`,
+    },
+  });
+  await flushWaitUntil();
+  return response;
+}
+
+// A subscription as Polar's 2026-10 API serializes it in webhooks.
+export function polarSubscription(fields: {
+  id: string;
+  status: string;
+  metadata: Record<string, unknown>;
+  current_period_end: string;
+  created_at: string;
+  modified_at: string | null;
+}) {
+  return {
+    amount: 1900,
+    currency: "usd",
+    recurring_interval: "month",
+    recurring_interval_count: 1,
+    current_period_start: fields.created_at,
+    trial_start: null,
+    trial_end: null,
+    cancel_at_period_end: false,
+    canceled_at: null,
+    started_at: fields.created_at,
+    ends_at: null,
+    ended_at: null,
+    customer_id: "cus_1",
+    product_id: "prod_test_monthly",
+    discount_id: null,
+    checkout_id: "checkout_1",
+    customer_cancellation_reason: null,
+    customer_cancellation_comment: null,
+    custom_field_data: {},
+    ...fields,
   };
 }
 

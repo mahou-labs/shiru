@@ -1,9 +1,8 @@
 import { call, ORPCError } from "@orpc/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { createClient } from "../test/client";
+import { createClient, polarSubscription, postPolarWebhook } from "../test/client";
 import { auth } from "./auth";
-import { syncSubscription } from "./billing";
 import { paidProcedure } from "./orpc";
 
 const JAN_1 = new Date("2026-01-01T00:00:00.000Z");
@@ -127,34 +126,40 @@ describe("paidProcedure", () => {
     await client.createOrganization("Paid Sub A");
     const organization = await client.createOrganization("Paid Sub B");
     const event = (status: "active" | "canceled", modifiedAt: string) =>
-      syncSubscription({
-        id: "sub_1",
-        status,
-        metadata: { referenceId: organization.id },
-        currentPeriodEnd: new Date("2026-02-01T00:00:00.000Z"),
-        modifiedAt: new Date(modifiedAt),
-        createdAt: JAN_1,
-      });
+      postPolarWebhook(
+        "subscription.updated",
+        polarSubscription({
+          id: "sub_1",
+          status,
+          metadata: { referenceId: organization.id },
+          current_period_end: "2026-02-01T00:00:00Z",
+          created_at: "2026-01-01T00:00:00Z",
+          modified_at: modifiedAt,
+        }),
+      );
 
-    await event("active", "2026-01-01T10:00:00.000Z");
+    await event("active", "2026-01-01T10:00:00Z");
     expect(await callPaidRoute(client)).toEqual({
       kind: "subscription",
       status: "active",
       currentPeriodEnd: new Date("2026-02-01T00:00:00.000Z"),
     });
 
-    await event("canceled", "2026-01-01T09:00:00.000Z");
+    await event("canceled", "2026-01-01T09:00:00Z");
     expect(await callPaidRoute(client)).toMatchObject({ kind: "subscription", status: "active" });
 
-    await syncSubscription({
-      id: "sub_unlinked",
-      status: "active",
-      metadata: {},
-      currentPeriodEnd: new Date("2026-06-01T00:00:00.000Z"),
-      modifiedAt: new Date("2026-01-01T12:00:00.000Z"),
-      createdAt: JAN_1,
-    });
-    await event("canceled", "2026-01-01T11:00:00.000Z");
+    await postPolarWebhook(
+      "subscription.created",
+      polarSubscription({
+        id: "sub_unlinked",
+        status: "active",
+        metadata: {},
+        current_period_end: "2026-06-01T00:00:00Z",
+        created_at: "2026-01-01T00:00:00Z",
+        modified_at: "2026-01-01T12:00:00Z",
+      }),
+    );
+    await event("canceled", "2026-01-01T11:00:00Z");
     expect(await paymentError(callPaidRoute(client))).toEqual({
       code: "PAYMENT_REQUIRED",
       status: 402,

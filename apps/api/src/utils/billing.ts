@@ -1,4 +1,4 @@
-import type { Subscription } from "@polar-sh/sdk/models/components/subscription.js";
+import type { models } from "@polar-sh/sdk/2026-10";
 import { and, eq, isNull, lt, sql } from "drizzle-orm";
 
 import { organizations, users } from "../schema/auth";
@@ -69,8 +69,8 @@ export async function getOrganizationAccess(organizationId: string): Promise<Acc
 
 export async function syncSubscription(
   subscription: Pick<
-    Subscription,
-    "id" | "status" | "metadata" | "currentPeriodEnd" | "modifiedAt" | "createdAt"
+    models.Subscription,
+    "id" | "status" | "metadata" | "current_period_end" | "modified_at" | "created_at"
   >,
 ) {
   const organizationId = subscription.metadata.referenceId;
@@ -82,8 +82,8 @@ export async function syncSubscription(
     id: subscription.id,
     organizationId,
     status: subscription.status,
-    currentPeriodEnd: subscription.currentPeriodEnd,
-    polarModifiedAt: subscription.modifiedAt ?? subscription.createdAt,
+    currentPeriodEnd: new Date(subscription.current_period_end),
+    polarModifiedAt: new Date(subscription.modified_at ?? subscription.created_at),
   };
   await db
     .insert(subscriptions)
