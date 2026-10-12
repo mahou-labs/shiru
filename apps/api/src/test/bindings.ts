@@ -38,6 +38,7 @@ export const env = {
   DB: undefined,
   DASHBOARD_URL: "http://localhost:3001",
   SITE_URL: "http://localhost:3002",
+  DOCS_DOMAIN: "docs.localhost",
   BETTER_AUTH_URL: "http://localhost:3000",
   BETTER_AUTH_SECRET: "test-secret-that-is-at-least-32-characters",
   POLAR_ACCESS_TOKEN: "polar_test_token",

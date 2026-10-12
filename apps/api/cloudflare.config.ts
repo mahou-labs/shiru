@@ -23,6 +23,9 @@ export default defineConfig(({ mode }) => {
           development ? "http://localhost:3001" : "https://app.shiru.sh",
         ),
         SITE_URL: bindings.text(development ? "http://localhost:3002" : "https://shiru.sh"),
+        // Docs sites live at <slug>.DOCS_DOMAIN. The production domain is not bought yet; `.invalid`
+        // can never resolve, so nothing points at a domain someone else could own.
+        DOCS_DOMAIN: bindings.text(development ? "docs.localhost" : "shiru-docs.invalid"),
         BETTER_AUTH_SECRET: bindings.secret(),
         BETTER_AUTH_URL: bindings.text(
           development ? "http://localhost:3000" : "https://api.shiru.sh",
