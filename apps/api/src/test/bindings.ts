@@ -248,7 +248,9 @@ export async function polarApi(request: Request): Promise<Response> {
 
   switch (route) {
     case "GET /v1/customers/": {
-      const items = polarCustomers.filter((customer) => customer.email === searchParams.get("email"));
+      const items = polarCustomers.filter(
+        (customer) => customer.email === searchParams.get("email"),
+      );
       return Response.json({ items, pagination: { total_count: items.length, max_page: 1 } });
     }
     case "POST /v1/customers/": {
