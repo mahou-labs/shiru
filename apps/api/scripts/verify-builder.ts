@@ -1,0 +1,153 @@
+// Drives the Builder Durable Object end to end through the dev-only route.
+// Needs `cf dev` running (default http://localhost:3000) with Docker available.
+// Usage: node scripts/verify-builder.ts [baseUrl]
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+
+const base = process.argv[2] ?? "http://localhost:3000";
+const fixtures = path.resolve(import.meta.dirname, "../../builder/fixtures");
+const siteUrl = "https://acme.shiru.sh";
+const { version } = JSON.parse(
+  await readFile(path.resolve(import.meta.dirname, "../../builder/template/package.json"), "utf8"),
+);
+const name = `verify-${Date.now()}`;
+let passed = 0;
+let failed = 0;
+
+type Result = {
+  ok: boolean;
+  templateVersion?: string;
+  manifest?: { path: string }[];
+  errors?: string[];
+};
+
+function check(label: string, actual: unknown, expected: unknown) {
+  const a = JSON.stringify(actual);
+  const e = JSON.stringify(expected);
+  if (a === e) {
+    console.log(`PASS ${label}`);
+    passed++;
+  } else {
+    console.log(`FAIL ${label}\n  expected: ${e}\n  actual:   ${a}`);
+    failed++;
+  }
+}
+
+/** The fixture's files as a repository would hold them, under docs/. */
+async function fixture(dir: string, skip: string[] = []) {
+  const root = path.join(fixtures, dir);
+  const entries = await readdir(root, { recursive: true, withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    const rel = path.relative(root, path.join(entry.parentPath, entry.name));
+    if (skip.includes(rel)) continue;
+    files.push({ path: `docs/${rel}`, content: await readFile(path.join(root, rel), "utf8") });
+  }
+  return files;
+}
+
+async function post(route: string, body: unknown) {
+  const response = await fetch(`${base}/dev/builder/${name}/${route}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return { status: response.status, body: (await response.json().catch(() => null)) as Result };
+}
+
+const build = () => post("build", { siteUrl, docsRoot: "docs" });
+const paths = (result: Result) => new Set(result.manifest?.map((entry) => entry.path));
+const timed = async <T>(work: () => Promise<T>) => {
+  const start = performance.now();
+  const value = await work();
+  return { value, seconds: ((performance.now() - start) / 1000).toFixed(2) };
+};
+
+const early = await post("build", { siteUrl, docsRoot: "docs" });
+check("build before any reset is refused", early.status, 500);
+
+check(
+  "reset refuses a path outside /work/src",
+  (await post("reset", [{ path: "../x", content: "" }])).body,
+  {
+    ok: false,
+    errors: ["../x has an empty, . or .. segment"],
+  },
+);
+
+const coldReset = await timed(async () => post("reset", await fixture("good")));
+const coldBuild = await timed(build);
+check("good: reset", coldReset.value.body, { ok: true });
+check(
+  "good: build ok with the template version",
+  [coldBuild.value.body.ok, coldBuild.value.body.templateVersion],
+  [true, version],
+);
+const good = paths(coldBuild.value.body);
+check(
+  "good: manifest lists the pages and llms.txt",
+  ["/index.html", "/guides/setup/index.html", "/guides/faq/index.html", "/llms.txt"].map((p) =>
+    good.has(p),
+  ),
+  [true, true, true, true],
+);
+
+const llms = await fetch(`${base}/dev/builder/${name}/asset?path=/llms.txt`);
+const llmsText = await llms.text();
+check(
+  "good: readAsset returns llms.txt under SITE_URL",
+  llmsText.includes("- [Acme Docs](https://acme.shiru.sh/index.md)"),
+  true,
+);
+const llmsEntry = coldBuild.value.body.manifest?.find((entry) => entry.path === "/llms.txt") as
+  | { size: number }
+  | undefined;
+check(
+  "good: manifest size matches the bytes read back",
+  llmsEntry?.size,
+  new TextEncoder().encode(llmsText).length,
+);
+check(
+  "readAsset refuses a path outside dist",
+  (await fetch(`${base}/dev/builder/${name}/asset?path=/../etc/passwd`)).status,
+  500,
+);
+
+const warmReset = await timed(async () =>
+  post("reset", await fixture("good", ["content/guides/faq.mdx"])),
+);
+const warmBuild = await timed(build);
+check("rebuild: reset without faq.mdx", warmReset.value.body, { ok: true });
+const rebuilt = paths(warmBuild.value.body);
+check(
+  "rebuild: faq page is gone, setup remains",
+  [rebuilt.has("/guides/faq/index.html"), rebuilt.has("/guides/setup/index.html")],
+  [false, true],
+);
+
+await post("reset", await fixture("bad-mdx"));
+const bad = await build();
+check("bad-mdx: errors come back as data", bad, {
+  status: 200,
+  body: {
+    ok: false,
+    errors: [
+      "content/guide.mdx:5:1 export statements are not allowed",
+      "content/guide.mdx:7:1 attribute expressions are not allowed (title on <Aside>)",
+      "content/index.mdx:5:1 import statements are not allowed",
+      "content/index.mdx:7:17 JavaScript expressions are not allowed",
+    ],
+  },
+});
+
+console.log();
+console.log(`manifest entries for good: ${good.size}`);
+console.log(
+  `first, in a fresh container: reset ${coldReset.seconds}s, build ${coldBuild.seconds}s`,
+);
+console.log(
+  `second, in the same container: reset ${warmReset.seconds}s, build ${warmBuild.seconds}s`,
+);
+console.log(`${passed} passed, ${failed} failed`);
+process.exit(failed === 0 ? 0 : 1);
