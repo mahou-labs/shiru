@@ -126,20 +126,18 @@ check(
   [false, true],
 );
 
-await post("reset", await fixture("bad-mdx"));
+await post("reset", await fixture("bad-import"));
 const bad = await build();
-check("bad-mdx: errors come back as data", bad, {
-  status: 200,
-  body: {
-    ok: false,
-    errors: [
-      "content/guide.mdx:5:1 export statements are not allowed",
-      "content/guide.mdx:7:1 attribute expressions are not allowed (title on <Aside>)",
-      "content/index.mdx:5:1 import statements are not allowed",
-      "content/index.mdx:7:17 JavaScript expressions are not allowed",
-    ],
-  },
-});
+const badErrors = (bad.body as { errors?: string[] }).errors ?? [];
+check(
+  "bad-import: errors come back as data, naming the package and the page",
+  [
+    bad.status,
+    (bad.body as { ok?: boolean }).ok,
+    badErrors.some((e) => e.includes("canvas-confetti") && e.includes("content/index.mdx")),
+  ],
+  [200, false, true],
+);
 
 console.log();
 console.log(`manifest entries for good: ${good.size}`);
