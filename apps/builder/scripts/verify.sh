@@ -124,6 +124,13 @@ content/index.mdx:5:10 link ./guides/setup.mdx points to no page in content/
 docs.config.json: logo assets/missing.svg does not exist
 docs.config.json: navigation[1].items[0].href points to no page in content/"
 
+docker exec "$container" sh -c 'mkdir -p /tmp/m/sub && printf hello >/tmp/m/a.txt && printf hello >/tmp/m/b.css && : >/tmp/m/sub/c.html'
+check "dist-manifest: path, size and a hash that differs by extension" equals \
+  "$(docker exec "$container" env -i PATH=/usr/local/bin:/usr/bin:/bin dist-manifest /tmp/m)" \
+  '[{"path":"/a.txt","size":5,"hash":"6557d84ac976d6185b43efbc8df3d80c"},{"path":"/b.css","size":5,"hash":"e72a1a0559528439e25f634b1f20f825"},{"path":"/sub/c.html","size":0,"hash":"e5e239560bc125a20ff2ac1fea50915b"}]'
+check "dist-manifest: lists a built page" \
+  grep -qF '"path":"/guides/setup/index.html"' <<<"$(docker exec "$container" dist-manifest /out/good)"
+
 echo
 echo "image size: $(docker image inspect "$image" --format '{{.Size}}' | awk '{printf "%.0f MB", $1 / 1000000}')"
 echo "good build, first in a fresh container: ${cold}s"
