@@ -1,13 +1,6 @@
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@shiru/ui/components/alert";
 import { Button } from "@shiru/ui/components/button";
-import { Badge } from "@shiru/ui/components/badge";
-import {
-  Card,
-  CardAction,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@shiru/ui/components/card";
+import { Card } from "@shiru/ui/components/card";
 import {
   Dialog,
   DialogDescription,
@@ -31,6 +24,7 @@ import { useState } from "react";
 
 import { CreateSiteForm } from "@/components/create-site-form";
 import { Page } from "@/components/page";
+import { SiteCard } from "@/components/site-card";
 import { accessLabel } from "@/lib/access";
 import { accessQuery, useSession } from "@/lib/queries";
 import { orpc } from "@/utils/orpc";
@@ -65,15 +59,7 @@ function Dashboard() {
       )}
       {sites &&
         (publicSite ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>{publicSite.name}</CardTitle>
-              <CardDescription>{new URL(publicSite.url).host}</CardDescription>
-              <CardAction>
-                <Badge variant="outline">Not published yet</Badge>
-              </CardAction>
-            </CardHeader>
-          </Card>
+          <SiteCard site={publicSite} />
         ) : (
           <Card>
             <Empty>
