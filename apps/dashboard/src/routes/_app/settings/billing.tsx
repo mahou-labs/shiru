@@ -31,7 +31,7 @@ function BillingSettings() {
     mutationFn: () =>
       authClient.checkout({
         slug: "monthly",
-        referenceId: session.activeOrganizationId ?? undefined,
+        reference_id: session.activeOrganizationId ?? undefined,
       }),
   });
   const portal = useMutation({ mutationFn: () => authClient.customer.portal() });
