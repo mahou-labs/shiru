@@ -499,6 +499,11 @@ A share link is the same signed token with a longer expiry, created by an editor
 
 ### Domains
 
+- **Docs live on their own registrable domain.** Client pages can run any script MDX allows, so a
+  docs site must never share a cookie scope with the dashboard or the API. Platform subdomains and
+  previews sit under a domain separate from the product's (`docs.yoursaas.com` here stands for that
+  separate domain, the way GitHub serves Pages from `github.io` and not `github.com`). Add the domain
+  to the Public Suffix List, so one client's site cannot set cookies for another's.
 - **Platform subdomains.** A wildcard route `*.docs.yoursaas.com/*` sends traffic to the Dispatch
   Worker.
 - **Client domains (`docs.acme.com`).** Use Cloudflare for SaaS custom hostnames. The client adds a
@@ -560,12 +565,13 @@ The build runs code that clients control, so treat the sandbox as hostile for it
   build that could read it could overwrite any client's site.
 - **The sandbox environment holds only `SITE_URL`.**
 
-### Restrict what MDX can run
+### MDX runs inside the sandbox
 
-Content only needs your components. The build rejects MDX that uses `import`, `export`, or JavaScript
-expressions, through a remark/recma check in `build-site`. Components from the template are
-available without imports. This removes most build-time code execution instead of only containing
-it.
+Any MDX that Nimbus accepts builds, including `import`, `export`, and JavaScript expressions. That
+code runs at build time inside the sandbox, which has no credentials and no network, and in the
+visitor's browser on the docs domain, which shares nothing with the product's domain (section 7).
+`build-site` only checks what Nimbus does not: `docs.config.json`, and links to pages or a logo that
+do not exist.
 
 ### Other controls
 
