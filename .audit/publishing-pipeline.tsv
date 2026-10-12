@@ -1,0 +1,7 @@
+ts	phase	decision	why	evidence	result
+2026-10-12T13:27:41Z	frame	build the units that can be proven locally first (domain model, builder image), leave remote units gated	no Cloudflare token in this shell; Artifacts and dispatch namespaces have no local emulation	docs/plans/publishing-pipeline.md	open
+2026-10-12T13:27:41Z	frame	skipped a multi-model design bakeoff for the overall shape	the architecture doc already settles the design; what is open are API facts, settled by research	docs-platform-architecture.md	decided
+2026-10-12T13:27:41Z	research	build sandbox becomes our own DO on Sandbox SDK 1.0, not getSandbox()	SDK 1.0 (2026-09-30) removed getSandbox and string exec	developers.cloudflare.com/sandbox/sdk/migrate/changes-in-1-0/	decided
+2026-10-12T13:27:41Z	research	fetch source by walking Artifacts readTree/readBlob in the Workflow; commit via isomorphic-git	Artifacts has no tarball endpoint and no commit method; keeps credentials out of the sandbox	developers.cloudflare.com/artifacts/api/workers-binding/	decided
+2026-10-12T13:27:41Z	domain	build requests dedupe on building or pending sha only; a deployed sha rebuilds only when asked to rebuild	the doc says a deployed sha is a no-op, but template upgrades rebuild deployed_sha; the two rules conflict	docs-platform-architecture.md sections 5 and 6	decided
+2026-10-12T13:27:41Z	domain	site names live in apps/api for now, no shared package until the dispatch worker needs them	one consumer today; a package with one caller is a layer with no payoff	'-	decided
