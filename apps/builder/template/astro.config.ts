@@ -1,4 +1,5 @@
 import { defineConfig } from "astro/config";
+import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import nimbus, { defineConfig as defineNimbusConfig } from "@cloudflare/nimbus-docs";
 import { tableScroll } from "@cloudflare/nimbus-docs/markdown";
@@ -23,6 +24,7 @@ export default defineConfig({
     defaultStrategy: "hover",
   },
   integrations: [
+    react(),
     nimbus(nimbusConfig, {
       rules: {
         "nimbus/frontmatter-shape": "error",
