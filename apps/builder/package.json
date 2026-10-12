@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "schema": "node scripts/generate-schema.ts"
+    "schema": "node scripts/generate-schema.ts",
+    "verify": "scripts/verify.sh"
   },
   "devDependencies": {
     "@types/node": "catalog:",
