@@ -1,0 +1,2 @@
+ALTER TABLE `sites` ADD `visibility` text DEFAULT 'public' NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX `sites_public_organizationId_idx` ON `sites` (`organization_id`) WHERE visibility = 'public';

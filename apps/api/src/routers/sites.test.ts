@@ -41,6 +41,7 @@ describe("sites.create", () => {
           organizationId,
           slug: "acme",
           name: "Acme",
+          visibility: "public",
           source: { kind: "managed", artifactsRepo: id },
           createdAt: "2026-01-01T00:00:00.000Z",
         },
@@ -122,40 +123,44 @@ describe("sites.create", () => {
 });
 
 describe("sites.list", () => {
-  it("returns only the active organization's sites, oldest first", async () => {
+  it("returns only the active organization's sites", async () => {
     const a = await organizationMember("list-a@example.com", "List A");
     const b = await organizationMember("list-b@example.com", "List B");
     const alpha = await createSite(a.client, "alpha", "Alpha");
     vi.setSystemTime(JAN_1.getTime() + MINUTE);
     const beta = await createSite(b.client, "beta", "Beta");
-    vi.setSystemTime(JAN_1.getTime() + 2 * MINUTE);
-    const gamma = await createSite(a.client, "gamma", "Gamma");
 
-    const site = (id: string, organizationId: string, slug: string, name: string, at: string) => ({
-      id,
-      organizationId,
-      slug,
-      name,
-      source: { kind: "managed", artifactsRepo: id },
-      createdAt: at,
-    });
     expect(await a.client.rpc("sites/list")).toEqual({
       status: 200,
       body: {
         json: [
-          site(alpha.id, a.organizationId, "alpha", "Alpha", "2026-01-01T00:00:00.000Z"),
-          site(gamma.id, a.organizationId, "gamma", "Gamma", "2026-01-01T00:02:00.000Z"),
+          {
+            id: alpha.id,
+            organizationId: a.organizationId,
+            slug: "alpha",
+            name: "Alpha",
+            visibility: "public",
+            source: { kind: "managed", artifactsRepo: alpha.id },
+            createdAt: "2026-01-01T00:00:00.000Z",
+          },
         ],
-        meta: [
-          [1, 0, "createdAt"],
-          [1, 1, "createdAt"],
-        ],
+        meta: [[1, 0, "createdAt"]],
       },
     });
     expect(await b.client.rpc("sites/list")).toEqual({
       status: 200,
       body: {
-        json: [site(beta.id, b.organizationId, "beta", "Beta", "2026-01-01T00:01:00.000Z")],
+        json: [
+          {
+            id: beta.id,
+            organizationId: b.organizationId,
+            slug: "beta",
+            name: "Beta",
+            visibility: "public",
+            source: { kind: "managed", artifactsRepo: beta.id },
+            createdAt: "2026-01-01T00:01:00.000Z",
+          },
+        ],
         meta: [[1, 0, "createdAt"]],
       },
     });

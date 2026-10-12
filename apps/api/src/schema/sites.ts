@@ -1,4 +1,5 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import type { SiteSlug } from "../sites/names";
 import type { SiteSource } from "../sites/source";
@@ -13,10 +14,18 @@ export const sites = sqliteTable(
       .references(() => organizations.id, { onDelete: "cascade" }),
     slug: text("slug").$type<SiteSlug>().notNull().unique(),
     name: text("name").notNull(),
+    visibility: text("visibility", { enum: ["public", "internal"] })
+      .notNull()
+      .default("public"),
     source: text("source", { mode: "json" }).$type<SiteSource>().notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
-  (table) => [index("sites_organizationId_idx").on(table.organizationId)],
+  (table) => [
+    index("sites_organizationId_idx").on(table.organizationId),
+    uniqueIndex("sites_public_organizationId_idx")
+      .on(table.organizationId)
+      .where(sql`visibility = 'public'`),
+  ],
 );
 
 export const hostnames = sqliteTable(
