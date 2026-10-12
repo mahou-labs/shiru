@@ -24,7 +24,16 @@ vi.mock("../utils/db", async () => {
   return { db };
 });
 
-vi.mock("@polar-sh/sdk", async () => {
-  const { Polar } = await import("./bindings");
-  return { Polar };
+// The real SDK runs; only its HTTP hop to Polar goes to the in-memory API instead.
+vi.mock("@polar-sh/sdk/2026-10", async (importOriginal) => {
+  const sdk = await importOriginal<typeof import("@polar-sh/sdk/2026-10")>();
+  const { polarApi } = await import("./bindings");
+  return {
+    ...sdk,
+    createPolarCore: (options: Parameters<typeof sdk.createPolarCore>[0]) => {
+      const client = sdk.createPolarCore(options);
+      client.sendRequest = async ([url, init]) => polarApi(new Request(url, init));
+      return client;
+    },
+  };
 });

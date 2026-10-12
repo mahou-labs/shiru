@@ -44,11 +44,41 @@ describe("sign-up and email verification", () => {
     expect(session).toMatchObject({ user: { email: "grace@example.com", emailVerified: true } });
   });
 
-  it("creates a Polar customer for each new user", async () => {
-    await createClient().signUpVerified("linus@example.com", "Linus");
+  it("creates a Polar customer for each new user, linked by user id", async () => {
+    const client = createClient();
+    await client.signUpVerified("linus@example.com", "Linus");
+    const { user } = (await (await client.request("/auth/get-session")).json()) as {
+      user: { id: string };
+    };
+    expect(polarCustomers.filter((customer) => customer.email === "linus@example.com")).toEqual([
+      {
+        id: expect.stringMatching(/^cus_/),
+        type: "individual",
+        email: "linus@example.com",
+        name: "Linus",
+        external_id: user.id,
+        metadata: {},
+      },
+    ]);
+  });
+
+  it("links an existing Polar customer with the same email instead of creating one", async () => {
+    polarCustomers.push({
+      id: "cus_existing",
+      type: "individual",
+      email: "existing@example.com",
+      name: "Bought before signing up",
+      external_id: null,
+      metadata: {},
+    });
+    const client = createClient();
+    await client.signUpVerified("existing@example.com", "Existing");
+    const { user } = (await (await client.request("/auth/get-session")).json()) as {
+      user: { id: string };
+    };
     expect(
-      polarCustomers.filter((customer) => customer.email === "linus@example.com"),
-    ).toHaveLength(1);
+      polarCustomers.filter((customer) => customer.email === "existing@example.com"),
+    ).toMatchObject([{ id: "cus_existing", external_id: user.id }]);
   });
 });
 
