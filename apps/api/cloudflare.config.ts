@@ -1,4 +1,10 @@
-import { bindings, defineConfig, exports } from "cf/config";
+import { bindings, defineConfig, defineContainer, exports } from "cf/config";
+
+const builder = defineContainer({
+  name: "shiru-api-builder",
+  schedulingPolicy: "durable-object",
+  images: { builder: { dockerfile: "../builder/Dockerfile", buildContext: "../builder" } },
+});
 
 export default defineConfig(({ mode }) => {
   const development = mode === "development";
@@ -56,11 +62,14 @@ export default defineConfig(({ mode }) => {
         // No PostHog project yet. Switch to bindings.secret() in production once a key exists.
         POSTHOG_KEY: bindings.text(""),
         POSTHOG_HOST: bindings.text("https://us.i.posthog.com"),
+        BUILDER: bindings.durableObject({ worker: "shiru-api", exportName: "Builder" }),
       },
       exports: {
         // The previous app on this Worker ran a Durable Object; retiring it lets this code deploy.
         BuilderSandbox: exports.durableObject({ state: "deleted" }),
+        Builder: exports.durableObject({ storage: "sqlite", container: builder }),
       },
     },
+    containers: [builder],
   };
 });

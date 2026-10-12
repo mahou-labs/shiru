@@ -13,6 +13,7 @@
     "test": "vp test --coverage"
   },
   "dependencies": {
+    "@cloudflare/sandbox": "1.0.0",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
