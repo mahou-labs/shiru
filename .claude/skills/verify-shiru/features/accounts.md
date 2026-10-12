@@ -27,7 +27,7 @@ Preconditions:
 - `doctor.sh` exits 0.
 - Sign-up needs a real Polar sandbox `POLAR_ACCESS_TOKEN`, because a Polar customer is created at sign-up. With placeholder secrets or an expired token, sign-up fails with `Polar customer creation failed` (500); report `accounts-sign-up` and `accounts-verify-email` as blocked and drive the rest with an existing verified user.
 
-- **Sign up.** On `/auth/sign-up`, fill `[name=name]`, `[name=email]` (`verify-$RUN_ID@example.com`) and `[name=password]` (8+ characters), then `click("form button[type=submit]")`. The page moves to `/auth/verify-email` and shows `Check your inbox`.
+- **Sign up.** On `/auth/sign-up`, fill `[name=name]`, `[name=email]` (`verify-$RUN_ID@mailinator.com`) and `[name=password]` (8+ characters), then `click("form button[type=submit]")`. The page moves to `/auth/verify-email` and shows `Check your inbox`.
 - **Unverified sign-in.** Run `curl -s -H 'content-type: application/json' -H 'Origin: http://localhost:3001' -X POST -d '{"email":"<email>","password":"<password>"}' http://localhost:3000/auth/sign-in/email`. The body has `"code":"EMAIL_NOT_VERIFIED"`. In the browser, the same sign-in moves to `/auth/verify-email`.
 - **Verification email.** Run `.claude/skills/verify-shiru/scripts/latest-email.sh <email>`. It saves the email under `evidence/emails/` and prints the link.
 - **Verify.** `goto(link)` in the browser. A user without an organization lands on `/onboarding` showing `Create your organization`.
