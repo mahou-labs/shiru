@@ -20,6 +20,14 @@ Write tests the way a caller uses the API:
 
 Better Auth skips its origin (CSRF) check when `NODE_ENV` is `test`, so origin rejection cannot be tested here. Use the `verify-shiru` skill for checks that need the real server or a browser.
 
+## Inspecting local Cloudflare resources
+
+While the API dev server is running (`vp run dev` in `apps/api`), the Cloudflare Local Explorer exposes the local bindings (D1, KV, R2, Durable Objects, Workflows) at `http://localhost:3000/cdn-cgi/local/explorer/api`. Fetch that URL to get the OpenAPI schema, then use its endpoints to list and query local resources. The same database backs the user's own dev server, so read from it freely but do not write to it unless asked. Emails sent through the simulated `EMAIL` binding show up in the Explorer UI at `http://localhost:3000/cdn-cgi/local/explorer`.
+
+## Commits
+
+Commit your changes with the `git` or `gh` CLI under the user's configured git identity. Start every commit message with a lowercase letter and an imperative verb, like `add rate limiting to the api`. Commit only the files you changed and leave the user's other pending edits alone.
+
 <!--VITE PLUS START-->
 
 # Using Vite+, the Unified Toolchain for the Web
