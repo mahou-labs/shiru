@@ -5,11 +5,14 @@
 import { spawn } from "node:child_process";
 import { cp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { stripVTControlCharacters } from "node:util";
 import { markdownToMdast, mdxToMdast, type MdastNode } from "satteri";
 import { markdownFeatures } from "../template/markdown.ts";
 import { type DocsConfig, formatPath, type NavItem, parseDocsConfig } from "./config.ts";
 
 const templateDir = path.resolve(import.meta.dirname, "../template");
+// Astro reports pages at their copy inside the template; authors know them as content/.
+const contentCopyPath = new RegExp(`(?:${RegExp.escape(templateDir)}/)?src/content/docs/`, "g");
 const features = { gfm: true, smartPunctuation: true, ...markdownFeatures };
 
 const [srcRoot, outDir] = process.argv.slice(2);
@@ -254,8 +257,13 @@ function runAstroBuild(): Promise<{ code: number | null; tail: string }> {
     });
     let tail = "";
     const keep = (chunk: Buffer) => {
-      process.stderr.write(chunk);
-      tail = (tail + chunk.toString()).slice(-4000);
+      // Rolldown colors its diagnostics even with NO_COLOR set.
+      const text = stripVTControlCharacters(chunk.toString()).replaceAll(
+        contentCopyPath,
+        "content/",
+      );
+      process.stderr.write(text);
+      tail = (tail + text).slice(-4000);
     };
     child.stdout.on("data", keep);
     child.stderr.on("data", keep);

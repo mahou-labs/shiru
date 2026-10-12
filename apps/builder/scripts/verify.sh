@@ -108,6 +108,27 @@ check "bad-config: result line lists the errors" equals "$(tail -n1 <<<"$stdout"
   '{"ok":false,"errors":["docs.config.json: github must be an https://github.com/ URL","docs.config.json: navigation[2].href is not a valid path"]}'
 check "bad-config: writes no output" file_missing /out/bad-config
 
+build /work/mdx-features /out/mdx-features
+check "mdx-features: exits 0" equals "$code" 0
+check "mdx-features: exported const renders through an expression" \
+  file_contains /out/mdx-features/index.html 'The answer is 42.'
+check "mdx-features: imported .mdx partial renders" \
+  file_contains /out/mdx-features/index.html 'Imported note text from _note.mdx.'
+check "mdx-features: imported .astro component renders with an expression prop" \
+  file_contains /out/mdx-features/index.html '<strong>Computed 42</strong> Callout body from a local component.'
+check "mdx-features: imported .js module value renders" \
+  file_contains /out/mdx-features/index.html 'Latest release: 2.4.1.'
+check "mdx-features: expression attribute on a built-in component" \
+  file_contains /out/mdx-features/index.html 'aria-label="Title from an expression"'
+
+build /work/bad-import /out/bad-import
+check "bad-import: exits 1" equals "$code" 1
+check "bad-import: error names the missing package and the page under content/" \
+  grep -qF 'Rolldown failed to resolve import \"canvas-confetti\" from \"content/index.mdx\"' <<<"$(tail -n1 <<<"$stdout")"
+check "bad-import: error has no template paths or color codes" \
+  equals "$(tail -n1 <<<"$stdout" | grep -cE 'src/content/docs|\\u001b')" 0
+check "bad-import: writes no output" file_missing /out/bad-import
+
 build /work/bad-links /out/bad-links
 check "bad-links: exits 1" equals "$code" 1
 check "bad-links: stderr lists missing pages and logo" equals "$stderr" "content/index.mdx:5:10 link ./guides/setup.mdx points to no page in content/
