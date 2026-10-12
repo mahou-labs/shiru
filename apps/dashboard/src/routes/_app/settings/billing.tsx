@@ -30,7 +30,7 @@ function BillingSettings() {
   const checkout = useMutation({
     mutationFn: () =>
       authClient.checkout({
-        slug: "starter-monthly",
+        slug: "monthly",
         referenceId: session.activeOrganizationId ?? undefined,
       }),
   });
