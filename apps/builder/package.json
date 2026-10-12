@@ -1,0 +1,15 @@
+{
+  "name": "builder",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "schema": "node scripts/generate-schema.ts"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "satteri": "0.10.5",
+    "typescript": "catalog:",
+    "yaml": "2.9.1",
+    "zod": "catalog:"
+  }
+}
