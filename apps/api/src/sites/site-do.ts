@@ -185,6 +185,7 @@ export class SiteDO extends DurableObject<Env> {
       });
       const pushed = await this.push(head, commit);
       if (pushed.kind === "stale") {
+        console.log(`publish: main moved past ${head ?? "nothing"} (stale ref); refreshing`);
         await this.refresh();
         continue;
       }
@@ -328,18 +329,18 @@ export class SiteDO extends DurableObject<Env> {
     return parseReportStatus(body);
   }
 
+  // Get, else create, else get again for a create that lost a race. Errors are not classified by
+  // code: through `cf dev`'s remote binding they arrive as plain Errors without one.
   private async ensureRepo(name: string): Promise<string> {
+    const remote = async () => (await (await this.env.ARTIFACTS.get(name)).info()).remote;
     try {
-      return (await (await this.env.ARTIFACTS.get(name)).info()).remote;
-    } catch (error) {
-      if ((error as { code?: string }).code !== "NOT_FOUND") throw error;
-    }
-    try {
-      return (await this.env.ARTIFACTS.create(name)).remote;
-    } catch (error) {
-      // Another request created it first.
-      if ((error as { code?: string }).code !== "ALREADY_EXISTS") throw error;
-      return (await (await this.env.ARTIFACTS.get(name)).info()).remote;
+      return await remote();
+    } catch {
+      try {
+        return (await this.env.ARTIFACTS.create(name)).remote;
+      } catch {
+        return remote();
+      }
     }
   }
 
