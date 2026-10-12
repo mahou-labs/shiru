@@ -1,0 +1,19 @@
+---
+title: MDX features
+---
+
+import Note from "./_note.mdx";
+import Callout from "./_components/Callout.astro";
+import { release } from "./_data.js";
+
+export const answer = 6 * 7;
+
+The answer is {answer}.
+
+<Note />
+
+<Callout label={`Computed ${answer}`}>Callout body from a local component.</Callout>
+
+Latest release: {release.version}.
+
+<Aside type="note" title={"Title from " + "an expression"}>Aside with an expression title.</Aside>
