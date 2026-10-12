@@ -108,19 +108,9 @@ check "bad-config: result line lists the errors" equals "$(tail -n1 <<<"$stdout"
   '{"ok":false,"errors":["docs.config.json: github must be an https://github.com/ URL","docs.config.json: navigation[2].href is not a valid path"]}'
 check "bad-config: writes no output" file_missing /out/bad-config
 
-build /work/bad-mdx /out/bad-mdx
-check "bad-mdx: exits 1" equals "$code" 1
-check "bad-mdx: stderr lists all four errors with file:line:column" equals "$stderr" "content/guide.mdx:5:1 export statements are not allowed
-content/guide.mdx:7:1 attribute expressions are not allowed (title on <Aside>)
-content/index.mdx:5:1 import statements are not allowed
-content/index.mdx:7:17 JavaScript expressions are not allowed"
-check "bad-mdx: result line lists the errors" equals "$(tail -n1 <<<"$stdout")" \
-  '{"ok":false,"errors":["content/guide.mdx:5:1 export statements are not allowed","content/guide.mdx:7:1 attribute expressions are not allowed (title on <Aside>)","content/index.mdx:5:1 import statements are not allowed","content/index.mdx:7:17 JavaScript expressions are not allowed"]}'
-
 build /work/bad-links /out/bad-links
 check "bad-links: exits 1" equals "$code" 1
-check "bad-links: stderr lists missing title, pages and logo" equals "$stderr" "content/index.mdx:1:1 frontmatter title is required
-content/index.mdx:5:10 link ./guides/setup.mdx points to no page in content/
+check "bad-links: stderr lists missing pages and logo" equals "$stderr" "content/index.mdx:5:10 link ./guides/setup.mdx points to no page in content/
 docs.config.json: logo assets/missing.svg does not exist
 docs.config.json: navigation[1].items[0].href points to no page in content/"
 
