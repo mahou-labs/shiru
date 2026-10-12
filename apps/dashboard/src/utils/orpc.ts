@@ -11,6 +11,7 @@ import type { AppRouterClient } from "../../../api/src/routers";
 declare module "@tanstack/react-query" {
   interface Register {
     queryMeta: { silent?: boolean };
+    mutationMeta: { silent?: boolean };
   }
 }
 
@@ -27,7 +28,8 @@ export const queryClient = new QueryClient({
     },
   }),
   mutationCache: new MutationCache({
-    onError: (error) => {
+    onError: (error, _variables, _context, mutation) => {
+      if (mutation.meta?.silent) return;
       toastManager.add({ type: "error", title: errorMessage(error) });
     },
   }),

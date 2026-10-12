@@ -4,27 +4,12 @@ import { Form } from "@shiru/ui/components/form";
 import { Input } from "@shiru/ui/components/input";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { authClient } from "@/lib/auth-client";
+import { slugify, useDebouncedValue } from "@/lib/slug";
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-
-function slugify(name: string) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-function useDebouncedValue<T>(value: T, delay: number) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debounced;
-}
 
 function useSlugAvailability(slug: string) {
   const valid = slug.length >= 3 && SLUG_PATTERN.test(slug);
