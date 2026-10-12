@@ -30,8 +30,9 @@ export class PublishWorkflow extends WorkflowEntrypoint<Env, PublishParams> {
   ): Promise<BuildResult> {
     const { docId, repo, target, sha, docUrl, docsRoot } = event.payload;
     // Builder is reached through this Worker's own exports: a binding would carry a script_name,
-    // and Wrangler refuses a container on a Durable Object bound that way. Neither is typed.
-    const builders = exports.Builder as DurableObjectNamespace<Builder>;
+    // and Wrangler refuses a container on a Durable Object bound that way. cf types each export as
+    // any kind of loopback, and the DOCS binding by its Worker name, so both are cast.
+    const builders = exports.Builder as unknown as DurableObjectNamespace<Builder>;
     const docs = this.env.DOCS as DurableObjectNamespace<Doc>;
 
     let result: BuildResult;

@@ -17,10 +17,10 @@ import type { SourceFile } from "./protocol";
  */
 export const devRoute = new Hono();
 
-// Builder comes from this Worker's own exports (see publish-workflow.ts) and Doc from a binding
-// naming this Worker by string, so neither is typed.
+// Builder comes from this Worker's own exports and Doc from a binding; publish-workflow.ts says why
+// both are cast.
 const builder = (name: string) =>
-  (exports.Builder as DurableObjectNamespace<Builder>).getByName(name);
+  (exports.Builder as unknown as DurableObjectNamespace<Builder>).getByName(name);
 const docObject = (id: string) => (env.DOCS as DurableObjectNamespace<Doc>).getByName(id);
 
 devRoute.use(async (c, next) => {
