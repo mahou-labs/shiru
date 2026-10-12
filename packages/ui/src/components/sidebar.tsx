@@ -28,8 +28,17 @@ const SIDEBAR_WIDTH_MOBILE: string = "18rem";
 const SIDEBAR_WIDTH_ICON: string = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT: string = "b";
 
+// Everything that resizes on collapse shares one curve so width, padding and labels land together.
+const SIDEBAR_MOTION: string =
+  "duration-180 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none";
+
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-lg p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pe-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg:not([class*='size-'])]:size-4 [&>svg]:shrink-0",
+  [
+    SIDEBAR_MOTION,
+    "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-lg p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pe-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg:not([class*='size-'])]:size-4 [&>svg]:shrink-0",
+    // Collapsed, only the first child (icon or avatar) stays; the rest fades instead of being cut mid-word.
+    "[&>*]:transition-opacity [&>*]:duration-180 [&>*]:ease-[cubic-bezier(0.23,1,0.32,1)] group-data-[collapsible=icon]:[&>:not(:first-child)]:opacity-0",
+  ],
   {
     defaultVariants: {
       size: "default",
@@ -236,7 +245,8 @@ export function Sidebar({
       {/* This is what handles the sidebar gap on desktop */}
       <div
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          "relative w-(--sidebar-width) bg-transparent transition-[width]",
+          SIDEBAR_MOTION,
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -247,7 +257,8 @@ export function Sidebar({
       />
       <div
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] md:flex",
+          SIDEBAR_MOTION,
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -334,7 +345,8 @@ export function SidebarInset({
   return (
     <main
       className={cn(
-        "relative flex w-full flex-1 flex-col bg-background",
+        "relative flex w-full flex-1 flex-col bg-background transition-[margin]",
+        SIDEBAR_MOTION,
         "md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ms-2 md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ms-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm/5",
         className,
       )}
@@ -440,8 +452,9 @@ export function SidebarGroupLabel({
 }: useRender.ComponentProps<"div">): React.ReactElement {
   const defaultProps = {
     className: cn(
-      "flex h-8 shrink-0 items-center rounded-lg px-2 font-medium text-sidebar-foreground text-xs outline-hidden ring-sidebar-ring transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-      "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
+      "flex h-8 shrink-0 items-center rounded-lg px-2 font-medium text-sidebar-foreground text-xs outline-hidden ring-sidebar-ring transition-[margin,opacity] focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+      SIDEBAR_MOTION,
+      "group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
       className,
     ),
     "data-sidebar": "group-label",
