@@ -1,5 +1,5 @@
 import { checkout, polar, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
+import { createPolarCore } from "@polar-sh/sdk/2026-10";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
@@ -163,9 +163,9 @@ export const auth = betterAuth({
       },
     }),
     polar({
-      client: new Polar({
+      client: createPolarCore({
         accessToken: env.POLAR_ACCESS_TOKEN,
-        server: production ? "production" : "sandbox",
+        environment: production ? "production" : "sandbox",
       }),
       createCustomerOnSignUp: true,
       use: [
