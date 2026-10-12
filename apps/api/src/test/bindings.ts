@@ -34,6 +34,81 @@ for (const statement of statements) client.exec(statement);
 
 export const db = drizzle({ client });
 
+/** A Durable Object's SQL storage over node:sqlite, with BLOBs as ArrayBuffers like the runtime's. */
+function sqlStorage(database: DatabaseSync) {
+  return {
+    exec(query: string, ...bindings: unknown[]) {
+      const statement = database.prepare(query);
+      const args = bindings.map((value) =>
+        value instanceof ArrayBuffer ? new Uint8Array(value) : value,
+      ) as (string | number | null | Uint8Array)[];
+      const rows = statement
+        .all(...args)
+        .map((row) =>
+          Object.fromEntries(
+            Object.entries(row).map(([key, value]) => [
+              key,
+              value instanceof Uint8Array ? value.slice().buffer : value,
+            ]),
+          ),
+        );
+      const rowsWritten = Number(
+        (database.prepare("SELECT changes() AS n").get() as { n: number }).n,
+      );
+      return { toArray: () => rows, rowsWritten };
+    },
+  };
+}
+
+/**
+ * Runs the real SiteDO class, one instance per name, on node:sqlite. Calls go through a proxy that
+ * awaits and structured-clones like an RPC stub. Alarms are recorded, not fired.
+ */
+export const siteObjects = {
+  instances: new Map<string, unknown>(),
+  alarms: new Map<string, number | null>(),
+  getByName(name: string) {
+    const instance = async () => {
+      if (!this.instances.has(name)) {
+        const { SiteDO } = await import("../sites/site-do");
+        const database = new DatabaseSync(":memory:");
+        const ctx = {
+          id: { name },
+          storage: {
+            sql: sqlStorage(database),
+            transactionSync<T>(work: () => T) {
+              database.exec("BEGIN");
+              try {
+                const result = work();
+                database.exec("COMMIT");
+                return result;
+              } catch (error) {
+                database.exec("ROLLBACK");
+                throw error;
+              }
+            },
+            setAlarm: async (time: number) => void siteObjects.alarms.set(name, time),
+            deleteAlarm: async () => void siteObjects.alarms.set(name, null),
+          },
+        };
+        this.instances.set(name, new SiteDO(ctx as never, env as never));
+      }
+      return this.instances.get(name) as Record<string, (...args: unknown[]) => unknown>;
+    };
+    return new Proxy(
+      {},
+      {
+        // Not thenable, so an async function can return the stub, as it can a runtime stub.
+        get: (_, method: string) =>
+          method === "then"
+            ? undefined
+            : async (...args: unknown[]) =>
+                structuredClone(await (await instance())[method]!(...structuredClone(args))),
+      },
+    );
+  },
+};
+
 type StoredObject = { type: "blob" | "tree" | "commit"; body: Uint8Array };
 type Repo = { objects: Map<string, StoredObject>; head: string | null };
 
@@ -136,6 +211,8 @@ export const env = {
   PUBLIC_WRITE_RATE_LIMITER: rateLimiter("public-write", 10),
   POSTHOG_KEY: "",
   POSTHOG_HOST: "https://us.i.posthog.com",
+  ARTIFACTS: artifacts,
+  SITE_DO: siteObjects,
   EMAIL: {
     send: async (message: SentEmail) => {
       sentEmails.push(message);
