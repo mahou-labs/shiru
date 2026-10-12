@@ -6,7 +6,6 @@ import { spawn } from "node:child_process";
 import { cp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { markdownToMdast, mdxToMdast, type MdastNode } from "satteri";
-import { parse as parseYaml } from "yaml";
 import { markdownFeatures } from "../template/markdown.ts";
 import { type DocsConfig, formatPath, type NavItem, parseDocsConfig } from "./config.ts";
 
@@ -149,8 +148,8 @@ function routeOf(page: string): string {
 }
 
 /**
- * Checks one page and returns every error in it: forbidden MDX syntax, a
- * missing title, links to missing pages. Also returns the source with
+ * Checks one page for links to missing pages, the one page check Nimbus does
+ * not make. Also returns the source with
  * file-relative page links (`../setup.mdx#install`) rewritten to routes
  * (`/guides/setup/#install`), the only form Nimbus resolves in both the HTML
  * and the Markdown it emits.
@@ -177,37 +176,8 @@ function preparePage(file: string, source: string): { errors: string[]; source: 
     errors.push(`${file}:${start.line}:${start.column} ${message}`);
   };
 
-  const titleError = checkTitle(tree.type === "root" ? tree.children[0] : undefined);
-  if (titleError) report({}, titleError);
-
   const visit = (node: MdastNode) => {
     switch (node.type) {
-      case "mdxjsEsm":
-        report(
-          node,
-          `${/^\s*export\b/.test(node.value) ? "export" : "import"} statements are not allowed`,
-        );
-        break;
-      case "mdxFlowExpression":
-      case "mdxTextExpression":
-        if (!isComment(node.value)) report(node, "JavaScript expressions are not allowed");
-        break;
-      case "mdxJsxFlowElement":
-      case "mdxJsxTextElement":
-        for (const attribute of node.attributes) {
-          if (attribute.type === "mdxJsxExpressionAttribute") {
-            report(
-              attribute.position ? attribute : node,
-              `spread attributes are not allowed on <${node.name}>`,
-            );
-          } else if (attribute.value !== null && typeof attribute.value === "object") {
-            report(
-              attribute.position ? attribute : node,
-              `attribute expressions are not allowed (${attribute.name} on <${node.name}>)`,
-            );
-          }
-        }
-        break;
       case "link":
       case "definition": {
         const [, target, suffix = ""] = /^([^:?#]*\.mdx?)([?#].*)?$/.exec(node.url) ?? [];
@@ -236,20 +206,6 @@ function preparePage(file: string, source: string): { errors: string[]; source: 
   return { errors, source: rewritten };
 }
 
-function checkTitle(frontmatter: MdastNode | undefined): string | undefined {
-  if (frontmatter?.type !== "yaml") return "frontmatter title is required";
-  let data: { title?: unknown } | null;
-  try {
-    data = parseYaml(frontmatter.value);
-  } catch (error) {
-    return `frontmatter is not valid YAML: ${(error as Error).message.split("\n")[0]}`;
-  }
-  const title = data?.title;
-  if (title === undefined) return "frontmatter title is required";
-  if (typeof title !== "string" || title.trim() === "") return "frontmatter title must be text";
-  return undefined;
-}
-
 /** Where a link's destination starts in the source: after `](` for links, after `]:` for definitions. */
 function destinationOffset(
   source: string,
@@ -263,12 +219,6 @@ function destinationOffset(
   marker.lastIndex = after;
   const match = marker.exec(source.slice(0, end));
   return match ? match.index + match[0].length : -1;
-}
-
-/** `{/* note *\/}` is how MDX spells a comment; it compiles to nothing. */
-function isComment(expression: string): boolean {
-  const body = expression.trim();
-  return body.startsWith("/*") && body.indexOf("*/") === body.length - 2;
 }
 
 function checkNavigation(items: NavItem[], at: (string | number)[], routes: Set<string>): string[] {
