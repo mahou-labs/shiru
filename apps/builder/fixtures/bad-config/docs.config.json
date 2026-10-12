@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "name": "Acme Docs",
+  "github": "http://gitlab.com/acme/acme",
+  "navigation": [
+    { "label": "Introduction", "href": "/" },
+    { "label": "Guides", "items": [{ "label": "Setup", "href": "/guides/setup" }] },
+    { "label": "Reference", "href": "reference/api" }
+  ]
+}
