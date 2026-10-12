@@ -10,6 +10,7 @@ type PolarCustomer = { id: string; email: string; name: string | null; externalI
 
 export const sentEmails: SentEmail[] = [];
 export const polarCustomers: PolarCustomer[] = [];
+export const polarCheckouts: Record<string, unknown>[] = [];
 const pendingWork: Promise<unknown>[] = [];
 
 const client = new DatabaseSync(":memory:");
@@ -29,6 +30,8 @@ export const env = {
   BETTER_AUTH_SECRET: "test-secret-that-is-at-least-32-characters",
   POLAR_ACCESS_TOKEN: "polar_test_token",
   POLAR_WEBHOOK_SECRET: "polar_test_webhook_secret",
+  POLAR_MONTHLY_PRODUCT_ID: "prod_test_monthly",
+  POLAR_YEARLY_PRODUCT_ID: "prod_test_yearly",
   ENVIRONMENT: "development",
   POSTHOG_KEY: "",
   POSTHOG_HOST: "https://us.i.posthog.com",
@@ -79,6 +82,12 @@ export class Polar {
         polarCustomers.findIndex((customer) => customer.id === id),
         1,
       );
+    },
+  };
+  checkouts = {
+    create: async (input: Record<string, unknown>) => {
+      polarCheckouts.push(input);
+      return { url: `https://sandbox.polar.sh/checkout/${polarCheckouts.length}` };
     },
   };
 }

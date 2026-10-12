@@ -29,6 +29,16 @@ export default defineConfig(({ mode }) => {
         ),
         POLAR_ACCESS_TOKEN: bindings.secret(),
         POLAR_WEBHOOK_SECRET: bindings.secret(),
+        POLAR_MONTHLY_PRODUCT_ID: bindings.text(
+          development
+            ? "886797b2-ee38-459c-9904-9d76ba5c50af"
+            : "57d8f9c8-0eb7-40e3-9a24-7d3927b1af71",
+        ),
+        POLAR_YEARLY_PRODUCT_ID: bindings.text(
+          development
+            ? "b8a0905d-e14c-4e9d-afaa-7af02bdc940a"
+            : "dceaf15a-dad4-4809-a4cc-ce048ff90a87",
+        ),
         ENVIRONMENT: bindings.text(development ? "development" : "production"),
         EMAIL: bindings.sendEmail({ dev: { remote: false } }),
         // No PostHog project yet. Switch to bindings.secret() in production once a key exists.
