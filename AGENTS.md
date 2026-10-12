@@ -16,7 +16,7 @@ Write tests the way a caller uses the API:
 
 - `cloudflare:workers` becomes the bindings in `src/test/bindings.ts`. Sent emails land in `sentEmails`, and `waitUntil` work is awaited after each request. `ARTIFACTS` is an in-memory namespace with the binding's read API; `artifacts.receive()` stands in for an accepted push. `SITE_DO` runs the real `SiteDO` class on node:sqlite, one instance per name, behind a stub that clones arguments and results like RPC. Publishing pushes over HTTP and starts a Workflow, so it is covered by `scripts/verify-publish.ts` under `cf dev`, not here.
 - `src/utils/db.ts` becomes an in-memory SQLite database with the tables from `src/schema`, created with drizzle-kit the way `db:push` creates them. Each test file gets a fresh database, so use unique emails within a file.
-- `@polar-sh/sdk` becomes an in-memory fake of the customer API. Its state is `polarCustomers`.
+- `@polar-sh/sdk/2026-10` keeps the real SDK, but `createPolarCore` sends its HTTP requests to `polarApi`, an in-memory Polar API in `src/test/bindings.ts`. What Polar received is in `polarCustomers` and `polarCheckouts`, in Polar's snake_case wire shape. A route the fake lacks answers 501.
 
 Better Auth skips its origin (CSRF) check when `NODE_ENV` is `test`, so origin rejection cannot be tested here. Use the `verify-shiru` skill for checks that need the real server or a browser.
 

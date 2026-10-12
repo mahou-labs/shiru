@@ -6,7 +6,14 @@ import { drizzle } from "drizzle-orm/node-sqlite";
 import * as schema from "../schema";
 
 type SentEmail = { from: string; to: string; subject: string; html: string; text: string };
-type PolarCustomer = { id: string; email: string; name: string | null; externalId: string | null };
+type PolarCustomer = {
+  id: string;
+  type: "individual";
+  email: string;
+  name: string | null;
+  external_id: string | null;
+  metadata: Record<string, unknown>;
+};
 
 export const sentEmails: SentEmail[] = [];
 export const polarCustomers: PolarCustomer[] = [];
@@ -229,43 +236,63 @@ export async function flushWaitUntil() {
   while (pendingWork.length > 0) await Promise.all(pendingWork.splice(0));
 }
 
-export class Polar {
-  customers = {
-    list: async ({ email }: { email: string }) => ({
-      result: { items: polarCustomers.filter((customer) => customer.email === email) },
-    }),
-    create: async (input: { email: string; name?: string; externalId?: string }) => {
-      const customer = {
+const notFound = () => Response.json({ error: "ResourceNotFound" }, { status: 404 });
+
+// Polar's HTTP API for the routes the Better Auth plugin calls, in wire (snake_case) shape.
+export async function polarApi(request: Request): Promise<Response> {
+  const { pathname, searchParams } = new URL(request.url);
+  const body = request.body ? ((await request.json()) as Record<string, unknown>) : {};
+  const [, external] = pathname.match(/^\/v1\/customers\/external\/([^/]+)$/) ?? [];
+  const [, id] = pathname.match(/^\/v1\/customers\/([^/]+)$/) ?? [];
+  const route = `${request.method} ${external ? "/v1/customers/external/{id}" : id ? "/v1/customers/{id}" : pathname}`;
+
+  switch (route) {
+    case "GET /v1/customers/": {
+      const items = polarCustomers.filter((customer) => customer.email === searchParams.get("email"));
+      return Response.json({ items, pagination: { total_count: items.length, max_page: 1 } });
+    }
+    case "POST /v1/customers/": {
+      const customer: PolarCustomer = {
         id: `cus_${polarCustomers.length + 1}`,
-        email: input.email,
-        name: input.name ?? null,
-        externalId: input.externalId ?? null,
+        type: "individual",
+        email: body.email as string,
+        name: (body.name as string | undefined) ?? null,
+        external_id: (body.external_id as string | undefined) ?? null,
+        metadata: (body.metadata as Record<string, unknown> | undefined) ?? {},
       };
       polarCustomers.push(customer);
-      return customer;
-    },
-    update: async ({
-      id,
-      customerUpdate,
-    }: {
-      id: string;
-      customerUpdate: { externalId?: string };
-    }) => {
-      const customer = polarCustomers.find((candidate) => candidate.id === id)!;
-      Object.assign(customer, customerUpdate);
-      return customer;
-    },
-    delete: async ({ id }: { id: string }) => {
-      polarCustomers.splice(
-        polarCustomers.findIndex((customer) => customer.id === id),
-        1,
+      return Response.json(customer, { status: 201 });
+    }
+    case "PATCH /v1/customers/{id}":
+    case "PATCH /v1/customers/external/{id}": {
+      const customer = polarCustomers.find((candidate) =>
+        external ? candidate.external_id === external : candidate.id === id,
       );
-    },
-  };
-  checkouts = {
-    create: async (input: Record<string, unknown>) => {
-      polarCheckouts.push(input);
-      return { url: `https://sandbox.polar.sh/checkout/${polarCheckouts.length}` };
-    },
-  };
+      if (!customer) return notFound();
+      Object.assign(customer, body);
+      return Response.json(customer);
+    }
+    case "DELETE /v1/customers/external/{id}": {
+      const index = polarCustomers.findIndex((customer) => customer.external_id === external);
+      if (index === -1) return notFound();
+      polarCustomers.splice(index, 1);
+      return new Response(null, { status: 204 });
+    }
+    case "POST /v1/checkouts/": {
+      polarCheckouts.push(body);
+      const number = polarCheckouts.length;
+      return Response.json(
+        {
+          id: `checkout_${number}`,
+          status: "open",
+          url: `https://sandbox.polar.sh/checkout/${number}`,
+          client_secret: `polar_c_${number}`,
+          metadata: body.metadata ?? {},
+        },
+        { status: 201 },
+      );
+    }
+    default:
+      return Response.json({ error: `${route} is not in the test fake` }, { status: 501 });
+  }
 }

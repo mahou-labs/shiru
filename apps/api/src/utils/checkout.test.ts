@@ -11,7 +11,7 @@ describe("checkout", () => {
 
     const response = await client.post("/auth/checkout", {
       slug: "yearly",
-      referenceId: organization.id,
+      reference_id: organization.id,
     });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
@@ -21,7 +21,7 @@ describe("checkout", () => {
     expect(polarCheckouts[0]).toMatchObject({
       products: ["prod_test_yearly"],
       metadata: { referenceId: organization.id },
-      successUrl: "http://localhost:3001/success?checkout_id={CHECKOUT_ID}",
+      success_url: "http://localhost:3001/success?checkout_id={CHECKOUT_ID}",
     });
   });
 
@@ -32,7 +32,7 @@ describe("checkout", () => {
 
     const response = await client.post("/auth/checkout", {
       slug: "monthly",
-      referenceId: organization.id,
+      reference_id: organization.id,
     });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
@@ -52,7 +52,7 @@ describe("checkout", () => {
 
     const response = await client.post("/auth/checkout", {
       slug: "starter-monthly",
-      referenceId: organization.id,
+      reference_id: organization.id,
     });
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ message: "Product not found" });
