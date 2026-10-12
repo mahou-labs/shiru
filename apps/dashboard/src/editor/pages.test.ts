@@ -87,7 +87,7 @@ describe("newPagePathError", () => {
 
 describe("newPageSource", () => {
   test("puts the title in front matter as a JSON string", () => {
-    expect(newPageSource('Say "hi" <Now>')).toBe('---\ntitle: "Say \\"hi\\" <Now>"\n---\n');
+    expect(newPageSource('Say "hi" <Now>')).toBe('---\ntitle: "Say \\"hi\\" <Now>"\n---\n\n');
   });
 });
 

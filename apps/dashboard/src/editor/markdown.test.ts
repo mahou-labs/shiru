@@ -296,6 +296,18 @@ describe("round trip", () => {
   );
 });
 
+describe("a page that starts empty", () => {
+  const paragraph = { type: "paragraph", content: [{ type: "text", text: "First line." }] };
+  test.each([
+    ["after frontmatter", "\n", "\nFirst line.\n"],
+    ["with nothing at all", "", "First line.\n"],
+  ])("gets the usual layout on its first edit, %s", (_, body, expected) => {
+    const { mdx } = codecs;
+    const doc = mdx.parse(body);
+    expect(mdx.serialize({ ...doc, content: [paragraph] })).toBe(expected);
+  });
+});
+
 describe("structure", () => {
   const { parse } = codecs.mdx;
 

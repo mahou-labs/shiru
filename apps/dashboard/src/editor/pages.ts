@@ -40,7 +40,7 @@ export function newPagePathError(path: string, files: FileStatus[]): string | un
 }
 
 /** A new page's source: the title in front matter, as a JSON string so MDX reads it as text. */
-export const newPageSource = (title: string) => `---\ntitle: ${JSON.stringify(title)}\n---\n`;
+export const newPageSource = (title: string) => `---\ntitle: ${JSON.stringify(title)}\n---\n\n`;
 
 /** The tree after a save of `status`, which may be a page the tree has not seen. */
 export function withFile(files: FileStatus[], status: FileStatus): FileStatus[] {

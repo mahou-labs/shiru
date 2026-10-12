@@ -111,9 +111,14 @@ export function createMarked(): typeof marked {
 export function parseBody(markdown: MarkdownManager, body: string): JSONContent {
   const lineEnding = body.includes("\r\n") ? "\r\n" : "\n";
   const text = body.replace(/\r\n/g, "\n");
-  const leading = /^(?:[ \t]*\n)*/.exec(text)![0];
-  const trailing = /\s*$/.exec(text.slice(leading.length))![0];
-  const doc = markdown.parse(text.slice(leading.length, text.length - trailing.length));
+  // A blank body has no layout to keep, so the first edit gets the usual one: a blank line after
+  // the frontmatter and a final newline.
+  const blank = !text.trim();
+  const leading = blank ? (text ? "\n" : "") : /^(?:[ \t]*\n)*/.exec(text)![0];
+  const trailing = blank ? "\n" : /\s*$/.exec(text.slice(leading.length))![0];
+  const doc = markdown.parse(
+    blank ? "" : text.slice(leading.length, text.length - trailing.length),
+  );
   const attrs: DocumentAttrs = { leading, trailing, lineEnding };
   const content = (doc.content ?? []).filter(
     (node) => node.type !== "paragraph" || node.content?.length,
