@@ -1,0 +1,10 @@
+*
+!src/
+!template/
+template/node_modules/
+template/dist/
+template/.astro/
+template/.nimbus/
+template/site.json
+template/src/content/docs/
+template/public/assets/
