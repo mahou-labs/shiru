@@ -120,6 +120,17 @@ check "mdx-features: imported .js module value renders" \
   file_contains /out/mdx-features/index.html 'Latest release: 2.4.1.'
 check "mdx-features: expression attribute on a built-in component" \
   file_contains /out/mdx-features/index.html 'aria-label="Title from an expression"'
+check "mdx-features: imported .tsx React component renders statically" \
+  file_contains /out/mdx-features/index.html '<p class="greeting">Hello <!-- -->Acme<!-- --> from a React component.</p>'
+check "mdx-features: client:load .jsx component is server-rendered with its props" \
+  file_contains /out/mdx-features/index.html 'Clicked <!-- -->3<!-- --> times'
+check "mdx-features: client:load .jsx component is an island" \
+  file_contains /out/mdx-features/index.html 'client="load" opts="{&quot;name&quot;:&quot;Counter&quot;'
+island_urls=$(docker exec "$container" grep -oE '(component|renderer)-url="[^"]+"' /out/mdx-features/index.html | cut -d'"' -f2)
+check "mdx-features: island names its component and renderer scripts" equals "$(wc -l <<<"$island_urls")" 2
+for url in $island_urls; do
+  check "mdx-features: island script $url exists" file_exists "/out/mdx-features$url"
+done
 
 build /work/bad-import /out/bad-import
 check "bad-import: exits 1" equals "$code" 1
