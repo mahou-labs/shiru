@@ -58,6 +58,26 @@ describe("settled", () => {
     ]);
   });
 
+  test("waits for another page's queued save before letting a publish go", async () => {
+    const client = new QueryClient();
+    const log: string[] = [];
+    const saves = autosaver(client, log);
+    saves.enqueue({ path: "content/a.mdx", content: "typed" });
+    // Page A unmounts with one more edit as page B opens, and B publishes right away.
+    saves.enqueue({ path: "content/a.mdx", content: "flushed" });
+    const published = settled(client.getMutationCache(), { mutationKey: ["save"] }).then(() =>
+      log.push("publish"),
+    );
+
+    await tick();
+    saves.release();
+    await tick();
+    expect(log).toEqual(["save content/a.mdx typed"]);
+    saves.release();
+    await published;
+    expect(log).toEqual(["save content/a.mdx typed", "save content/a.mdx flushed", "publish"]);
+  });
+
   test("ignores saves of other pages", async () => {
     const client = new QueryClient();
     const log: string[] = [];

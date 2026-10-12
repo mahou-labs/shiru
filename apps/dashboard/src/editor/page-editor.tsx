@@ -21,6 +21,7 @@ import { BlockHandle } from "./block-handle";
 import { EditorBubbleMenu } from "./bubble-menu";
 import { createMarked, markdownExtensions, parseBody, type Flavor } from "./markdown";
 import { joinPage, readFields, splitPage, writeFields } from "./page";
+import { settled } from "./settled";
 import { slashMenu } from "./slash-menu";
 
 import "./editor.css";
@@ -299,7 +300,10 @@ function SaveStatus({ state, onRetry }: { state: SaveState; onRetry: () => void 
   }
 }
 
-/** Publishes after the open page's pending edits are saved, which the doc status cannot know of yet. */
+/**
+ * Publishes after the doc's pending edits are saved, which the doc status cannot know of yet: the
+ * open page's, and those other pages still have in flight or flushed as they unmounted.
+ */
 function PublishButton({
   docId,
   edited = false,
@@ -309,6 +313,7 @@ function PublishButton({
   edited?: boolean;
   beforePublish?: () => Promise<unknown>;
 }) {
+  const queryClient = useQueryClient();
   const { state, publish } = usePublish(docId);
   const [flushing, setFlushing] = useState(false);
 
@@ -316,6 +321,11 @@ function PublishButton({
     setFlushing(true);
     try {
       await beforePublish();
+      await settled(queryClient.getMutationCache(), {
+        mutationKey: orpc.docs.files.save.mutationKey(),
+        predicate: (mutation) =>
+          (mutation.state.variables as { docId?: string } | undefined)?.docId === docId,
+      });
     } catch {
       // The failed save already explains itself, and publishing now would skip the edit.
       return;
