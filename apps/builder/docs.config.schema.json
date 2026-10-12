@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Site name, shown in the header and page titles."
+    },
+    "description": {
+      "description": "One line about the docs, used for SEO and llms.txt.",
+      "type": "string"
+    },
+    "logo": {
+      "description": "Logo file shown in the header, such as `assets/logo.svg`.",
+      "type": "string",
+      "pattern": "^assets\\/(?!.*\\.\\.)[^\\\\]+\\.(svg|png|jpe?g|webp)$"
+    },
+    "github": {
+      "description": "Repository URL linked from the header.",
+      "type": "string",
+      "format": "uri"
+    },
+    "navigation": {
+      "description": "Sidebar order. Leave it out to build the sidebar from the content/ folder tree.",
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NavItem"
+      }
+    }
+  },
+  "required": [
+    "version",
+    "name"
+  ],
+  "additionalProperties": false,
+  "title": "docs.config.json",
+  "description": "Configuration for a Shiru docs site.",
+  "$defs": {
+    "NavItem": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "href": {
+              "type": "string",
+              "pattern": "^\\/([A-Za-z0-9_~-][A-Za-z0-9._~-]*(\\/[A-Za-z0-9_~-][A-Za-z0-9._~-]*)*\\/?)?$",
+              "description": "A page path on this site, such as `/guides/setup`."
+            }
+          },
+          "required": [
+            "label",
+            "href"
+          ],
+          "additionalProperties": false,
+          "title": "Link",
+          "description": "A link to one page."
+        },
+        {
+          "$ref": "#/$defs/NavGroup"
+        }
+      ]
+    },
+    "NavGroup": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "items": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NavItem"
+          }
+        }
+      },
+      "required": [
+        "label",
+        "items"
+      ],
+      "additionalProperties": false,
+      "title": "Group",
+      "description": "A labelled group of links and groups."
+    }
+  }
+}

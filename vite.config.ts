@@ -35,6 +35,7 @@ export default defineConfig({
       "apps/site/dist/**",
       "apps/site/.astro/**",
       "apps/builder/template/**",
+      "apps/builder/docs.config.schema.json",
       "**/.cloudflare/**",
       "**/.impeccable/**",
       ".wrangler/**",
