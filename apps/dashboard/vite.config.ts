@@ -12,7 +12,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   plugins: [
-    cloudflare({ types: { generate: false } }),
+    cloudflare({ types: { generate: false }, inspectorPort: false }),
     tailwindcss(),
     tanstackRouter({
       target: "react",
