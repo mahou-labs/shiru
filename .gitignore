@@ -62,3 +62,6 @@ temp
 
 # verification runs (logs and evidence)
 /.verify/
+
+# Local agent decision logs
+.audit/
