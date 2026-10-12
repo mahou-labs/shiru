@@ -33,12 +33,24 @@ const TAG_NAME = /^[A-Za-z][\w.-]*(?::[A-Za-z][\w-]*)?/;
 const ATTR_NAME = /^[A-Za-z_:][\w.:-]*/;
 const UNQUOTED_VALUE = /^[^\s"'=<>`]+/;
 
-/** The index just past the `}` that balances the `{` at `start`, or -1. Skips strings and comments. */
+/** Keywords after which a `/` starts a regular expression rather than dividing. */
+const REGEX_KEYWORDS =
+  /(?:^|[^\w$])(?:return|typeof|instanceof|in|of|new|delete|void|throw|case|do|else|yield|await)$/;
+
+/**
+ * The index just past the `}` that balances the `{` at `start`, or -1. Skips strings, comments and
+ * regular expressions.
+ */
 export function scanExpression(src: string, start: number): number {
   let depth = 0;
   let i = start;
   while (i < src.length) {
     const char = src[i];
+    if (char === "/" && !src.startsWith("//", i) && !src.startsWith("/*", i)) {
+      const end = startsRegex(src, start, i) ? skipRegex(src, i) : -1;
+      i = end < 0 ? i + 1 : end;
+      continue;
+    }
     if (char === "{") depth++;
     else if (char === "}") {
       depth--;
@@ -72,6 +84,31 @@ function skipQuoted(src: string, start: number): number {
     if (src[i] === "\\") i++;
     else if (src[i] === quote) return i + 1;
     else if (src[i] === "\n") return -1;
+  }
+  return -1;
+}
+
+/**
+ * Whether the `/` at `slash` opens a regular expression, judged by the token before it: after a
+ * value (a name, number, or closing bracket) it divides, and anywhere else it opens a regex.
+ */
+function startsRegex(src: string, start: number, slash: number): boolean {
+  const before = src.slice(start, slash).trimEnd();
+  const last = before.at(-1) ?? "{";
+  if (/[\w$]/.test(last)) return REGEX_KEYWORDS.test(before);
+  return !")]}".includes(last);
+}
+
+/** The index past the regular expression at `start` and its flags, or -1 if it does not close on its line. */
+function skipRegex(src: string, start: number): number {
+  let inClass = false;
+  for (let i = start + 1; i < src.length; i++) {
+    const char = src[i];
+    if (char === "\\") i++;
+    else if (char === "\n") return -1;
+    else if (char === "[") inClass = true;
+    else if (char === "]") inClass = false;
+    else if (char === "/" && !inClass) return i + 1 + /^[a-z]*/.exec(src.slice(i + 1))![0].length;
   }
   return -1;
 }

@@ -226,6 +226,11 @@ describe("round trip", () => {
       "mdx",
       'Status <Badge text="new" /> and **<Badge text="bold" />** with {props.count} items.\n',
     ],
+    [
+      "regular expressions in expressions",
+      "mdx",
+      "Result: { /}/.test(text) } and {a / b / c} and {[/[/}]/g][0].source} and {(x) / 2 / {y}.y}.\n",
+    ],
     ["unknown component", "mdx", "<Callout label={`Computed ${answer}`}>\n  Body.\n</Callout>\n"],
     [
       "components that do not fit the registry",
