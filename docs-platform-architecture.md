@@ -98,8 +98,11 @@ type SiteSource =
     };
 ```
 
-- **Managed.** The platform owns the repo in Artifacts. The web editor is the only writer. This suits
-  teams with no developers in the loop.
+- **Managed.** The platform owns the repo in Artifacts. The web editor is the usual writer. This suits
+  teams with no developers in the loop. Artifacts also accepts `git push` from anyone holding a repo
+  token, so a managed site reacts to the `cf.artifacts.repo.pushed` event (delivered through Queues)
+  the same way a connected site reacts to a GitHub push. The SiteDO commits through isomorphic-git,
+  because the Artifacts binding reads repos but cannot write them.
 - **Connected.** The client owns the repo on GitHub. Developers push and review there, and the web
   editor commits to the same repo through the GitHub App.
 
@@ -298,33 +301,22 @@ type Params = { site: string; target: string; sha: string; siteUrl: string; docs
 export class PublishWorkflow extends WorkflowEntrypoint<Env, Params> {
   async run(event, step) {
     const { site, target, sha, siteUrl, docsRoot } = event.payload;
-    const siteDO = this.env.SITE_DO.get(this.env.SITE_DO.idFromName(site));
-    const sandbox = getSandbox(this.env.SANDBOX, `build-${site}-${target}`);
+    const siteDO = this.env.SITE_DO.getByName(site);
+    const builder = this.env.BUILDER.getByName(`build-${site}-${target}`);
 
     try {
       await step.do("fetch", async () => {
-        const tarball = await fetchSourceTarball(this.env, site, sha); // Artifacts or GitHub, by source kind
-        await sandbox.exec("rm -rf /work && mkdir -p /work/src");
-        await sandbox.writeFile("/work/src.tar.gz", tarball);
-        await sandbox.exec("tar -xzf /work/src.tar.gz -C /work/src --strip-components=1");
+        // Artifacts or GitHub, by source kind. The files go in through RPC, so no token enters the container.
+        const files = await readSourceFiles(this.env, site, sha, docsRoot);
+        await builder.reset(files);
       });
 
-      const result = await step.do(
-        "build",
-        { retries: { limit: 2, delay: "5 seconds" } },
-        async () => {
-          const out = await sandbox.exec(`build-site /work/src/${docsRoot} /work/dist`, {
-            env: { SITE_URL: siteUrl },
-          });
-          return {
-            manifest: await readAssetManifest(sandbox, "/work/dist"),
-            templateVersion: out.templateVersion,
-          };
-        },
+      const result = await step.do("build", { retries: { limit: 2, delay: "5 seconds" } }, () =>
+        builder.build({ siteUrl }),
       );
 
       await step.do("deploy", { retries: { limit: 3, delay: "5 seconds" } }, async () => {
-        await deployAssets(this.env, workerName(site, target), sandbox, result.manifest);
+        await deployAssets(this.env, workerName(site, target), builder, result.manifest);
       });
 
       await step.do("report", async () => {
@@ -345,12 +337,17 @@ export class PublishWorkflow extends WorkflowEntrypoint<Env, Params> {
 }
 ```
 
-This is illustrative only. Check the exact Sandbox SDK, Artifacts, and assets upload APIs at build
-time.
+This is illustrative. `BUILDER` is our own Durable Object class with a container attached. Sandbox SDK
+1.0 removed `getSandbox()` and string `exec()`, so the class starts the container through
+`ctx.container`, runs commands as argv arrays, and moves files with the SDK's `Files` helper. The
+Workflow only calls its RPC methods (`reset`, `build`, and reads of `dist/`).
 
-- **The build always starts from a fresh `/work`.** The full tarball for one SHA goes into an empty
-  directory, so a file deleted in the repo cannot survive in a warm sandbox. Fetching by SHA also
-  works for any commit, including rollbacks and pull request heads.
+- **The build always starts from a fresh `/work`.** `reset` empties `/work` and writes every file of
+  one SHA, so a file deleted in the repo cannot survive in a warm sandbox. Fetching by SHA also works
+  for any commit, including rollbacks and pull request heads.
+- **Sources are read file by file.** Artifacts has no tarball endpoint, so the Workflow walks the
+  commit's tree with `readTree` and `readBlob`, limited to `docsRoot`. GitHub has a tarball endpoint,
+  and the Workflow unpacks it before calling `reset`.
 - **`build-site` is a script in the image.** It validates `docs.config.json`, links the content into
   the template, runs `astro build`, and prints the template version.
 - **The sandbox holds no credentials.** The Workflow fetches the source and deploys the assets. The
@@ -359,11 +356,15 @@ time.
 ### Sandbox image
 
 ```Dockerfile
-FROM docker.io/cloudflare/sandbox:<pinned-version>
+FROM node:24-trixie-slim
+COPY --from=docker.io/cloudflare/sandbox:1.0.0 /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
 COPY template/ /template/          # the Nimbus template you own
 RUN cd /template && npm ci         # deps baked in, so no install per build
 COPY build-site /usr/local/bin/
 ```
+
+The container starts with `enableInternet: false`, so the build has to work offline. The
+`cloudflare/sandbox` tag must match the `@cloudflare/sandbox` npm version.
 
 - Every client uses your template, so dependencies are installed once, in the image.
 - Each image has a template version. Each target records the `template_version` it was built with,
@@ -417,7 +418,8 @@ The App Worker receives GitHub webhooks.
 `onPush` does not trust the SHA in the payload. GitHub can redeliver an event or deliver two pushes
 out of order. Instead, `onPush` reads the branch's current ref from the GitHub API, updates `head_sha`
 and the tree cache, and recomputes conflicts. A duplicate or late webhook then leads to the same
-state. `build` with a SHA that is already building or deployed on that target does nothing.
+state. `build` with a SHA that is already building, pending, or deployed on that target does nothing.
+A template upgrade passes `rebuild: true`, which builds the deployed SHA again.
 
 For a monorepo, skip a push that changes nothing under `docsRoot`.
 
@@ -624,13 +626,12 @@ The design already has the right shape for multiplayer editing:
 
 ## 13. Open questions
 
-- **Artifacts.** Pricing, the API for committing several files from a Worker, tarball download by
-  SHA, and whether clients can `git push` to a managed repo. If they can, managed sites need a push
-  trigger too.
-- **Sandbox SDK.** Version (0.x or 1.0), and its exec, env, and file APIs.
-- **Assets upload API.** Whether a Workflow can upload assets to a dispatch namespace Worker directly,
-  and whether user Workers can be assets-only or need a small `main` that calls
-  `env.ASSETS.fetch(request)`. Either way, the script is the same for every site.
+- **Assets-only user Workers.** A Workflow can upload assets to a dispatch namespace Worker directly
+  through the upload session, bucket, and script `PUT` endpoints. Wrangler uploads assets-only Workers
+  with no `main_module`, but the Workers for Platforms docs only show an example with one. Confirm it
+  against a real namespace before relying on it.
+- **Local development.** Dispatch namespaces and Artifacts have no local emulation. Containers and
+  Workflows run under `cf dev`, and containers need Docker. Remote work needs a staging account.
 - **Config surface.** What clients can change in `docs.config.json` (theme tokens, navigation, logo)
   and what stays locked in the template.
 - **Template-owned features.** Search, an API reference generated from OpenAPI, `llms.txt`,
