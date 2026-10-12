@@ -2,9 +2,10 @@ import { checkout, polar, portal, usage, webhooks } from "@polar-sh/better-auth"
 import { Polar } from "@polar-sh/sdk";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { organization } from "better-auth/plugins";
 import { env, waitUntil } from "cloudflare:workers";
-import { eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 
 import * as schema from "../schema/auth";
@@ -21,6 +22,32 @@ async function getActiveOrganization(userId: string) {
     .where(eq(schema.members.userId, userId))
     .limit(1);
   return membership?.organizationId ?? null;
+}
+
+const VERIFICATION_EMAIL_COOLDOWN_MS = 60_000;
+
+// Seconds left before another verification email may go to this address, or 0.
+// Every sign-up and resend starts the cooldown, whether or not the address has an
+// account, so the response never reveals which emails are registered.
+async function claimVerificationEmailSlot(email: string, now: Date) {
+  const identifier = `verification-email-cooldown:${email.toLowerCase()}`;
+  const [active] = await db
+    .select({ expiresAt: schema.verifications.expiresAt })
+    .from(schema.verifications)
+    .where(
+      and(eq(schema.verifications.identifier, identifier), gt(schema.verifications.expiresAt, now)),
+    )
+    .limit(1);
+  if (active) return Math.ceil((active.expiresAt.getTime() - now.getTime()) / 1000);
+
+  await db.delete(schema.verifications).where(eq(schema.verifications.identifier, identifier));
+  await db.insert(schema.verifications).values({
+    id: uuidv7(),
+    identifier,
+    value: "",
+    expiresAt: new Date(now.getTime() + VERIFICATION_EMAIL_COOLDOWN_MS),
+  });
+  return 0;
 }
 
 export const auth = betterAuth({
@@ -72,6 +99,21 @@ export const auth = betterAuth({
       partitioned: true,
       domain: production ? ".shiru.sh" : undefined,
     },
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/sign-up/email" && ctx.path !== "/send-verification-email") return;
+      const email = (ctx.body as { email?: unknown } | undefined)?.email;
+      if (typeof email !== "string") return;
+      const retryAfter = await claimVerificationEmailSlot(email, new Date());
+      if (retryAfter > 0 && ctx.path === "/send-verification-email") {
+        throw new APIError("TOO_MANY_REQUESTS", {
+          code: "VERIFICATION_EMAIL_COOLDOWN",
+          message: `Wait ${retryAfter}s before requesting another email.`,
+          retryAfter,
+        });
+      }
+    }),
   },
   databaseHooks: {
     session: {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { polarCustomers, sentEmails } from "../test/bindings";
 import { createClient, verificationLink } from "../test/client";
@@ -126,5 +126,92 @@ describe("organization invitations", () => {
     expect(await accept.json()).toMatchObject({
       member: { organizationId: organization.id, role: "member" },
     });
+  });
+});
+
+describe("verification email cooldown", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const resend = (email: string) =>
+    createClient().post("/auth/send-verification-email", {
+      email,
+      callbackURL: "http://localhost:3001/dashboard",
+    });
+  const sentTo = (email: string) => sentEmails.filter((sent) => sent.to === email).length;
+
+  it("refuses a resend within 60 seconds of sign-up", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-12T10:00:00Z"));
+    await createClient().post("/auth/sign-up/email", {
+      email: "barbara@example.com",
+      password: "password123",
+      name: "Barbara",
+    });
+    expect(sentTo("barbara@example.com")).toBe(1);
+
+    vi.setSystemTime(new Date("2026-10-12T10:00:45Z"));
+    const early = await resend("barbara@example.com");
+    expect(early.status).toBe(429);
+    expect(await early.json()).toEqual({
+      code: "VERIFICATION_EMAIL_COOLDOWN",
+      message: "Wait 15s before requesting another email.",
+      retryAfter: 15,
+    });
+    expect(sentTo("barbara@example.com")).toBe(1);
+
+    vi.setSystemTime(new Date("2026-10-12T10:01:00Z"));
+    const later = await resend("barbara@example.com");
+    expect(later.status).toBe(200);
+    expect(sentTo("barbara@example.com")).toBe(2);
+  });
+
+  it("restarts the cooldown after each resend", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-12T11:00:00Z"));
+    await createClient().post("/auth/sign-up/email", {
+      email: "margaret@example.com",
+      password: "password123",
+      name: "Margaret",
+    });
+
+    vi.setSystemTime(new Date("2026-10-12T11:02:00Z"));
+    expect((await resend("margaret@example.com")).status).toBe(200);
+
+    vi.setSystemTime(new Date("2026-10-12T11:02:30Z"));
+    const early = await resend("MARGARET@example.com");
+    expect(early.status).toBe(429);
+    expect(await early.json()).toMatchObject({ retryAfter: 30 });
+  });
+
+  it("applies the same cooldown to addresses without an account", async () => {
+    expect((await resend("nobody@example.com")).status).toBe(200);
+    expect(sentTo("nobody@example.com")).toBe(0);
+
+    const again = await resend("nobody@example.com");
+    expect(again.status).toBe(429);
+    expect(await again.json()).toMatchObject({ code: "VERIFICATION_EMAIL_COOLDOWN" });
+  });
+});
+
+describe("organization slug check", () => {
+  it("reports whether a slug is free before creating the organization", async () => {
+    const client = createClient();
+    await client.signUpVerified("katherine@example.com", "Katherine");
+
+    const free = await client.post("/auth/organization/check-slug", { slug: "orbit" });
+    expect(free.status).toBe(200);
+    expect(await free.json()).toEqual({ status: true });
+
+    await client.createOrganization("Orbit");
+    const taken = await createClient().post("/auth/organization/check-slug", { slug: "orbit" });
+    expect(taken.status).toBe(401);
+
+    const other = createClient();
+    await other.signUpVerified("dorothy@example.com", "Dorothy");
+    const takenForOthers = await other.post("/auth/organization/check-slug", { slug: "orbit" });
+    expect(takenForOthers.status).toBe(400);
+    expect(await takenForOthers.json()).toMatchObject({ code: "ORGANIZATION_SLUG_ALREADY_TAKEN" });
   });
 });
