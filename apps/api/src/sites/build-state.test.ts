@@ -5,6 +5,7 @@ import {
   type BuildEvent,
   initialBuilds,
   type InstanceStatus,
+  parseInstanceStatus,
 } from "./build-state";
 import { LIVE, TargetLabel } from "./names";
 
@@ -289,5 +290,28 @@ describe("reconciling a building target", () => {
       pendingSha: null,
       deployed: null,
     });
+  });
+});
+
+describe("parseInstanceStatus", () => {
+  it.each([
+    [{ status: "running" }, { status: "running" }],
+    [{ status: "rollingBack" }, { status: "running" }],
+    [
+      { status: "complete", output: { ok: true, templateVersion: "1.2.0" } },
+      { status: "complete", output: { ok: true, templateVersion: "1.2.0" } },
+    ],
+    [
+      { status: "complete", output: "nothing" },
+      { status: "errored", error: "The build finished without a result" },
+    ],
+    [
+      { status: "errored", error: { name: "Error", message: "boom" } },
+      { status: "errored", error: "boom" },
+    ],
+    [{ status: "terminated" }, { status: "terminated" }],
+    [{ status: "unknown" }, { status: "unknown" }],
+  ])("reads %j", (raw, expected) => {
+    expect(parseInstanceStatus(raw)).toEqual(expected);
   });
 });
