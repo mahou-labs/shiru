@@ -128,11 +128,11 @@ CI (`.github/workflows/ci.yml`) installs, builds, runs `vp check` and the tests,
 apps/
   dashboard/          React + TanStack Router frontend
   api/                Hono + oRPC API on Workers
-  dispatch/           Dispatch Worker that routes docs hostnames to site Workers
     drizzle/          generated migrations
     src/routers/      oRPC routers
     src/schema/       Drizzle tables
     src/utils/        db, auth, context, and oRPC procedures
+  dispatch/           Dispatch Worker that routes docs hostnames to site Workers
 packages/
   ui/                 shadcn/ui components and styles
 ```
