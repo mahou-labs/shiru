@@ -88,4 +88,6 @@ app.get("/", (c) => {
   return c.text("OK");
 });
 
+export { Builder } from "./builder/builder";
+
 export default app;
