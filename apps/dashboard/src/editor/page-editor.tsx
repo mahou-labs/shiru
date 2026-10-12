@@ -32,10 +32,12 @@ type PageEditorProps = {
   flavor: Flavor;
   file?: FileStatus;
   autoFocus?: boolean;
+  /** Opens the page list on small screens, where it is not shown beside the editor. */
+  pagesButton?: ReactNode;
 };
 
 /** One page of a doc. Mount it keyed by path so nothing carries over between pages. */
-export function PageEditor({ docId, path, flavor, file, autoFocus }: PageEditorProps) {
+export function PageEditor({ docId, path, flavor, file, autoFocus, pagesButton }: PageEditorProps) {
   const { data, error } = useQuery({
     ...orpc.docs.files.get.queryOptions({ input: { docId, path } }),
     meta: { silent: true },
@@ -43,7 +45,12 @@ export function PageEditor({ docId, path, flavor, file, autoFocus }: PageEditorP
 
   if (!data) {
     return (
-      <EditorFrame path={path} status={null} actions={<PublishButton docId={docId} />}>
+      <EditorFrame
+        path={path}
+        pagesButton={pagesButton}
+        status={null}
+        actions={<PublishButton docId={docId} />}
+      >
         {error ? (
           <Alert variant="error">
             <AlertTitle>This page could not be opened</AlertTitle>
@@ -70,6 +77,7 @@ export function PageEditor({ docId, path, flavor, file, autoFocus }: PageEditorP
       flavor={flavor}
       file={file}
       autoFocus={autoFocus}
+      pagesButton={pagesButton}
       source={data.content}
     />
   );
@@ -81,6 +89,7 @@ function LoadedPage({
   flavor,
   file,
   autoFocus,
+  pagesButton,
   source,
 }: PageEditorProps & { source: string }) {
   const queryClient = useQueryClient();
@@ -164,6 +173,7 @@ function LoadedPage({
   return (
     <EditorFrame
       path={path}
+      pagesButton={pagesButton}
       status={<SaveStatus state={autosave.state} onRetry={() => void autosave.flush()} />}
       actions={
         <PublishButton
@@ -243,11 +253,13 @@ function LoadedPage({
 
 function EditorFrame({
   path,
+  pagesButton,
   status,
   actions,
   children,
 }: {
   path: string;
+  pagesButton?: ReactNode;
   status: ReactNode;
   actions: ReactNode;
   children: ReactNode;
@@ -255,7 +267,9 @@ function EditorFrame({
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ms-1" />
+        {/* The page list links back to the dashboard, so on small screens it takes the app sidebar's place. */}
+        {pagesButton && <div className="-ms-1 md:hidden">{pagesButton}</div>}
+        <SidebarTrigger className={pagesButton ? "-ms-1 max-md:hidden" : "-ms-1"} />
         <Separator orientation="vertical" className="me-1 h-4" />
         <span className="truncate font-mono text-muted-foreground text-xs" title={path}>
           {path}

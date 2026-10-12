@@ -50,6 +50,8 @@ type TreeActions = {
   /** Opens the new page dialog for a folder, a path ending in `/`. */
   onCreate: (folder: string) => void;
   onDelete: (file: FileStatus) => void;
+  /** Called when a page link is followed, so a panel holding the tree can close. */
+  onNavigate?: () => void;
 };
 
 export function PageTree({ files, ...actions }: TreeActions & { files: FileStatus[] }) {
@@ -62,7 +64,7 @@ export function PageTree({ files, ...actions }: TreeActions & { files: FileStatu
 
 /** Row controls that show while the row is hovered, focused, or has its menu open. */
 const ROW_ACTIONS =
-  "absolute inset-y-0 end-1 flex items-center opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 has-data-popup-open:opacity-100";
+  "absolute inset-y-0 end-1 flex items-center opacity-0 pointer-coarse:opacity-100 group-hover/row:opacity-100 group-focus-within/row:opacity-100 has-data-popup-open:opacity-100";
 
 function TreeLevel({
   nodes,
@@ -70,7 +72,7 @@ function TreeLevel({
   depth,
   ...actions
 }: TreeActions & { nodes: TreeNode[]; folder: string; depth: number }) {
-  const { docId, current, onCreate, onDelete } = actions;
+  const { docId, current, onCreate, onDelete, onNavigate } = actions;
   const indent = { paddingInlineStart: `${0.5 + depth * 1}rem` };
   return (
     <ul className="flex flex-col gap-px">
@@ -111,6 +113,7 @@ function TreeLevel({
               search={{ path: node.file.path }}
               aria-current={node.file.path === current ? "page" : undefined}
               title={node.file.path}
+              onClick={onNavigate}
               className="flex h-7 items-center gap-2 rounded-md pe-2 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:font-medium"
               style={indent}
             >

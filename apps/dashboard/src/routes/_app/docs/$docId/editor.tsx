@@ -6,12 +6,14 @@ import {
   EmptyTitle,
 } from "@shiru/ui/components/empty";
 import { Button } from "@shiru/ui/components/button";
+import { Sheet, SheetPopup } from "@shiru/ui/components/sheet";
 import { Skeleton } from "@shiru/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   IconArrowLeftOutlineDuo18,
   IconFileOutlineDuo18,
+  IconFilesOutlineDuo18,
   IconPlusOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 import { useState } from "react";
@@ -51,6 +53,18 @@ function Editor() {
   // The page being deleted, kept out of the editor until the delete settles.
   const [closing, setClosing] = useState<string>();
   const [focusBody, setFocusBody] = useState<string>();
+  const [pagesOpen, setPagesOpen] = useState(false);
+  const pagesButton = (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="size-7"
+      aria-label="Pages"
+      onClick={() => setPagesOpen(true)}
+    >
+      <IconFilesOutlineDuo18 />
+    </Button>
+  );
 
   const remove = useDeletePage(docId, (deleted) => {
     if (deleted !== current) return;
@@ -62,45 +76,42 @@ function Editor() {
   return (
     <div className="flex h-svh min-h-0 md:h-[calc(100svh-1rem)]">
       <aside className="hidden w-64 shrink-0 flex-col border-e md:flex">
-        <div className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
-          <Link
-            to="/"
-            aria-label="Back to dashboard"
-            className="-ms-1 flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <IconArrowLeftOutlineDuo18 className="size-4" />
-          </Link>
-          <span className="truncate font-medium text-sm">{doc?.name ?? "Pages"}</span>
-          <Button
-            size="icon-xs"
-            variant="ghost"
-            aria-label="New page"
-            title="New page"
-            className="ms-auto"
-            disabled={!files}
-            onClick={() => setCreatingIn(PAGES_ROOT)}
-          >
-            <IconPlusOutlineDuo18 />
-          </Button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          {pages ? (
-            <PageTree
-              docId={docId}
-              files={pages}
-              current={current}
-              onCreate={setCreatingIn}
-              onDelete={setConfirming}
-            />
-          ) : (
-            <div className="flex flex-col gap-2 p-1">
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-5 w-1/2" />
-              <Skeleton className="h-5 w-2/3" />
-            </div>
-          )}
-        </div>
+        <PagesPanel
+          docId={docId}
+          name={doc?.name}
+          files={files}
+          pages={pages}
+          current={current}
+          onCreate={setCreatingIn}
+          onDelete={setConfirming}
+        />
       </aside>
+      {/* Small screens have no room beside the editor, so the same panel opens over it. */}
+      <Sheet open={pagesOpen} onOpenChange={setPagesOpen}>
+        <SheetPopup
+          side="left"
+          showCloseButton={false}
+          aria-label="Pages"
+          className="max-w-72 md:hidden"
+        >
+          <PagesPanel
+            docId={docId}
+            name={doc?.name}
+            files={files}
+            pages={pages}
+            current={current}
+            onCreate={(folder) => {
+              setPagesOpen(false);
+              setCreatingIn(folder);
+            }}
+            onDelete={(file) => {
+              setPagesOpen(false);
+              setConfirming(file);
+            }}
+            onNavigate={() => setPagesOpen(false)}
+          />
+        </SheetPopup>
+      </Sheet>
       {files && (
         <NewPageDialog
           docId={docId}
@@ -130,27 +141,98 @@ function Editor() {
           flavor={flavor}
           file={pages?.find((file) => file.path === current)}
           autoFocus={focusBody === current}
+          pagesButton={pagesButton}
         />
       ) : (
         pages &&
         current !== closing && (
-          <div className="flex flex-1 items-center justify-center p-6">
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <IconFileOutlineDuo18 />
-                </EmptyMedia>
-                <EmptyTitle>{current ? "This file is not a page" : "No pages yet"}</EmptyTitle>
-                <EmptyDescription>
-                  {current
-                    ? "Only .md and .mdx files open in the editor."
-                    : "Push a content/index.mdx file to this site to start editing."}
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="flex h-12 shrink-0 items-center border-b px-4 md:hidden">
+              <div className="-ms-1">{pagesButton}</div>
+            </header>
+            <div className="flex flex-1 items-center justify-center p-6">
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <IconFileOutlineDuo18 />
+                  </EmptyMedia>
+                  <EmptyTitle>{current ? "This file is not a page" : "No pages yet"}</EmptyTitle>
+                  <EmptyDescription>
+                    {current
+                      ? "Only .md and .mdx files open in the editor."
+                      : "Push a content/index.mdx file to this site to start editing."}
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            </div>
           </div>
         )
       )}
+    </div>
+  );
+}
+
+/** The doc's pages with controls to create and delete them, beside the editor or over it. */
+function PagesPanel({
+  docId,
+  name,
+  files,
+  pages,
+  current,
+  onCreate,
+  onDelete,
+  onNavigate,
+}: {
+  docId: string;
+  name: string | undefined;
+  files: FileStatus[] | undefined;
+  pages: FileStatus[] | undefined;
+  current: string | undefined;
+  onCreate: (folder: string) => void;
+  onDelete: (file: FileStatus) => void;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
+        <Link
+          to="/"
+          aria-label="Back to dashboard"
+          className="-ms-1 flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <IconArrowLeftOutlineDuo18 className="size-4" />
+        </Link>
+        <span className="truncate font-medium text-sm">{name ?? "Pages"}</span>
+        <Button
+          size="icon-xs"
+          variant="ghost"
+          aria-label="New page"
+          title="New page"
+          className="ms-auto"
+          disabled={!files}
+          onClick={() => onCreate(PAGES_ROOT)}
+        >
+          <IconPlusOutlineDuo18 />
+        </Button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+        {pages ? (
+          <PageTree
+            docId={docId}
+            files={pages}
+            current={current}
+            onCreate={onCreate}
+            onDelete={onDelete}
+            onNavigate={onNavigate}
+          />
+        ) : (
+          <div className="flex flex-col gap-2 p-1">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-5 w-1/2" />
+            <Skeleton className="h-5 w-2/3" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
