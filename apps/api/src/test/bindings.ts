@@ -34,6 +34,92 @@ for (const statement of statements) client.exec(statement);
 
 export const db = drizzle({ client });
 
+type StoredObject = { type: "blob" | "tree" | "commit"; body: Uint8Array };
+type Repo = { objects: Map<string, StoredObject>; head: string | null };
+
+function artifactsError(code: string, message: string) {
+  return Object.assign(new Error(message), { name: "ArtifactsError", code });
+}
+
+/**
+ * An in-memory Artifacts namespace with the binding's read API. Pushes go over HTTP, which tests
+ * cannot reach; `receive` stands in for a push the server accepted.
+ */
+export const artifacts = {
+  repos: new Map<string, Repo>(),
+  async create(name: string) {
+    if (this.repos.has(name)) throw artifactsError("ALREADY_EXISTS", `${name} exists`);
+    this.repos.set(name, { objects: new Map(), head: null });
+    return { id: name, name, remote: `https://artifacts.test/${name}.git`, token: "token" };
+  },
+  async get(name: string) {
+    const repo = this.repos.get(name);
+    if (!repo) throw artifactsError("NOT_FOUND", `${name} not found`);
+    // Only the read API the site code calls; anything else is missing at runtime.
+    return repoHandle(name, repo) as unknown as ArtifactsRepo;
+  },
+  receive(name: string, objects: (StoredObject & { sha: string })[], head?: string) {
+    const repo = this.repos.get(name)!;
+    for (const { sha, type, body } of objects) repo.objects.set(sha, { type, body });
+    if (head) repo.head = head;
+  },
+};
+
+function repoHandle(name: string, repo: Repo) {
+  const decoder = new TextDecoder();
+  const object = (sha: string, type: StoredObject["type"]) => {
+    const found = repo.objects.get(sha);
+    return found?.type === type ? found.body : null;
+  };
+  const readCommit = async (hash: string) => {
+    const body = object(hash, "commit");
+    if (!body) return null;
+    const lines = decoder.decode(body).split("\n");
+    const field = (key: string) =>
+      lines.filter((line) => line.startsWith(`${key} `)).map((line) => line.slice(key.length + 1));
+    return { hash, treeHash: field("tree")[0]!, parents: field("parent") };
+  };
+  return {
+    [Symbol.dispose]() {},
+    async info() {
+      return { name, remote: `https://artifacts.test/${name}.git` };
+    },
+    async createToken(scope: "read" | "write", ttl: number) {
+      return { id: "token", plaintext: `${scope}-${ttl}`, scope };
+    },
+    async log({ limit = 50 }: { limit?: number } = {}) {
+      const commits = [];
+      for (let sha = repo.head; sha && commits.length < limit;) {
+        const commit = (await readCommit(sha))!;
+        commits.push(commit);
+        sha = commit.parents[0] ?? null;
+      }
+      return commits;
+    },
+    readCommit,
+    async readTree(hash: string) {
+      const body = object(hash, "tree");
+      if (!body) return null;
+      const entries = [];
+      for (let at = 0; at < body.length;) {
+        const nul = body.indexOf(0, at);
+        const [mode = "", entryName = ""] = decoder.decode(body.slice(at, nul)).split(" ");
+        const sha = Array.from(body.slice(nul + 1, nul + 21), (byte) =>
+          byte.toString(16).padStart(2, "0"),
+        ).join("");
+        const type = mode === "40000" ? "tree" : mode === "100755" ? "exec" : "blob";
+        entries.push({ name: entryName, mode, hash: sha, type });
+        at = nul + 21;
+      }
+      return entries;
+    },
+    async readBlob(hash: string) {
+      const body = object(hash, "blob");
+      return body ? new Blob([body]) : null;
+    },
+  };
+}
+
 export const env = {
   DB: undefined,
   DASHBOARD_URL: "http://localhost:3001",
