@@ -1,0 +1,19 @@
+{
+  "include": ["src", "cloudflare.config.ts", "vite.config.ts", ".cloudflare/types"],
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+    "lib": ["ESNext"],
+    "types": ["node"]
+  }
+}
