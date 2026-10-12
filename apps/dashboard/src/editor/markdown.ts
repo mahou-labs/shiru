@@ -28,15 +28,8 @@ import { FootnoteDefinition, FootnoteReference } from "./nodes/footnote";
 import { atomMarks } from "./nodes/marks";
 import { rawBlock, rawInline } from "./nodes/raw";
 
-export {
-  COMPONENTS,
-  getProp,
-  getStringProp,
-  setProp,
-  type ComponentAttrs,
-  type JsxProp,
-  type JsxPropValue,
-} from "./nodes/components";
+export { COMPONENTS, type ComponentAttrs } from "./nodes/components";
+export { getProp, getStringProp, setProp, type JsxProp, type JsxPropValue } from "./nodes/props";
 
 /** `.mdx` pages get Nimbus components, admonitions and MDX escaping. `.md` pages are plain GFM. */
 export type Flavor = "md" | "mdx";

@@ -6,6 +6,7 @@ import { Skeleton } from "@shiru/ui/components/skeleton";
 import { Spinner } from "@shiru/ui/components/spinner";
 import { Textarea } from "@shiru/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Placeholder } from "@tiptap/extensions";
 import { Markdown, MarkdownManager } from "@tiptap/markdown";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { useRef, useState, type ReactNode } from "react";
@@ -16,13 +17,24 @@ import { errorMessage } from "@/lib/errors";
 import { orpc } from "@/utils/orpc";
 
 import type { FileStatus } from "../../../api/src/sites/drafts";
+import { BlockHandle } from "./block-handle";
+import { EditorBubbleMenu } from "./bubble-menu";
 import { createMarked, markdownExtensions, parseBody, type Flavor } from "./markdown";
 import { joinPage, readFields, splitPage, writeFields } from "./page";
+import { slashMenu } from "./slash-menu";
 
-type PageEditorProps = { siteId: string; path: string; flavor: Flavor; file?: FileStatus };
+import "./editor.css";
+
+type PageEditorProps = {
+  siteId: string;
+  path: string;
+  flavor: Flavor;
+  file?: FileStatus;
+  autoFocus?: boolean;
+};
 
 /** One page of a site. Mount it keyed by path so nothing carries over between pages. */
-export function PageEditor({ siteId, path, flavor, file }: PageEditorProps) {
+export function PageEditor({ siteId, path, flavor, file, autoFocus }: PageEditorProps) {
   const { data, error } = useQuery({
     ...orpc.sites.files.get.queryOptions({ input: { siteId, path } }),
     meta: { silent: true },
@@ -51,11 +63,25 @@ export function PageEditor({ siteId, path, flavor, file }: PageEditorProps) {
     );
   }
   return (
-    <LoadedPage siteId={siteId} path={path} flavor={flavor} file={file} source={data.content} />
+    <LoadedPage
+      siteId={siteId}
+      path={path}
+      flavor={flavor}
+      file={file}
+      autoFocus={autoFocus}
+      source={data.content}
+    />
   );
 }
 
-function LoadedPage({ siteId, path, flavor, file, source }: PageEditorProps & { source: string }) {
+function LoadedPage({
+  siteId,
+  path,
+  flavor,
+  file,
+  autoFocus,
+  source,
+}: PageEditorProps & { source: string }) {
   const queryClient = useQueryClient();
   const [page] = useState(() => splitPage(source));
   const [frontmatter, setFrontmatter] = useState(page.frontmatter);
@@ -88,7 +114,19 @@ function LoadedPage({ siteId, path, flavor, file, source }: PageEditorProps & { 
   );
 
   const editor = useEditor({
-    extensions: [...markdownExtensions(flavor), Markdown.configure({ marked: createMarked() })],
+    autofocus: autoFocus ? "start" : false,
+    extensions: [
+      ...markdownExtensions(flavor),
+      Markdown.configure({ marked: createMarked() }),
+      slashMenu(flavor),
+      Placeholder.configure({
+        includeChildren: true,
+        placeholder: ({ node }) => {
+          if (node.type.name === "heading") return `Heading ${node.attrs.level}`;
+          return node.type.name === "paragraph" ? "Type / for commands" : "";
+        },
+      }),
+    ],
     content,
     shouldRerenderOnTransaction: false,
     editorProps: { attributes: { class: PROSE, "aria-label": "Page content" } },
@@ -190,7 +228,14 @@ function LoadedPage({ siteId, path, flavor, file, source }: PageEditorProps & { 
           />
         </header>
       )}
-      <EditorContent editor={editor} />
+      {editor && (
+        <>
+          <BlockHandle editor={editor}>
+            <EditorContent editor={editor} />
+          </BlockHandle>
+          <EditorBubbleMenu editor={editor} />
+        </>
+      )}
     </EditorFrame>
   );
 }

@@ -1,0 +1,70 @@
+/* Steps, numbered like Nimbus's: a circle per item and a line down to the next one. */
+.editor-steps {
+  counter-reset: step;
+}
+
+.editor-steps > div > ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.editor-steps > div > ol > li,
+.editor-step {
+  position: relative;
+  counter-increment: step;
+  margin: 0;
+  min-height: 1.75rem;
+  padding: 0 0 1.5rem 2.75rem;
+}
+
+.editor-steps > div > ol > li:last-child,
+.editor-steps > div > :last-child > .editor-step {
+  padding-bottom: 0;
+}
+
+.editor-steps > div > ol > li::marker {
+  content: none;
+}
+
+.editor-steps > div > ol > li::before,
+.editor-step::before {
+  content: counter(step);
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.editor-steps > div > ol > li:not(:last-child)::after,
+.editor-steps > div > :not(:last-child) > .editor-step::after {
+  content: "";
+  position: absolute;
+  top: 2rem;
+  bottom: 0.25rem;
+  left: calc(0.875rem - 0.5px);
+  width: 1px;
+  background: var(--border);
+}
+
+.editor-steps > div > ol > li > p:first-child {
+  margin-top: 0.125rem;
+}
+
+/* Placeholders on the empty line holding the cursor, from TipTap's Placeholder extension. */
+.ProseMirror .is-empty:not([data-placeholder=""])::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--muted-foreground);
+  opacity: 0.6;
+  pointer-events: none;
+}

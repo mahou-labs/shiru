@@ -32,6 +32,7 @@
     "@tiptap/extension-list": "^3.31.4",
     "@tiptap/extension-paragraph": "^3.31.4",
     "@tiptap/extension-table": "^3.31.4",
+    "@tiptap/extensions": "^3.31.4",
     "@tiptap/markdown": "^3.31.4",
     "@tiptap/pm": "^3.31.4",
     "@tiptap/react": "^3.31.4",

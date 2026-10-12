@@ -6,33 +6,43 @@ import {
   type MarkdownToken,
 } from "@tiptap/core";
 
-import { parseBlocks, rawBlockNode, renderBlocks, validOr, type Syntax } from "./context";
-import {
-  dedent,
-  indent,
-  scanElement,
-  scanExpression,
-  type JsxProp,
-  type JsxPropValue,
-} from "./scan";
+import { ReactNodeViewRenderer, type ReactNodeViewProps } from "@tiptap/react";
+import type { ComponentType } from "react";
 
-export type { JsxProp, JsxPropValue };
+import { AsideView } from "../views/callout";
+import {
+  CardGridView,
+  CardView,
+  PackageManagersView,
+  StepView,
+  StepsView,
+  TabItemView,
+  TabsView,
+} from "../views/components";
+import { parseBlocks, rawBlockNode, renderBlocks, validOr, type Syntax } from "./context";
+import type { JsxProp, JsxPropValue } from "./props";
+import { dedent, indent, scanElement, scanExpression } from "./scan";
 
 /**
  * The global MDX components Nimbus provides. `content` is the ProseMirror content expression for
  * the children, or null when the component is self-closing. `within` names the only parent a
- * component may appear in.
+ * component may appear in. `view` draws the component in the editor.
  */
 export const COMPONENTS = [
-  { name: "Aside", content: "block+" },
-  { name: "Card", content: "block+" },
-  { name: "CardGrid", content: "card+" },
-  { name: "PackageManagers", content: null },
-  { name: "Steps", content: "orderedList | step+" },
-  { name: "Step", content: "block+", within: "Steps" },
-  { name: "Tabs", content: "tabItem+" },
-  { name: "TabItem", content: "block+", within: "Tabs" },
-] as const satisfies readonly { name: string; content: string | null; within?: string }[];
+  { name: "Aside", content: "block+", view: AsideView },
+  { name: "Card", content: "block+", view: CardView },
+  { name: "CardGrid", content: "card+", view: CardGridView },
+  { name: "PackageManagers", content: null, view: PackageManagersView },
+  { name: "Steps", content: "orderedList | step+", view: StepsView },
+  { name: "Step", content: "block+", within: "Steps", view: StepView },
+  { name: "Tabs", content: "tabItem+", view: TabsView },
+  { name: "TabItem", content: "block+", within: "Tabs", view: TabItemView },
+] as const satisfies readonly {
+  name: string;
+  content: string | null;
+  within?: string;
+  view: ComponentType<ReactNodeViewProps>;
+}[];
 
 export type Component = (typeof COMPONENTS)[number];
 
@@ -43,23 +53,6 @@ export type ComponentAttrs = { props: JsxProp[]; layout: Layout };
 
 export function nodeName(component: Component): string {
   return component.name[0].toLowerCase() + component.name.slice(1);
-}
-
-export function getProp(props: JsxProp[], name: string): JsxPropValue | undefined {
-  return props.find((prop) => prop.name === name)?.value;
-}
-
-/** The prop's string value, or null when it is missing or not a plain string. */
-export function getStringProp(props: JsxProp[], name: string): string | null {
-  const value = getProp(props, name);
-  return value?.kind === "string" ? value.value : null;
-}
-
-/** Sets a prop in place, or appends it, keeping the author's order. A null value removes it. */
-export function setProp(props: JsxProp[], name: string, value: JsxPropValue | null): JsxProp[] {
-  if (value === null) return props.filter((prop) => prop.name !== name);
-  if (!props.some((prop) => prop.name === name)) return [...props, { name, value }];
-  return props.map((prop) => (prop.name === name ? { name, value } : prop));
 }
 
 function renderProps(props: JsxProp[]): string {
@@ -218,6 +211,7 @@ export function componentNodes() {
         layout: { default: "block", rendered: false },
       }),
       parseHTML: () => [{ tag: `div[data-component="${component.name}"]` }],
+      addNodeView: () => ReactNodeViewRenderer(component.view),
       renderHTML: () =>
         selfClosing
           ? ["div", { "data-component": component.name }]

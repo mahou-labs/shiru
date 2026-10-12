@@ -1,4 +1,7 @@
 import { Node } from "@tiptap/core";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+
+import { RawBlockView, RawInlineView } from "../views/source";
 
 import type { Syntax } from "./context";
 import { indexOfUnescaped, scanElement, scanExpression, scanOpenTag, type ScanMode } from "./scan";
@@ -25,6 +28,7 @@ export function rawBlock(syntax: Syntax) {
     renderHTML({ node }) {
       return ["pre", { "data-type": this.name }, node.attrs.source];
     },
+    addNodeView: () => ReactNodeViewRenderer(RawBlockView),
     markdownTokenName: "html",
     parseMarkdown: (token) => ({
       type: syntax.rawBlock,
@@ -50,6 +54,7 @@ export function rawInline(syntax: Syntax) {
     renderHTML({ node }) {
       return ["code", { "data-type": this.name }, node.attrs.source];
     },
+    addNodeView: () => ReactNodeViewRenderer(RawInlineView, { as: "span" }),
     markdownTokenizer: {
       name: syntax.rawInline,
       level: "inline",

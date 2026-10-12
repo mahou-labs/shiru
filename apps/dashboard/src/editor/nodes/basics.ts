@@ -8,6 +8,9 @@ import Link from "@tiptap/extension-link";
 import { BulletList, ListItem, OrderedList, TaskItem } from "@tiptap/extension-list";
 import Paragraph from "@tiptap/extension-paragraph";
 import { Table } from "@tiptap/extension-table";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+
+import { CodeBlockView } from "../views/source";
 
 import type { Syntax } from "./context";
 import { applyMark, destination, inlineLink, linkTitle } from "./marks";
@@ -59,6 +62,7 @@ export const CodeBlockWithMeta = CodeBlock.extend({
   addAttributes() {
     return { ...this.parent?.(), meta: { default: null, rendered: false } };
   },
+  addNodeView: () => ReactNodeViewRenderer(CodeBlockView),
   parseMarkdown(token) {
     const [, language, meta] = /^(\S*)\s*([\s\S]*)$/.exec((token.lang ?? "").trim())!;
     return {

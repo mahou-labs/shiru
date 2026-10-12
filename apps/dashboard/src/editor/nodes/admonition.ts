@@ -1,4 +1,7 @@
-import { Node, type MarkdownToken } from "@tiptap/core";
+import { Node, wrappingInputRule, type MarkdownToken } from "@tiptap/core";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+
+import { AdmonitionView } from "../views/callout";
 
 import { parseBlocks, rawBlockNode, renderBlocks, validOr, type Syntax } from "./context";
 
@@ -56,6 +59,16 @@ export function admonition(syntax: Syntax) {
     }),
     parseHTML: () => [{ tag: "aside[data-admonition]" }],
     renderHTML: () => ["aside", { "data-admonition": "" }, 0],
+    addNodeView: () => ReactNodeViewRenderer(AdmonitionView),
+    addInputRules() {
+      return [
+        wrappingInputRule({
+          find: new RegExp(`^:::(${ADMONITION_KEYWORDS.join("|")})\\s$`),
+          type: this.type,
+          getAttributes: (match) => ({ keyword: match[1], title: null }),
+        }),
+      ];
+    },
     markdownTokenizer: {
       name: "admonition",
       level: "block",

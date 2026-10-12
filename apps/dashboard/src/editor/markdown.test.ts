@@ -16,6 +16,7 @@ import {
   type Flavor,
   type JsxProp,
 } from "./markdown";
+import { matchTemplates, TEMPLATES } from "./templates";
 
 function codec(flavor: Flavor) {
   const manager = new MarkdownManager({
@@ -564,5 +565,97 @@ describe("prop helpers", () => {
       props: setProp(aside.attrs!.props, "title", { kind: "string", value: 'Say "hi"' }),
     };
     expect(serialize(doc)).toBe('<Aside type="note" title=\'Say "hi"\'>Text.</Aside>\n');
+  });
+});
+
+describe("slash menu templates", () => {
+  const expected: Record<string, string> = {
+    paragraph: "",
+    heading1: "#\n",
+    heading2: "##\n",
+    heading3: "###\n",
+    bulletList: "- List item\n",
+    orderedList: "1. List item\n",
+    taskList: "- [ ] To do\n",
+    blockquote: "> Quote\n",
+    codeBlock: "```\n```\n",
+    table: "| Column | Column |\n| --- | --- |\n|  |  |\n",
+    horizontalRule: "---\n",
+    image: "![Image](/image.png)\n",
+    note: ":::note\nAdd a note.\n:::\n",
+    tip: ":::tip\nAdd a tip.\n:::\n",
+    caution: ":::caution\nAdd a caution.\n:::\n",
+    danger: ":::danger\nAdd a warning.\n:::\n",
+    tabs: [
+      "<Tabs>",
+      '  <TabItem label="First">',
+      "    First tab.",
+      "  </TabItem>",
+      '  <TabItem label="Second">',
+      "    Second tab.",
+      "  </TabItem>",
+      "</Tabs>\n",
+    ].join("\n"),
+    steps: "<Steps>\n  1. First step.\n  2. Second step.\n</Steps>\n",
+    cardGrid: [
+      "<CardGrid>",
+      '  <Card title="First card">',
+      "    Describe it.",
+      "  </Card>",
+      '  <Card title="Second card">',
+      "    Describe it.",
+      "  </Card>",
+      "</CardGrid>\n",
+    ].join("\n"),
+    packageManagers: '<PackageManagers pkg="package-name" />\n',
+    mdx: "",
+  };
+
+  test.each(TEMPLATES.map((template) => [template.id, template] as const))(
+    "%s inserts valid nodes that serialize to canonical syntax and read back the same",
+    (id, template) => {
+      const { parse, serialize, check } = codecs.mdx;
+      const doc: JSONContent = { type: "doc", content: [template.content] };
+      check(doc);
+      const out = serialize(doc);
+      expect(out).toBe(expected[id]);
+      const reread = parse(out);
+      expect(serialize(reread)).toBe(out);
+      if (out) expect(reread.content?.map((node) => node.type)).toEqual([template.content.type]);
+    },
+  );
+
+  test("Markdown pages offer no Nimbus components or raw MDX", () => {
+    expect(matchTemplates("md", "").map((template) => template.id)).toEqual([
+      "paragraph",
+      "heading1",
+      "heading2",
+      "heading3",
+      "bulletList",
+      "orderedList",
+      "taskList",
+      "blockquote",
+      "codeBlock",
+      "table",
+      "horizontalRule",
+      "image",
+    ]);
+  });
+
+  test("typing filters by label, then by keyword", () => {
+    expect(matchTemplates("mdx", "ta").map((template) => template.id)).toEqual([
+      "taskList",
+      "table",
+      "tabs",
+    ]);
+    expect(matchTemplates("mdx", "npm").map((template) => template.id)).toEqual([
+      "packageManagers",
+    ]);
+    expect(matchTemplates("mdx", "callout").map((template) => template.id)).toEqual([
+      "note",
+      "tip",
+      "caution",
+      "danger",
+    ]);
   });
 });
