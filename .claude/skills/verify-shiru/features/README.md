@@ -7,7 +7,7 @@ This folder is the maintained source for verifying shiru's user-facing behavior.
 - Launch with `.claude/skills/verify-shiru/scripts/launch.sh` from the repo root. It refuses to start when ports 3000 or 3001 are taken.
 - `doctor.sh` exits 0 before any drive.
 - Sign-up and checkout need a real Polar sandbox `POLAR_ACCESS_TOKEN` in `apps/api/.env`. Without it, launch with `VERIFY_PLACEHOLDER_SECRETS=1` and report those paths as blocked.
-- Use a fresh email per run, such as `verify-$RUN_ID@example.com`. The local D1 is shared with the user's dev server and keeps every user ever created.
+- Use a fresh email per run, such as `verify-$RUN_ID@mailinator.com`. The local D1 is shared with the user's dev server and keeps every user ever created.
 
 ## Driving conventions
 

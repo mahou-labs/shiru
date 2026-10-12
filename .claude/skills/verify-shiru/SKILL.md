@@ -74,7 +74,7 @@ Auth routes are under `/auth/*` (Better Auth). Procedures are `POST /rpc/<name>`
 .claude/skills/verify-shiru/scripts/cleanup.sh
 ```
 
-Stops only the session this run started (by its process group), then confirms ports 3000 and 3001 are free. If another process still holds a port, it reports the pid and leaves it alone. Run folders and evidence are kept. Delete old ones in `.verify/runs/` by hand when they are no longer needed. Test users and organizations stay in the local D1 (`apps/api/.cloudflare/state`), which is the same database the user's own dev server uses. Use unique emails such as `verify-<RUN_ID>@example.com`.
+Stops only the session this run started (by its process group), then confirms ports 3000 and 3001 are free. If another process still holds a port, it reports the pid and leaves it alone. Run folders and evidence are kept. Delete old ones in `.verify/runs/` by hand when they are no longer needed. Test users and organizations stay in the local D1 (`apps/api/.cloudflare/state`), which is the same database the user's own dev server uses. Use unique emails such as `verify-<RUN_ID>@mailinator.com`. The Polar sandbox rejects `@example.com` addresses at sign-up.
 
 ## Helpers
 
