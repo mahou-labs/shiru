@@ -237,7 +237,6 @@ describe("reconciling a building target", () => {
   it.each([
     [{ status: "errored", error: "step deploy failed" }, "step deploy failed"],
     [{ status: "terminated" }, "The build was stopped"],
-    [{ status: "unknown" }, "The build instance was not found"],
     [{ status: "complete", output: { ok: false, error: "bad config" } }, "bad config"],
   ] satisfies [InstanceStatus, string][])(
     "fails on %j and drains the pending sha",
@@ -264,4 +263,31 @@ describe("reconciling a building target", () => {
       });
     },
   );
+
+  it("restarts a build whose instance was never created, with the newest sha", () => {
+    expect(run([requested("a"), reconciled("site-1--live--1", { status: "unknown" })])).toEqual({
+      state: {
+        siteId: "site-1",
+        seq: 2,
+        targets: {
+          live: {
+            kind: "building",
+            build: { sha: "a", workflowId: "site-1--live--2" },
+            pendingSha: null,
+            deployed: null,
+          },
+        },
+      },
+      effects: [start("site-1--live--1", "a"), start("site-1--live--2", "a")],
+    });
+    expect(
+      run([requested("a"), requested("b"), reconciled("site-1--live--1", { status: "unknown" })])
+        .state.targets[LIVE],
+    ).toEqual({
+      kind: "building",
+      build: { sha: "b", workflowId: "site-1--live--2" },
+      pendingSha: null,
+      deployed: null,
+    });
+  });
 });
