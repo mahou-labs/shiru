@@ -644,10 +644,12 @@ describe("slash menu templates", () => {
 
   test("typing filters by label, then by keyword", () => {
     expect(matchTemplates("mdx", "ta").map((template) => template.id)).toEqual([
-      "taskList",
-      "table",
       "tabs",
+      "table",
+      "taskList",
     ]);
+    expect(matchTemplates("mdx", "tab")[0]?.id).toBe("tabs");
+    expect(matchTemplates("mdx", "tabl")[0]?.id).toBe("table");
     expect(matchTemplates("mdx", "npm").map((template) => template.id)).toEqual([
       "packageManagers",
     ]);

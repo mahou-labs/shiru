@@ -256,9 +256,15 @@ export function matchTemplates(flavor: Flavor, query: string): Template[] {
     if (template.keywords.some((word) => word.startsWith(needle))) return 2;
     return label.includes(needle) ? 3 : 4;
   };
-  return offered
-    .map((template) => ({ template, rank: rank(template) }))
-    .filter((entry) => entry.rank < 4)
-    .sort((a, b) => a.rank - b.rank)
-    .map((entry) => entry.template);
+  return (
+    offered
+      .map((template) => ({ template, rank: rank(template) }))
+      .filter((entry) => entry.rank < 4)
+      // Among labels the query starts, the one it covers most wins, so "tab" finds Tabs before Table.
+      .sort(
+        (a, b) =>
+          a.rank - b.rank || (a.rank === 0 ? a.template.label.length - b.template.label.length : 0),
+      )
+      .map((entry) => entry.template)
+  );
 }
