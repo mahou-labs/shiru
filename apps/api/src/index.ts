@@ -9,7 +9,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
-import { builderDevRoute } from "./builder/dev-route";
+import { devRoute } from "./builder/dev-route";
 import { appRouter } from "./routers";
 import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
@@ -37,7 +37,7 @@ app.onError((error, c) => {
 });
 
 app.on(["POST", "GET"], "/auth/*", (c) => auth.handler(c.req.raw));
-app.route("/dev/builder", builderDevRoute);
+app.route("/dev", devRoute);
 
 export const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
