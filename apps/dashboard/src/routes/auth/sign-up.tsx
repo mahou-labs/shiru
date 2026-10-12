@@ -30,7 +30,7 @@ function SignUp() {
     mutationFn: (account: NewAccount) =>
       authClient.signUp.email({ ...account, callbackURL: callbackURL(redirect) }),
     onSuccess: (_, { email }) =>
-      navigate({ to: "/auth/verify-email", search: { email, redirect } }),
+      navigate({ to: "/auth/verify-email", search: { email, sent: true, redirect } }),
   });
 
   return (
