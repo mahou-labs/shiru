@@ -33,18 +33,18 @@ Publishing from Git is a capability, not a differentiator. Competitors offer it 
 ## Operating Context
 
 - Authors write MDX in their own Git repository. Pushing publishes, and each published version is identified by a Git commit, the "active revision".
-- Readers browse server-rendered pages at `<org-slug>.shiru.sh`. The labels `app`, `api`, `docs`, `t` and `www` are reserved.
-- Agents fetch `/<path>.md` or start from `/llms.txt`. Every HTML page links to its Markdown version with `<link rel="alternate" type="text/markdown">`.
+- Readers browse pages at `<site-slug>.<docs domain>`. The docs domain is separate from `shiru.sh`, because client pages can run scripts and must not share cookies with the dashboard. The domain is not bought yet. The labels `app`, `api`, `docs`, `preview`, `t` and `www` are reserved.
+- Agents fetch `/<path>/index.md` (the Nimbus default) or start from `/llms.txt`. Every HTML page links to its Markdown version with `<link rel="alternate" type="text/markdown">`.
 - The dashboard is at `app.shiru.sh` and the API at `api.shiru.sh`.
 
 ## Capabilities and Constraints
 
-- **Documentation MDX.** CommonMark plus GitHub-flavored Markdown (tables, task lists, strikethrough, autolinks), React components, imports and exports.
+- **Documentation MDX.** CommonMark plus GitHub-flavored Markdown (tables, task lists, strikethrough, autolinks), React components, imports, exports and expressions. Whatever Nimbus accepts builds.
 - **Frontmatter.** YAML with a required `title` and an optional `description`, used for the browser title and SEO.
 - **Links and anchors.** Relative `.mdx` links render as extensionless paths. Headings get GitHub-style anchors.
 - **Accounts and billing.** Email and password sign-in, organizations, and Polar billing with Starter and Growth plans, monthly or yearly. Each new organization gets a 30-day trial with no checkout required.
 - **Launch state: pre-launch.** Marketing collects waitlist sign-ups. It does not offer self-serve trials yet.
-- **Engine status.** The docs rendering and publishing engine exists in the previous codebase (`shiru-old`). It is not yet in this repository.
+- **Engine status.** The publishing pipeline is being built in this repository on Nimbus (`docs/plans/publishing-pipeline.md`). It does not publish sites yet.
 - **Undecided.**
   - Prices. Do not publish any.
   - Custom domains, search, analytics and integrations. Do not claim them.

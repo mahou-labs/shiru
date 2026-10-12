@@ -43,5 +43,9 @@ Units 1 and 2 touch disjoint files and run in parallel. Unit 3 needs both. Unit 
 
 ## Gates that need the operator
 
-- A Cloudflare API token with Workers Scripts Write, Artifacts, and Containers for the account, and the name of a staging dispatch namespace. Units 4 to 6 and 8 to 9 stop at their live check until this exists.
-- Any deploy to production.
+The `cf` CLI is signed in to the Mahou Labs account through OAuth, so remote checks run from this machine. As of 2026-10-12:
+
+- **Workers for Platforms is not purchased.** Listing dispatch namespaces returns error 10121 (403). Units 4, 5 and 9 stop at their live check until it is enabled. It is a paid add-on, so buying it is the operator's call.
+- **Artifacts is reachable.** The account has no namespaces yet. Creating one for staging is reversible and proceeds without asking.
+- **The docs domain is not bought.** Sites must live on a domain separate from `shiru.sh` (decided 2026-10-12). Code reads it from config, so the name can be set later.
+- **Any deploy to production** still needs the operator.
