@@ -1,11 +1,12 @@
 // Publishes a site end to end on this machine: the real HTTP API, the SiteDO, a commit to the
 // shiru-staging Artifacts namespace, the PublishWorkflow and the Builder container, then reads the
-// built pages back through /dev/sites. Needs Docker, the cf CLI signed in, git, and apps/api/.env.
+// built pages back through /dev/sites and through the dispatch Worker. Needs Docker, the cf CLI
+// signed in, git, and apps/api/.env.
 //
-// Usage: node scripts/verify-publish.ts [--port 3010] [--state <dir>]
-// It starts its own `cf dev` on --port with state in --state (a new temp dir by default), so the
-// usual dev server on port 3000 and its database are left alone. It deletes the repos it created
-// and stops the server and the containers it started.
+// Usage: node scripts/verify-publish.ts [--port 3010] [--dispatch-port 3013] [--state <dir>]
+// It starts its own `cf dev` on --port with state in --state (a new temp dir by default) and its
+// own dispatch Worker on --dispatch-port, so the usual dev servers and their database are left
+// alone. It deletes the repos it created and stops the servers and the containers it started.
 import { execFileSync, spawn } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,7 +14,11 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 
 const { values: args } = parseArgs({
-  options: { port: { type: "string", default: "3010" }, state: { type: "string" } },
+  options: {
+    port: { type: "string", default: "3010" },
+    "dispatch-port": { type: "string", default: "3013" },
+    state: { type: "string" },
+  },
 });
 const api = path.resolve(import.meta.dirname, "..");
 const base = `http://localhost:${args.port}`;
@@ -57,6 +62,7 @@ const server = spawn("npx", ["varlock", "run", "--", "npx", "cf", "dev", "--pers
 server.stdout.on("data", (chunk) => (log += chunk));
 server.stderr.on("data", (chunk) => (log += chunk));
 const repos: string[] = [];
+let dispatch: ReturnType<typeof spawn> | undefined;
 
 async function waitFor<T>(what: string, timeoutMs: number, probe: () => Promise<T | undefined>) {
   const deadline = Date.now() + timeoutMs;
@@ -275,6 +281,23 @@ try {
     [home.status, home.type, home.text.includes("The home page says hello.")],
     [200, "text/html; charset=utf-8", true],
   );
+  dispatch = spawn("npx", ["cf", "dev"], {
+    cwd: path.resolve(api, "../dispatch"),
+    env: { ...process.env, DISPATCH_PORT: args["dispatch-port"], DEV_SITES_ORIGIN: base },
+    detached: true,
+    stdio: "ignore",
+  });
+  const docsHome = `http://${slug}.docs.localhost:${args["dispatch-port"]}/`;
+  const viaDispatch = await waitFor("the dispatch Worker", 120_000, async () => {
+    const response = await fetch(docsHome, { redirect: "manual" });
+    return response.ok ? { status: response.status, text: await response.text() } : undefined;
+  });
+  check(
+    "the dispatch Worker serves the home page on the site's subdomain",
+    [viaDispatch.status, viaDispatch.text.includes("The home page says hello.")],
+    [200, true],
+  );
+
   const setup = await page("/guides/setup/");
   check(
     "setup page has the saved text",
@@ -405,6 +428,7 @@ try {
       console.log(`repo ${repo} was not in ${NAMESPACE}`);
     }
   }
+  if (dispatch) process.kill(-dispatch.pid!, "SIGTERM");
   try {
     process.kill(-server.pid!, "SIGTERM");
   } catch {
