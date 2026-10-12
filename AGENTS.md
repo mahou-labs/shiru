@@ -14,7 +14,7 @@ Write tests the way a caller uses the API:
 
 `src/test/setup.ts` swaps three things, and nothing else should be mocked:
 
-- `cloudflare:workers` becomes the bindings in `src/test/bindings.ts`. Sent emails land in `sentEmails`, and `waitUntil` work is awaited after each request.
+- `cloudflare:workers` becomes the bindings in `src/test/bindings.ts`. Sent emails land in `sentEmails`, and `waitUntil` work is awaited after each request. `ARTIFACTS` is an in-memory namespace with the binding's read API; `artifacts.receive()` stands in for an accepted push. `SITE_DO` runs the real `SiteDO` class on node:sqlite, one instance per name, behind a stub that clones arguments and results like RPC. Publishing pushes over HTTP and starts a Workflow, so it is covered by `scripts/verify-publish.ts` under `cf dev`, not here.
 - `src/utils/db.ts` becomes an in-memory SQLite database with the tables from `src/schema`, created with drizzle-kit the way `db:push` creates them. Each test file gets a fresh database, so use unique emails within a file.
 - `@polar-sh/sdk` becomes an in-memory fake of the customer API. Its state is `polarCustomers`.
 
