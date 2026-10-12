@@ -49,3 +49,18 @@ The `cf` CLI is signed in to the Mahou Labs account through OAuth, so remote che
 - **Artifacts is reachable.** The account has no namespaces yet. Creating one for staging is reversible and proceeds without asking.
 - **The docs domain is not bought.** Sites must live on a domain separate from `shiru.sh` (decided 2026-10-12). Code reads it from config, so the name can be set later.
 - **Any deploy to production** still needs the operator.
+
+## Prototype evidence
+
+### Artifacts can hold a managed site's repo (2026-10-12)
+
+A throwaway prototype ran against the real service in the `shiru-staging` namespace. It deleted its repos afterwards.
+
+- **Committing works without a git binary.** One `POST /git-receive-pack` carries the new blobs, the trees and the commit. It ran from Node and from local workerd, with and without `nodejs_compat`. isomorphic-git's `git.push` is the wrong tool here, because it needs local copies of every unchanged object in the parent tree. The SiteDO should build the pack itself and send only the new objects.
+- **A moved branch is detected by the server.** A push whose old SHA is stale returns HTTP 200 with `ng refs/heads/main stale ref`. That line is how `publish` knows to run `onPush` and retry. A rejected push still leaves its objects on the server.
+- **Reading a commit needs no credentials in the sandbox.** Read the commit's `treeHash`, then walk `readTree` one level at a time, then `readBlob`. Binary files come back byte for byte. Calling `readTree` with a commit SHA instead of a tree SHA fails with `500 [10400]`.
+- **The head SHA is one call.** `repo.log({ limit: 1 })` in the binding.
+- **Tokens.** `repo.createToken("read" | "write", ttl)` takes a TTL of 60 to 31536000 seconds. The server enforces expiry and scope.
+- **Push events.** `cf.artifacts.repo.pushed` can target a Workflow or a Queue. Wrangler can configure it, and the `cf` CLI cannot yet.
+- **The tree cache needs file modes.** Store `mode` next to `blob_sha`, or a commit rebuilt from the cache loses executable bits.
+- **Measured from this machine.** A commit push took 494ms from Node and about 750ms from workerd. A stale push was rejected in 422ms.
