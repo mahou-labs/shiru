@@ -367,6 +367,14 @@ export const TEMPLATES: Template[] = [
     ]),
   },
   {
+    id: "badge",
+    label: "Badge",
+    description: "A small label inside the text",
+    keywords: ["pill", "tag", "label", "status"],
+    mdxOnly: true,
+    content: { type: "badge", attrs: { props: [prop("text", "New")] } },
+  },
+  {
     id: "mdx",
     label: "Raw MDX",
     description: "JSX or an expression, as written",

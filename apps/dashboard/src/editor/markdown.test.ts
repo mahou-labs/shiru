@@ -419,6 +419,25 @@ describe("structure", () => {
     expect(doc.content![1].content!.map((node) => node.attrs?.language)).toEqual(["js"]);
   });
 
+  test("a self-closing Badge is a badge node and a slotted one stays raw", () => {
+    const [paragraph] = parse(
+      '<Badge text="New" variant="tip" /> and <Badge>Old</Badge>\n',
+    ).content!;
+    expect(paragraph.content).toEqual([
+      {
+        type: "badge",
+        attrs: {
+          props: [
+            { name: "text", value: { kind: "string", value: "New" } },
+            { name: "variant", value: { kind: "string", value: "tip" } },
+          ],
+        },
+      },
+      { type: "text", text: " and " },
+      { type: "mdxInline", attrs: { source: "<Badge>Old</Badge>" } },
+    ]);
+  });
+
   test("an AccordionTrigger outside an Accordion stays raw", () => {
     expect(parse("<AccordionTrigger>Q</AccordionTrigger>\n").content).toEqual([
       { type: "mdxBlock", attrs: { source: "<AccordionTrigger>Q</AccordionTrigger>" } },
@@ -496,12 +515,12 @@ describe("structure", () => {
   });
 
   test("inline JSX and expressions become mdxInline atoms that keep their marks", () => {
-    expect(parse('A **<Badge text="x" />** and {count}.\n').content).toEqual([
+    expect(parse('A **<Icon name="x" />** and {count}.\n').content).toEqual([
       {
         type: "paragraph",
         content: [
           { type: "text", text: "A " },
-          { type: "mdxInline", attrs: { source: '<Badge text="x" />' }, marks: [{ type: "bold" }] },
+          { type: "mdxInline", attrs: { source: '<Icon name="x" />' }, marks: [{ type: "bold" }] },
           { type: "text", text: " and " },
           { type: "mdxInline", attrs: { source: "{count}" } },
           { type: "text", text: "." },
@@ -752,6 +771,7 @@ describe("slash menu templates", () => {
     frame: '<Frame caption="Caption">\n  ![Image](/image.png)\n</Frame>\n',
     linkButton: '<LinkButton href="/">Get started</LinkButton>\n',
     linkCard: '<LinkCard title="Title" description="Description" href="/" />\n',
+    badge: '<Badge text="New" />\n',
     mdx: "",
   };
 
@@ -759,13 +779,17 @@ describe("slash menu templates", () => {
     "%s inserts valid nodes that serialize to canonical syntax and read back the same",
     (id, template) => {
       const { parse, serialize, check } = codecs.mdx;
-      const doc: JSONContent = { type: "doc", content: [template.content] };
+      // An inline template, such as a badge, goes into the paragraph holding the cursor.
+      const inline = getSchema(markdownExtensions("mdx")).nodes[template.content.type!].isInline;
+      const block = inline ? { type: "paragraph", content: [template.content] } : template.content;
+      const doc: JSONContent = { type: "doc", content: [block] };
       check(doc);
       const out = serialize(doc);
       expect(out).toBe(expected[id]);
       const reread = parse(out);
       expect(serialize(reread)).toBe(out);
-      if (out) expect(reread.content?.map((node) => node.type)).toEqual([template.content.type]);
+      if (out) expect(reread.content?.map((node) => node.type)).toEqual([block.type]);
+      if (inline) expect(reread.content?.[0].content?.[0].type).toBe(template.content.type);
     },
   );
 
@@ -792,6 +816,7 @@ describe("slash menu templates", () => {
       "table",
       "taskList",
       "codeGroup",
+      "badge",
     ]);
     expect(matchTemplates("mdx", "tab")[0]?.id).toBe("tabs");
     expect(matchTemplates("mdx", "tabl")[0]?.id).toBe("table");

@@ -34,6 +34,7 @@ import {
   TabItemView,
   TabsView,
 } from "../views/components";
+import { badgeProps } from "./badge";
 import { parseBlocks, rawBlockNode, renderBlocks, validOr, type Syntax } from "./context";
 import type { JsxProp, JsxPropValue } from "./props";
 import { dedent, indent, scanElement, scanExpression } from "./scan";
@@ -93,7 +94,7 @@ export function nodeName(component: Component): string {
   return component.name[0].toLowerCase() + component.name.slice(1);
 }
 
-function renderProps(props: JsxProp[]): string {
+export function renderProps(props: JsxProp[]): string {
   return props.map((prop) => ` ${prop.name}${renderValue(prop.value)}`).join("");
 }
 
@@ -173,6 +174,9 @@ export function mdxFlow(syntax: Syntax) {
     parent: string | null,
   ): JSONContent {
     const raw = () => rawBlockNode(syntax, token.source);
+    // A badge alone on its line is still a badge, in a paragraph of its own.
+    const badge = parent === null ? badgeProps(token.source.trim()) : null;
+    if (badge) return { type: "paragraph", content: [{ type: "badge", attrs: { props: badge } }] };
     const found = token.component;
     const component = found && byName.get(found.name);
     if (!found || !component || !found.props) return raw();

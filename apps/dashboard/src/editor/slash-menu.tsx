@@ -6,6 +6,7 @@ import { ReactRenderer } from "@tiptap/react";
 import Suggestion, { type SuggestionProps } from "@tiptap/suggestion";
 import {
   IconBlockquoteOutlineDuo18,
+  IconTag2OutlineDuo18,
   IconBracketsCurlyOutlineDuo18,
   IconBulletListOutlineDuo18,
   IconCardsOutlineDuo18,
@@ -78,6 +79,7 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   frame: IconFrameOutlineDuo18,
   linkButton: IconLink2OutlineDuo18,
   linkCard: IconLink3OutlineDuo18,
+  badge: IconTag2OutlineDuo18,
   mdx: IconBracketsCurlyOutlineDuo18,
 };
 

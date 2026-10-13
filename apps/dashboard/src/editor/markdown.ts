@@ -7,6 +7,7 @@ import type { Schema } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 
 import { admonition } from "./nodes/admonition";
+import { Badge } from "./nodes/badge";
 import {
   AttributedHeading,
   BackslashHardBreak,
@@ -94,7 +95,7 @@ export function markdownExtensions(flavor: Flavor): AnyExtension[] {
     rawInline(syntax),
     ...atomMarks,
     ...(flavor === "mdx"
-      ? [mdxFlow(syntax), admonition(syntax), ...componentNodes(), fileTreeRows]
+      ? [mdxFlow(syntax), admonition(syntax), ...componentNodes(), Badge, fileTreeRows]
       : []),
   ];
   return extensions;

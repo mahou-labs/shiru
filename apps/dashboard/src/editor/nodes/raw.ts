@@ -3,6 +3,7 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 
 import { RawBlockView, RawInlineView } from "../views/source";
 
+import { badgeProps } from "./badge";
 import type { Syntax } from "./context";
 import { indexOfUnescaped, scanElement, scanExpression, scanOpenTag, type ScanMode } from "./scan";
 
@@ -69,7 +70,11 @@ export function rawInline(syntax: Syntax) {
         return { type: syntax.rawInline, raw: src.slice(0, length) };
       },
     },
-    parseMarkdown: (token) => ({ type: syntax.rawInline, attrs: { source: token.raw } }),
+    parseMarkdown: (token) => {
+      const props = syntax.flavor === "mdx" ? badgeProps(token.raw ?? "") : null;
+      if (props) return { type: "badge", attrs: { props } };
+      return { type: syntax.rawInline, attrs: { source: token.raw } };
+    },
     renderMarkdown: (node) => node.attrs?.source ?? "",
   });
 }
