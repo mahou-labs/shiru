@@ -202,6 +202,16 @@ function repoHandle(name: string, repo: Repo) {
   };
 }
 
+/** The Workflow binding's `create`, which refuses an instance id it has seen, as the real one does. */
+export const publishWorkflow = {
+  created: [] as string[],
+  async create({ id }: { id: string }) {
+    if (this.created.includes(id))
+      throw new Error(`Workflow instance with id "${id}" already exists`);
+    this.created.push(id);
+  },
+};
+
 export const env = {
   DB: undefined,
   DASHBOARD_URL: "http://localhost:3001",
@@ -220,6 +230,7 @@ export const env = {
   POSTHOG_HOST: "https://us.i.posthog.com",
   ARTIFACTS: artifacts,
   DOCS: docObjects,
+  PUBLISH_WORKFLOW: publishWorkflow,
   EMAIL: {
     send: async (message: SentEmail) => {
       sentEmails.push(message);

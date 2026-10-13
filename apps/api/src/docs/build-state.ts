@@ -15,9 +15,10 @@ export type TargetState =
   | { kind: "failed"; deployed: Deployed; error: string };
 
 // One coordinator per doc, not per target: a Durable Object has a single alarm, and workflow ids
-// come from one sequence so a deleted and recreated target never reuses an old instance id.
+// come from one sequence so a deleted and recreated target never reuses an old instance id. The
+// prefix is random per state, so state lost while the Workflow instances remain cannot reuse one.
 export type DocBuilds = {
-  docId: string;
+  prefix: string;
   seq: number;
   targets: Partial<Record<TargetLabel, TargetState>>;
 };
@@ -44,8 +45,8 @@ export type BuildEffect =
 
 type Transition = { state: DocBuilds; effects: BuildEffect[] };
 
-export function initialBuilds(docId: string): DocBuilds {
-  return { docId, seq: 0, targets: {} };
+export function initialBuilds(prefix: string): DocBuilds {
+  return { prefix, seq: 0, targets: {} };
 }
 
 export function applyBuildEvent(state: DocBuilds, event: BuildEvent): Transition {
@@ -78,7 +79,7 @@ function request(state: DocBuilds, target: TargetLabel, sha: string, rebuild: bo
   if (current.kind === "idle" && current.deployed?.sha === sha && !rebuild) return unchanged;
 
   const seq = state.seq + 1;
-  const workflowId = `${state.docId}--${target}--${seq}`;
+  const workflowId = `${state.prefix}--${target}--${seq}`;
   return {
     state: withTarget({ ...state, seq }, target, {
       kind: "building",

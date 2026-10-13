@@ -187,7 +187,7 @@ describe("applyBuildEvent", () => {
       },
     },
   ])("$name", ({ events, effects, seq, targets }) => {
-    expect(run(events)).toEqual({ state: { docId: "doc-1", seq, targets }, effects });
+    expect(run(events)).toEqual({ state: { prefix: "doc-1", seq, targets }, effects });
   });
 });
 
@@ -201,7 +201,7 @@ describe("reconciling a building target", () => {
   ] satisfies InstanceStatus[])("re-arms the alarm while the instance is $status", (instance) => {
     expect(run([requested("a"), reconciled("doc-1--live--1", instance)])).toEqual({
       state: {
-        docId: "doc-1",
+        prefix: "doc-1",
         seq: 1,
         targets: {
           live: {
@@ -236,7 +236,7 @@ describe("reconciling a building target", () => {
       expect(run([requested("a"), requested("b"), reconciled("doc-1--live--1", instance)])).toEqual(
         {
           state: {
-            docId: "doc-1",
+            prefix: "doc-1",
             seq: 2,
             targets: {
               live: {
@@ -259,7 +259,7 @@ describe("reconciling a building target", () => {
   it("restarts a build whose instance was never created, with the newest sha", () => {
     expect(run([requested("a"), reconciled("doc-1--live--1", { status: "unknown" })])).toEqual({
       state: {
-        docId: "doc-1",
+        prefix: "doc-1",
         seq: 2,
         targets: {
           live: {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { buildCommit } from "../docs/git";
-import { artifacts, env } from "../test/bindings";
+import { artifacts, docObjects, env, publishWorkflow } from "../test/bindings";
 import { createClient } from "../test/client";
 import { docUrl } from "./docs";
 
@@ -197,6 +197,29 @@ describe("doc files", () => {
       status: 200,
       body: { json: { path: "content/index.mdx", content: "# Home\n" } },
     });
+    expect(
+      ((await client.rpc("docs/status", { docId })).body.json as { headSha: string }).headSha,
+    ).toBe(head);
+  });
+
+  it("starts a build under a new id after the doc loses its stored state", async () => {
+    const { client, docId } = await docOwner("rebuilt@mailinator.com", "rebuilt");
+    const head = await pushFirstCommit(docId, { "docs/content/index.mdx": text("# Home\n") });
+    const buildId = async () => {
+      await client.rpc("docs/publish", { docId });
+      const { body } = await client.rpc("docs/status", { docId });
+      return (body.json as { targets: { live: { build: { workflowId: string } } } }).targets.live
+        .build.workflowId;
+    };
+
+    const first = await buildId();
+    docObjects.instances.delete(docId);
+    const second = await buildId();
+
+    expect(first).toMatch(new RegExp(`^${docId}--[0-9a-f]{8}--live--1$`));
+    expect(second).toMatch(new RegExp(`^${docId}--[0-9a-f]{8}--live--1$`));
+    expect(second).not.toBe(first);
+    expect(publishWorkflow.created.filter((id) => id.startsWith(docId))).toEqual([first, second]);
     expect(
       ((await client.rpc("docs/status", { docId })).body.json as { headSha: string }).headSha,
     ).toBe(head);

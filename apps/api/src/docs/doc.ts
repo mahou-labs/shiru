@@ -440,7 +440,9 @@ export class Doc extends DurableObject<Env> {
 
   private builds(): DocBuilds {
     const stored = this.meta("builds");
-    return stored ? (JSON.parse(stored) as DocBuilds) : initialBuilds(this.doc().docId);
+    const fresh = initialBuilds(`${this.doc().docId}--${crypto.randomUUID().slice(0, 8)}`);
+    // State saved before the prefix existed takes a fresh one.
+    return stored ? { ...fresh, ...(JSON.parse(stored) as DocBuilds) } : fresh;
   }
 
   private doc(): DocInfo {
