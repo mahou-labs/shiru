@@ -11,5 +11,138 @@
       "@/*": "src/*"
     }
   },
-  "components": []
+  "components": [
+    {
+      "slug": "cn",
+      "type": "registry:lib",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:7c54894573a1398333b41a63838db5de40ba05ad3fdb71048414baf912bb0070",
+      "files": [
+        "src/lib/cn.ts"
+      ]
+    },
+    {
+      "slug": "collapsible",
+      "type": "registry:ui",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:ba266b75f45260ed5e0f40bcbcd642acdc5aafee9ba177d41b696a06a897505a",
+      "files": [
+        "src/components/ui/collapsible/Collapsible.astro",
+        "src/components/ui/collapsible/CollapsibleContent.astro",
+        "src/components/ui/collapsible/CollapsibleTrigger.astro",
+        "src/components/ui/collapsible/collapsible.client.ts",
+        "src/components/ui/collapsible/index.ts"
+      ]
+    },
+    {
+      "slug": "accordion",
+      "type": "registry:ui",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:d867eb2d71e2e935b2614fae2509cfa8c57722888460263bbd2950f3176f84b9",
+      "files": [
+        "src/components/ui/accordion/Accordion.astro",
+        "src/components/ui/accordion/AccordionContent.astro",
+        "src/components/ui/accordion/AccordionGroup.astro",
+        "src/components/ui/accordion/AccordionTrigger.astro",
+        "src/components/ui/accordion/index.ts"
+      ]
+    },
+    {
+      "slug": "layer-card",
+      "type": "registry:ui",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:5045f9e12a0f917aeb980d96a325dd19df2875b0c9d72625f629b4735423b267",
+      "files": [
+        "src/components/ui/layer-card/LayerCard.astro",
+        "src/components/ui/layer-card/LayerCardContent.astro",
+        "src/components/ui/layer-card/LayerCardHeader.astro",
+        "src/components/ui/layer-card/index.ts"
+      ]
+    },
+    {
+      "slug": "code-group",
+      "type": "registry:ui",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:b1b709858534d8d582d23aacb654e09ab7efa7680c364036829d35b04cb9739d",
+      "files": [
+        "src/components/ui/code-group/CodeGroup.astro",
+        "src/components/ui/code-group/code-group.client.ts",
+        "src/components/ui/code-group/index.ts"
+      ]
+    },
+    {
+      "slug": "button",
+      "type": "registry:ui",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:a2fd2697645003aabd17ecbb4e8d25af37ce8d738adfdeac6ecdc5405bca63be",
+      "files": [
+        "src/components/ui/button/Button.astro",
+        "src/components/ui/button/index.ts",
+        "src/components/ui/button/variants.ts"
+      ]
+    },
+    {
+      "slug": "copy-prompt",
+      "type": "registry:ui",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:b0f93002b074e15682b329f12749c1df33867c1664d6bb04357ac2abc939b4c2",
+      "files": [
+        "src/components/ui/copy-prompt/CopyPrompt.astro",
+        "src/components/ui/copy-prompt/copy-prompt.client.ts",
+        "src/components/ui/copy-prompt/index.ts"
+      ]
+    },
+    {
+      "slug": "embed",
+      "type": "registry:ui",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:ccf9df24232e0542ee482ab2a86ae1de4b41f2110a6d30a327b9b3d5439443ad",
+      "files": [
+        "src/components/ui/embed/Embed.astro",
+        "src/components/ui/embed/index.ts"
+      ]
+    },
+    {
+      "slug": "file-tree",
+      "type": "registry:ui",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:1c92a06b3495d45ad8edf3cb1cfe92fcd38ec2c8432ad346fd179d74214b8837",
+      "files": [
+        "src/components/ui/file-tree/FileTree.astro",
+        "src/components/ui/file-tree/file-tree.client.ts",
+        "src/components/ui/file-tree/index.ts"
+      ]
+    },
+    {
+      "slug": "frame",
+      "type": "registry:ui",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:26927e8807fe74b6eabd342f0d4f6572e1366fe6e65e4d00c9a6fce4c1962367",
+      "files": [
+        "src/components/ui/frame/Frame.astro",
+        "src/components/ui/frame/index.ts"
+      ]
+    },
+    {
+      "slug": "link-card",
+      "type": "registry:ui",
+      "version": "0.18.0",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:3fa7c21e4fe97c9fe0d5edcbf984abab4a5c745224622d435b433f1482888f12",
+      "files": [
+        "src/components/ui/link-card/LinkCard.astro",
+        "src/components/ui/link-card/index.ts"
+      ]
+    }
+  ]
 }
