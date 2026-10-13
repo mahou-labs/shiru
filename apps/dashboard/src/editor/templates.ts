@@ -34,6 +34,26 @@ const component = (type: string, props: object[], content?: JSONContent[]): JSON
   ...(content && { content }),
 });
 
+const item = (value: string, nested?: JSONContent[]): JSONContent => ({
+  type: "listItem",
+  content: [text(value), ...(nested ? [{ type: "bulletList", content: nested }] : [])],
+});
+
+const accordion = (trigger: string, body: string): JSONContent => ({
+  type: "accordion",
+  attrs: { props: [], layout: "block" },
+  content: [
+    { type: "accordionTrigger", attrs: { props: [], layout: "inline" }, content: [text(trigger)] },
+    component("accordionContent", [], [text(body)]),
+  ],
+});
+
+const code = (language: string, value: string): JSONContent => ({
+  type: "codeBlock",
+  attrs: { language, meta: null },
+  content: [{ type: "text", text: value }],
+});
+
 const admonition = (
   keyword: string,
   label: string,
@@ -233,6 +253,118 @@ export const TEMPLATES: Template[] = [
     keywords: ["npm", "pnpm", "yarn", "bun", "install"],
     mdxOnly: true,
     content: component("packageManagers", [prop("pkg", "package-name")]),
+  },
+  {
+    id: "accordion",
+    label: "Accordion",
+    description: "A question that opens to its answer",
+    keywords: ["collapsible", "disclosure", "details", "faq"],
+    mdxOnly: true,
+    content: accordion("Question", "Answer."),
+  },
+  {
+    id: "accordionGroup",
+    label: "Accordion group",
+    description: "Accordions sharing one frame, as for a FAQ",
+    keywords: ["faq", "collapsible", "disclosure"],
+    mdxOnly: true,
+    content: component(
+      "accordionGroup",
+      [],
+      [accordion("First question", "Answer."), accordion("Second question", "Answer.")],
+    ),
+  },
+  {
+    id: "codeGroup",
+    label: "Code group",
+    description: "The same code in several languages, a tab each",
+    keywords: ["codegroup", "languages", "tabs", "snippet"],
+    mdxOnly: true,
+    content: {
+      type: "codeGroup",
+      attrs: {
+        props: [
+          { name: "titles", value: { kind: "expression", source: '["JavaScript","Python"]' } },
+        ],
+        layout: "block",
+      },
+      content: [code("js", 'console.log("Hello");'), code("py", 'print("Hello")')],
+    },
+  },
+  {
+    id: "copyPrompt",
+    label: "Copy prompt",
+    description: "A prompt readers paste into an AI agent",
+    keywords: ["copyprompt", "ai", "agent", "llm"],
+    mdxOnly: true,
+    content: component("copyPrompt", [prop("text", "Read this page, then help me get started.")]),
+  },
+  {
+    id: "embed",
+    label: "Embed",
+    description: "A video, map or other page in a frame",
+    keywords: ["iframe", "video", "youtube", "loom", "figma"],
+    mdxOnly: true,
+    content: component("embed", [prop("src", "https://"), prop("title", "Embedded content")]),
+  },
+  {
+    id: "fileTree",
+    label: "File tree",
+    description: "Folders and files, from a nested list",
+    keywords: ["filetree", "directory", "folders", "structure"],
+    mdxOnly: true,
+    content: component(
+      "fileTree",
+      [],
+      [
+        {
+          type: "bulletList",
+          content: [item("src/", [item("index.ts")]), item("package.json")],
+        },
+      ],
+    ),
+  },
+  {
+    id: "frame",
+    label: "Frame",
+    description: "A screenshot framed with a caption",
+    keywords: ["screenshot", "image", "picture", "caption"],
+    mdxOnly: true,
+    asksForImage: true,
+    content: component(
+      "frame",
+      [prop("caption", "Caption")],
+      [
+        {
+          type: "paragraph",
+          content: [{ type: "image", attrs: { src: "/image.png", alt: "Image" } }],
+        },
+      ],
+    ),
+  },
+  {
+    id: "linkButton",
+    label: "Link button",
+    description: "A link that looks like a button",
+    keywords: ["linkbutton", "cta", "call to action"],
+    mdxOnly: true,
+    content: {
+      type: "linkButton",
+      attrs: { props: [prop("href", "/")], layout: "inline" },
+      content: [text("Get started")],
+    },
+  },
+  {
+    id: "linkCard",
+    label: "Link card",
+    description: "A card linking to another page",
+    keywords: ["linkcard", "next", "related"],
+    mdxOnly: true,
+    content: component("linkCard", [
+      prop("title", "Title"),
+      prop("description", "Description"),
+      prop("href", "/"),
+    ]),
   },
   {
     id: "mdx",

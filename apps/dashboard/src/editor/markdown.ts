@@ -24,6 +24,7 @@ import {
 import { componentNodes, mdxFlow } from "./nodes/components";
 import type { Syntax } from "./nodes/context";
 import { document, type DocumentAttrs } from "./nodes/document";
+import { fileTreeRows } from "./nodes/file-tree";
 import { FootnoteDefinition, FootnoteReference } from "./nodes/footnote";
 import { atomMarks } from "./nodes/marks";
 import { rawBlock, rawInline } from "./nodes/raw";
@@ -92,7 +93,9 @@ export function markdownExtensions(flavor: Flavor): AnyExtension[] {
     rawBlock(syntax),
     rawInline(syntax),
     ...atomMarks,
-    ...(flavor === "mdx" ? [mdxFlow(syntax), admonition(syntax), ...componentNodes()] : []),
+    ...(flavor === "mdx"
+      ? [mdxFlow(syntax), admonition(syntax), ...componentNodes(), fileTreeRows]
+      : []),
   ];
   return extensions;
 }

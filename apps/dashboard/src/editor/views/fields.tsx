@@ -1,6 +1,15 @@
+import type { ReactNodeViewProps } from "@tiptap/react";
 import type { ComponentProps } from "react";
 
 import { getProp, setProp, type JsxProp, type JsxPropValue } from "../nodes/props";
+
+/** A small square button in a block's chrome. */
+export const ICON_BUTTON =
+  "flex size-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-3.5";
+
+export function isActive({ selected, selectionInside }: ReactNodeViewProps) {
+  return selected || !!selectionInside;
+}
 
 /**
  * Chrome that stays out of the way until the block is hovered, holds the selection or has a

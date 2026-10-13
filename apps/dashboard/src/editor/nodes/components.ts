@@ -9,7 +9,22 @@ import {
 import { ReactNodeViewRenderer, type ReactNodeViewProps } from "@tiptap/react";
 import type { ComponentType } from "react";
 
+import {
+  AccordionContentView,
+  AccordionGroupView,
+  AccordionTriggerView,
+  AccordionView,
+} from "../views/accordion";
+import {
+  CopyPromptView,
+  EmbedView,
+  FileTreeView,
+  FrameView,
+  LinkButtonView,
+  LinkCardView,
+} from "../views/blocks";
 import { AsideView } from "../views/callout";
+import { CodeGroupView } from "../views/code-group";
 import {
   CardGridView,
   CardView,
@@ -26,21 +41,44 @@ import { dedent, indent, scanElement, scanExpression } from "./scan";
 /**
  * The global MDX components Nimbus provides. `content` is the ProseMirror content expression for
  * the children, or null when the component is self-closing. `within` names the only parent a
- * component may appear in. `view` draws the component in the editor.
+ * component may appear in. `onePerLine` writes the children one per line rather than a blank line
+ * apart, for components that hold a list of items. `view` draws the component in the editor.
  */
 export const COMPONENTS = [
+  {
+    name: "Accordion",
+    content: "accordionTrigger accordionContent",
+    onePerLine: true,
+    view: AccordionView,
+  },
+  {
+    name: "AccordionTrigger",
+    content: "paragraph",
+    within: "Accordion",
+    view: AccordionTriggerView,
+  },
+  { name: "AccordionContent", content: "block+", within: "Accordion", view: AccordionContentView },
+  { name: "AccordionGroup", content: "accordion+", onePerLine: true, view: AccordionGroupView },
   { name: "Aside", content: "block+", view: AsideView },
   { name: "Card", content: "block+", view: CardView },
-  { name: "CardGrid", content: "card+", view: CardGridView },
+  { name: "CardGrid", content: "card+", onePerLine: true, view: CardGridView },
+  { name: "CodeGroup", content: "codeBlock+", view: CodeGroupView },
+  { name: "CopyPrompt", content: null, view: CopyPromptView },
+  { name: "Embed", content: null, view: EmbedView },
+  { name: "FileTree", content: "bulletList", view: FileTreeView },
+  { name: "Frame", content: "block+", view: FrameView },
+  { name: "LinkButton", content: "paragraph", view: LinkButtonView },
+  { name: "LinkCard", content: null, view: LinkCardView },
   { name: "PackageManagers", content: null, view: PackageManagersView },
-  { name: "Steps", content: "orderedList | step+", view: StepsView },
+  { name: "Steps", content: "orderedList | step+", onePerLine: true, view: StepsView },
   { name: "Step", content: "block+", within: "Steps", view: StepView },
-  { name: "Tabs", content: "tabItem+", view: TabsView },
+  { name: "Tabs", content: "tabItem+", onePerLine: true, view: TabsView },
   { name: "TabItem", content: "block+", within: "Tabs", view: TabItemView },
 ] as const satisfies readonly {
   name: string;
   content: string | null;
   within?: string;
+  onePerLine?: true;
   view: ComponentType<ReactNodeViewProps>;
 }[];
 
@@ -198,8 +236,7 @@ export function mdxFlow(syntax: Syntax) {
 export function componentNodes() {
   return COMPONENTS.map((component) => {
     const selfClosing = component.content === null;
-    // Tabs, CardGrid and Steps list their items one per line rather than a blank line apart.
-    const holdsItems = component.content !== null && component.content !== "block+";
+    const onePerLine = "onePerLine" in component;
     return Node.create({
       name: nodeName(component),
       group: "within" in component ? undefined : "block",
@@ -220,7 +257,7 @@ export function componentNodes() {
         const attrs = node.attrs as ComponentAttrs;
         const open = `<${component.name}${renderProps(attrs.props)}`;
         if (selfClosing) return `${open} />`;
-        const children = holdsItems
+        const children = onePerLine
           ? helpers.renderChildren(node.content ?? [], "\n")
           : renderBlocks(helpers, node.content);
         const single = node.content?.length === 1 && node.content[0].type === "paragraph";

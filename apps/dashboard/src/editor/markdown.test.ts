@@ -210,6 +210,32 @@ describe("round trip", () => {
       '<Tabs syncKey="pm">\n  <TabItem label="npm">\n    ```sh\n    npm i shiru\n    ```\n  </TabItem>\n  <TabItem label="pnpm">\n    <Aside type="tip">Nested.</Aside>\n  </TabItem>\n</Tabs>\n',
     ],
     [
+      "Accordion and AccordionGroup",
+      "mdx",
+      "<AccordionGroup>\n  <Accordion open>\n    <AccordionTrigger>What is it?</AccordionTrigger>\n    <AccordionContent>\n      A docs site.\n\n      - Fast\n    </AccordionContent>\n  </Accordion>\n</AccordionGroup>\n\n<Accordion>\n  <AccordionTrigger>\n    Alone\n  </AccordionTrigger>\n  <AccordionContent>\n    Body.\n  </AccordionContent>\n</Accordion>\n",
+    ],
+    [
+      "CodeGroup",
+      "mdx",
+      '<CodeGroup titles={["npm", "pnpm"]}>\n  ```sh title="Terminal"\n  npm i shiru\n  ```\n\n  ```sh\n  pnpm add shiru\n  ```\n</CodeGroup>\n',
+    ],
+    [
+      "self-closing Nimbus components",
+      "mdx",
+      '<CopyPrompt text="Read /start.md, then help me." />\n\n<Embed src="https://youtu.be/x" title="Demo" ratio="4/3" />\n\n<LinkCard title="Next" href="/next" />\n',
+    ],
+    ["FileTree", "mdx", "<FileTree>\n  - src/\n    - **index.ts**\n  - ...\n</FileTree>\n"],
+    [
+      "Frame",
+      "mdx",
+      '<Frame caption="The dashboard" aspect="16/9">\n  ![Dashboard](/dash.png)\n</Frame>\n',
+    ],
+    [
+      "LinkButton",
+      "mdx",
+      '<LinkButton href="/start" variant="secondary" icon>Get started</LinkButton>\n',
+    ],
+    [
       "CardGrid",
       "mdx",
       '<CardGrid>\n  <Card title="Fast" icon="rocket">\n    Builds in seconds.\n  </Card>\n  <Card title="Simple">\n    One file.\n  </Card>\n</CardGrid>\n',
@@ -337,6 +363,66 @@ describe("structure", () => {
     const step = doc.content![7].content![0].content![1];
     expect(step.content!.map((node) => node.type)).toEqual(["paragraph", "aside"]);
     expect(() => nimbusTree("mdx", nimbusPage)).not.toThrow();
+  });
+
+  test("every Nimbus content component becomes its own node, not raw MDX", () => {
+    const body = [
+      "<AccordionGroup>",
+      "  <Accordion>",
+      "    <AccordionTrigger>Q</AccordionTrigger>",
+      "    <AccordionContent>",
+      "      A.",
+      "    </AccordionContent>",
+      "  </Accordion>",
+      "</AccordionGroup>",
+      "",
+      '<CodeGroup titles={["a"]}>',
+      "  ```js",
+      "  1",
+      "  ```",
+      "</CodeGroup>",
+      "",
+      '<CopyPrompt text="Go." />',
+      "",
+      '<Embed src="https://x.com" title="X" />',
+      "",
+      "<FileTree>",
+      "  - src/",
+      "    - a.ts",
+      "</FileTree>",
+      "",
+      "<Frame>",
+      "  ![A](/a.png)",
+      "</Frame>",
+      "",
+      '<LinkButton href="/">Go</LinkButton>',
+      "",
+      '<LinkCard title="Next" href="/next" />',
+      "",
+    ].join("\n");
+    const { doc, out } = roundTrip("mdx", body);
+    expect(out).toBe(body);
+    expect(doc.content!.map((node) => node.type)).toEqual([
+      "accordionGroup",
+      "codeGroup",
+      "copyPrompt",
+      "embed",
+      "fileTree",
+      "frame",
+      "linkButton",
+      "linkCard",
+    ]);
+    expect(doc.content![0].content![0].content!.map((node) => node.type)).toEqual([
+      "accordionTrigger",
+      "accordionContent",
+    ]);
+    expect(doc.content![1].content!.map((node) => node.attrs?.language)).toEqual(["js"]);
+  });
+
+  test("an AccordionTrigger outside an Accordion stays raw", () => {
+    expect(parse("<AccordionTrigger>Q</AccordionTrigger>\n").content).toEqual([
+      { type: "mdxBlock", attrs: { source: "<AccordionTrigger>Q</AccordionTrigger>" } },
+    ]);
   });
 
   test("Tabs hold TabItems whose props keep their kind and order", () => {
@@ -625,6 +711,47 @@ describe("slash menu templates", () => {
       "</CardGrid>\n",
     ].join("\n"),
     packageManagers: '<PackageManagers pkg="package-name" />\n',
+    accordion: [
+      "<Accordion>",
+      "  <AccordionTrigger>Question</AccordionTrigger>",
+      "  <AccordionContent>",
+      "    Answer.",
+      "  </AccordionContent>",
+      "</Accordion>\n",
+    ].join("\n"),
+    accordionGroup: [
+      "<AccordionGroup>",
+      "  <Accordion>",
+      "    <AccordionTrigger>First question</AccordionTrigger>",
+      "    <AccordionContent>",
+      "      Answer.",
+      "    </AccordionContent>",
+      "  </Accordion>",
+      "  <Accordion>",
+      "    <AccordionTrigger>Second question</AccordionTrigger>",
+      "    <AccordionContent>",
+      "      Answer.",
+      "    </AccordionContent>",
+      "  </Accordion>",
+      "</AccordionGroup>\n",
+    ].join("\n"),
+    codeGroup: [
+      '<CodeGroup titles={["JavaScript","Python"]}>',
+      "  ```js",
+      '  console.log("Hello");',
+      "  ```",
+      "",
+      "  ```py",
+      '  print("Hello")',
+      "  ```",
+      "</CodeGroup>\n",
+    ].join("\n"),
+    copyPrompt: '<CopyPrompt text="Read this page, then help me get started." />\n',
+    embed: '<Embed src="https://" title="Embedded content" />\n',
+    fileTree: "<FileTree>\n  - src/\n    - index.ts\n  - package.json\n</FileTree>\n",
+    frame: '<Frame caption="Caption">\n  ![Image](/image.png)\n</Frame>\n',
+    linkButton: '<LinkButton href="/">Get started</LinkButton>\n',
+    linkCard: '<LinkCard title="Title" description="Description" href="/" />\n',
     mdx: "",
   };
 
@@ -664,6 +791,7 @@ describe("slash menu templates", () => {
       "tabs",
       "table",
       "taskList",
+      "codeGroup",
     ]);
     expect(matchTemplates("mdx", "tab")[0]?.id).toBe("tabs");
     expect(matchTemplates("mdx", "tabl")[0]?.id).toBe("table");

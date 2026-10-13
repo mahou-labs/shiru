@@ -6,15 +6,8 @@ import { useEffect, useId, useState } from "react";
 import type { ComponentAttrs } from "../nodes/components";
 import { getProp, setProp, type JsxProp } from "../nodes/props";
 import { COMMAND_TYPES, packageManagerTabs } from "../package-managers";
-import { BlockLabel, CHROME, FixedProp, PropField, REVEAL } from "./fields";
-import { Icon } from "./icon";
-
-const ICON_BUTTON =
-  "flex size-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-3.5";
-
-function isActive({ selected, selectionInside }: ReactNodeViewProps) {
-  return selected || !!selectionInside;
-}
+import { BlockLabel, CHROME, FixedProp, ICON_BUTTON, isActive, PropField, REVEAL } from "./fields";
+import { Icon, Phosphor } from "./icon";
 
 /** Positions of a node's children, for edits made from the parent's view. */
 function childPositions(node: PmNode, pos: number): number[] {
@@ -267,9 +260,6 @@ export function CardView(props: ReactNodeViewProps) {
 const FIELD =
   "rounded-md border border-transparent px-1.5 py-0.5 hover:border-input focus:border-input";
 
-const COPY_ICON =
-  "M216 32H88a8 8 0 0 0-8 8v40H40a8 8 0 0 0-8 8v128a8 8 0 0 0 8 8h128a8 8 0 0 0 8-8v-40h40a8 8 0 0 0 8-8V40a8 8 0 0 0-8-8m-56 176H48V96h112Zm48-48h-32V88a8 8 0 0 0-8-8H96V48h112Z";
-
 /** Nimbus's PackageManagers: a LayerCard with a tab per manager over the command. */
 export function PackageManagersView(props: ReactNodeViewProps) {
   const { node, updateAttributes } = props;
@@ -324,9 +314,7 @@ export function PackageManagersView(props: ReactNodeViewProps) {
                   onClick={() => void navigator.clipboard.writeText(tab.command)}
                   className="m-0 flex shrink-0 cursor-pointer items-center justify-center border-0 border-border border-l border-solid bg-transparent px-3 text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  <svg width="18" height="18" viewBox="0 0 256 256" aria-hidden="true">
-                    <path fill="currentColor" d={COPY_ICON} />
-                  </svg>
+                  <Phosphor name="copy" className="h-[18px] w-[18px]" />
                 </button>
               </div>
             </div>
