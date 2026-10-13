@@ -9,6 +9,9 @@ import { getProp, setProp, type JsxProp, type JsxPropValue } from "../nodes/prop
 export const CHROME =
   "opacity-0 transition-opacity duration-150 group-hover/block:opacity-100 group-focus-within/block:opacity-100 group-data-[active=true]/block:opacity-100";
 
+/** Like CHROME, for controls the published block has no room for: they take space only while editing. */
+export const REVEAL = "hidden group-focus-within/block:block group-data-[active=true]/block:block";
+
 /** A prop the field cannot edit as text. It is shown as written so it is never clobbered. */
 export function FixedProp({ name, value }: { name: string; value: JsxPropValue }) {
   const text =

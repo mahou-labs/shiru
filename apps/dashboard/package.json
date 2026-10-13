@@ -12,6 +12,9 @@
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@iconify-json/ph": "1.2.2",
+    "@iconify/utils": "^3.1.7",
     "@orpc/client": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/tanstack-query": "^1.15.5",

@@ -139,7 +139,10 @@ function LoadedPage({
     ],
     content,
     shouldRerenderOnTransaction: false,
-    editorProps: { attributes: { class: PROSE, "aria-label": "Page content" } },
+    // `docs-content` gives the body the published site's styles, from `editor.css`.
+    editorProps: {
+      attributes: { class: "docs-content min-h-64 outline-none", "aria-label": "Page content" },
+    },
     // Only edits after initialization count: content set while the editor is created is the
     // loaded page, and saving it would rewrite the file without anyone touching it.
     onUpdate: ({ editor, transaction }) => {
@@ -360,26 +363,3 @@ function PublishButton({
     </Button>
   );
 }
-
-/** Reads like the published page: a single measure, generous rhythm, quiet code and quotes. */
-const PROSE = [
-  "min-h-64 text-base/7 text-foreground outline-none",
-  "[&>*:first-child]:mt-0",
-  "[&_h1]:mt-12 [&_h1]:mb-4 [&_h1]:font-heading [&_h1]:font-semibold [&_h1]:text-3xl [&_h1]:tracking-tight",
-  "[&_h2]:mt-12 [&_h2]:mb-4 [&_h2]:font-heading [&_h2]:font-semibold [&_h2]:text-2xl [&_h2]:tracking-tight",
-  "[&_h3]:mt-8 [&_h3]:mb-3 [&_h3]:font-heading [&_h3]:font-semibold [&_h3]:text-xl",
-  "[&_h4]:mt-6 [&_h4]:mb-2 [&_h4]:font-semibold [&_h4]:text-base",
-  "[&_p]:my-4",
-  "[&_a]:font-medium [&_a]:underline [&_a]:decoration-foreground/30 [&_a]:underline-offset-4",
-  "[&_strong]:font-semibold",
-  "[&_ul]:my-4 [&_ul]:list-disc [&_ul]:ps-6 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:ps-6",
-  "[&_li]:my-1 [&_li>p]:my-1 [&_li::marker]:text-muted-foreground",
-  "[&_blockquote]:my-6 [&_blockquote]:border-s-2 [&_blockquote]:ps-4 [&_blockquote]:text-muted-foreground",
-  "[&_hr]:my-10 [&_hr]:border-border",
-  "[&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-muted [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[0.875em]",
-  "[&_pre]:my-6 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:bg-muted/50 [&_pre]:p-4 [&_pre]:text-sm/6",
-  "[&_img]:my-6 [&_img]:rounded-lg",
-  "[&_table]:my-6 [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm",
-  "[&_th]:border-b [&_th]:px-3 [&_th]:py-2 [&_th]:text-start [&_th]:font-semibold",
-  "[&_td]:border-b [&_td]:px-3 [&_td]:py-2 [&_td>p]:my-0 [&_th>p]:my-0",
-].join(" ");

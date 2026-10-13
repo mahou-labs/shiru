@@ -1,62 +1,360 @@
-/* Steps, numbered like Nimbus's: a circle per item and a line down to the next one. */
-.editor-steps {
+/*
+ * The page body renders with the published site's own stylesheet, so a page reads in the editor
+ * as it will on the site. Nimbus scopes its Markdown styles to `.docs-content`, the class the
+ * editor's root carries.
+ */
+@import "@fontsource-variable/jetbrains-mono";
+@import "../../../builder/template/src/styles/prose.css";
+
+/* The template's tokens from `src/styles/globals.css`, which `editor.test.ts` keeps in step. */
+.docs-content {
+  --nb-background: oklch(0.99 0 0);
+  --nb-foreground: oklch(0.21 0 0);
+  --nb-card: oklch(1 0 0);
+  --nb-card-foreground: var(--nb-foreground);
+  --nb-muted: oklch(0.98 0 0);
+  --nb-muted-foreground: oklch(0.556 0 0);
+  --nb-accent: oklch(0.967 0 0);
+  --nb-accent-foreground: var(--nb-foreground);
+  --nb-primary: oklch(0.145 0 0);
+  --nb-primary-foreground: oklch(0.97 0 0);
+  --nb-primary-hover: oklch(0.371 0 0);
+  --nb-border: oklch(0.935 0 0);
+  --nb-border-strong: oklch(0.87 0 0);
+  --nb-selected: oklch(0.89 0 0);
+  --nb-ring: oklch(0.145 0 0 / 0.35);
+  --nb-info: oklch(0.424 0.199 265.638);
+  --nb-info-foreground: oklch(0.424 0.199 265.638);
+  --nb-info-muted: oklch(0.932 0.032 255.6 / 0.45);
+  --nb-success: oklch(0.432 0.095 166.913);
+  --nb-success-foreground: oklch(0.432 0.095 166.913);
+  --nb-success-muted: oklch(0.962 0.043 156.7 / 0.57);
+  --nb-warning: oklch(0.597 0.144 57.5);
+  --nb-warning-foreground: oklch(0.597 0.144 57.5);
+  --nb-warning-muted: oklch(0.931 0.107 94.6 / 0.2);
+  --nb-danger: oklch(0.505 0.213 27.518);
+  --nb-danger-foreground: oklch(0.505 0.213 27.518);
+  --nb-danger-muted: oklch(0.936 0.032 17.7 / 0.42);
+  --nb-m-get: var(--nb-success);
+  --nb-m-get-tint: var(--nb-success-muted);
+  --nb-m-get-line: oklch(0.596 0.145 163.225 / 0.25);
+  --nb-m-post: var(--nb-info);
+  --nb-m-post-tint: var(--nb-info-muted);
+  --nb-m-post-line: oklch(0.685 0.169 237.323 / 0.25);
+  --nb-m-put: var(--nb-warning);
+  --nb-m-put-tint: var(--nb-warning-muted);
+  --nb-m-put-line: oklch(0.739 0.177 58.2 / 0.25);
+  --nb-m-delete: var(--nb-danger);
+  --nb-m-delete-tint: var(--nb-danger-muted);
+  --nb-m-delete-line: oklch(0.637 0.237 25.331 / 0.25);
+  --nb-m-other: var(--nb-muted-foreground);
+  --nb-m-other-tint: var(--nb-accent);
+  --nb-m-other-line: var(--nb-border);
+  --nb-sidebar-width: 18.75rem;
+  --nb-toc-width: 18rem;
+  --nb-content-max: 43.5rem;
+  --nb-code-rail-width: 34rem;
+  --nb-font-sans:
+    "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --nb-font-mono:
+    "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro",
+    Menlo, Consolas, monospace;
+  --nb-h1-size: 2.1875rem;
+  --nb-h1-weight: 600;
+  --nb-h1-tracking: -0.025em;
+  --nb-h2-size: 1.3rem;
+  --nb-h2-weight: 650;
+  --nb-h2-tracking: -0.015em;
+  --nb-h3-size: 1.1rem;
+  --nb-h3-weight: 600;
+  --nb-h3-tracking: -0.01em;
+  --nb-h4-weight: 600;
+  --nb-shadow-sm: 0 1px 2px oklch(0 0 0 / 0.04);
+  --nb-shadow: 0 1px 3px oklch(0 0 0 / 0.06), 0 1px 2px oklch(0 0 0 / 0.04);
+  --nb-shadow-lg: 0 4px 12px oklch(0 0 0 / 0.08), 0 2px 4px oklch(0 0 0 / 0.04);
+}
+
+.dark .docs-content {
+  --nb-background: oklch(0.085 0 0);
+  --nb-foreground: oklch(0.97 0 0);
+  --nb-card: #0f0f0f;
+  --nb-card-foreground: var(--nb-foreground);
+  --nb-muted: #060606;
+  --nb-muted-foreground: oklch(0.708 0 0);
+  --nb-accent: oklch(0.269 0 0);
+  --nb-accent-foreground: var(--nb-foreground);
+  --nb-primary: oklch(0.9 0 0);
+  --nb-primary-foreground: oklch(0.085 0 0);
+  --nb-primary-hover: oklch(0.7 0 0);
+  --nb-border: oklch(0.269 0 0);
+  --nb-border-strong: oklch(0.371 0 0);
+  --nb-selected: oklch(0.371 0 0);
+  --nb-ring: oklch(0.9 0 0 / 0.35);
+  --nb-info: oklch(0.707 0.165 254.624);
+  --nb-info-foreground: oklch(0.707 0.165 254.624);
+  --nb-info-muted: oklch(0.38 0.145 265.5 / 0.22);
+  --nb-success: oklch(0.905 0.093 164.15);
+  --nb-success-foreground: oklch(0.905 0.093 164.15);
+  --nb-success-muted: oklch(0.393 0.096 152.3 / 0.2);
+  --nb-warning: oklch(0.75 0.183 55.934);
+  --nb-warning-foreground: oklch(0.75 0.183 55.934);
+  --nb-warning-muted: oklch(0.353 0.079 65 / 0.37);
+  --nb-danger: oklch(0.704 0.191 22.216);
+  --nb-danger-foreground: oklch(0.704 0.191 22.216);
+  --nb-danger-muted: oklch(0.429 0.176 28.7 / 0.17);
+  --nb-m-get-line: oklch(0.765 0.177 163.223 / 0.25);
+  --nb-m-put-line: oklch(0.645 0.168 50 / 0.25);
+  --nb-m-delete-line: oklch(0.577 0.245 27.325 / 0.25);
+  --nb-shadow-sm: 0 1px 2px oklch(0 0 0 / 0.2);
+  --nb-shadow: 0 1px 3px oklch(0 0 0 / 0.3), 0 1px 2px oklch(0 0 0 / 0.2);
+  --nb-shadow-lg: 0 4px 12px oklch(0 0 0 / 0.4), 0 2px 4px oklch(0 0 0 / 0.2);
+}
+
+/* Utilities in the block views resolve to the site's colors, as the components' own classes do. */
+.docs-content {
+  --background: var(--nb-background);
+  --foreground: var(--nb-foreground);
+  --card: var(--nb-card);
+  --card-foreground: var(--nb-card-foreground);
+  --muted: var(--nb-muted);
+  --muted-foreground: var(--nb-muted-foreground);
+  --accent: var(--nb-accent);
+  --accent-foreground: var(--nb-accent-foreground);
+  --primary: var(--nb-primary);
+  --primary-foreground: var(--nb-primary-foreground);
+  --border: var(--nb-border);
+  --ring: var(--nb-ring);
+  --success: var(--nb-success);
+  --warning: var(--nb-warning);
+  /* Tailwind's default radius, which the site keeps: rounded-lg is 0.5rem. */
+  --radius: 0.5rem;
+  font-family: var(--nb-font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/*
+ * TipTap wraps each block view in a `.react-renderer` div. The site's rhythm belongs to the
+ * component inside it, where a component's own margin, such as an Aside's `my-4`, overrides it.
+ */
+.docs-content > .react-renderer {
+  margin-top: 0;
+}
+
+:where(.docs-content > .react-renderer:not(:first-child) > [data-node-view-wrapper]) {
+  margin-top: 1.25rem;
+}
+
+/* GFM task lists: the checkbox sits on the item's line, with no bullet. */
+.docs-content ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+.docs-content li[data-checked] {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25em;
+}
+
+.docs-content li[data-checked] > label {
+  display: contents;
+}
+
+.docs-content li[data-checked] > label > span {
+  display: none;
+}
+
+.docs-content li[data-checked] > div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* TipTap writes every row into `tbody`, so the header row's corners are rounded here. */
+.docs-content tbody tr:first-child th:first-child {
+  border-top-left-radius: 0.75rem;
+}
+
+.docs-content tbody tr:first-child th:last-child {
+  border-top-right-radius: 0.75rem;
+}
+
+.docs-content .tableWrapper {
+  overflow-x: auto;
+}
+
+/* A footnote stays where it is written, numbered like the site's list of footnotes. */
+.docs-content [data-footnote-label] {
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.docs-content [data-footnote-label]::before {
+  content: attr(data-footnote-label) ".";
+  position: absolute;
+  left: 0;
+}
+
+/* Code blocks, from the template's `src/styles/globals.css`. */
+.docs-content .nb-code-figure {
+  position: relative;
+  margin: 1.5rem 0;
+  border: 1px solid var(--nb-border);
+  border-radius: 0.5rem;
+  background-color: var(--nb-card);
+  overflow: hidden;
+}
+
+.docs-content .nb-code-figure > pre {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  font-family: var(--nb-font-mono);
+  font-size: 0.875rem;
+  line-height: 1.625;
+}
+
+.docs-content .nb-code-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.875rem;
+  border-bottom: 1px solid var(--nb-border);
+  background: color-mix(in oklch, var(--nb-muted) 50%, transparent);
+  font-family: var(--nb-font-mono);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.docs-content .nb-code-title-lang {
+  flex-shrink: 0;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 0.25rem;
+  background: var(--nb-muted);
+  color: var(--nb-muted-foreground);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Aside, from the template's `src/components/ui/aside/Aside.astro`. */
+.docs-content .aside-card {
+  border: 1px solid color-mix(in oklch, var(--_c) 25%, transparent);
+  background: var(--_t);
+}
+
+.docs-content .aside-card > :first-child,
+.docs-content .aside-card > :last-child > :first-child {
+  color: var(--_c);
+}
+
+.docs-content .aside-card-body {
+  color: var(--nb-foreground);
+}
+
+.docs-content .aside-card-body p {
+  margin: 0;
+}
+
+.docs-content .aside-card-body p + p {
+  margin-top: 0.375rem;
+}
+
+.docs-content .aside-card-body a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.docs-content .aside-card-body code:not(:where(pre *)) {
+  font-family: var(--nb-font-mono);
+  font-size: 0.8125em;
+  background: color-mix(in oklch, var(--_c) 10%, transparent);
+  border: 1px solid color-mix(in oklch, var(--_c) 15%, transparent);
+  border-radius: 0.25rem;
+  padding: 0.0625rem 0.3125rem;
+}
+
+.docs-content .aside-card-body strong {
+  font-weight: 600;
+  color: inherit;
+}
+
+.docs-content .aside-card-body .nb-code-figure {
+  margin: 0.75rem 0;
+}
+
+/*
+ * Steps, from the template's `src/components/ui/steps/Steps.astro`. A `<Step>` is the only child
+ * of its `.react-renderer`, so "last step" is asked of that wrapper.
+ */
+.docs-content .steps {
+  margin: 1.5rem 0;
   counter-reset: step;
 }
 
-.editor-steps > div > ol {
+.docs-content .steps ol {
+  counter-reset: step;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.editor-steps > div > ol > li,
-.editor-step {
-  position: relative;
+.docs-content .steps ol > li,
+.docs-content .steps [data-step] {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  column-gap: 0.75rem;
+  row-gap: 0.5rem;
+  align-items: center;
   counter-increment: step;
-  margin: 0;
+  position: relative;
   min-height: 1.75rem;
-  padding: 0 0 1.5rem 2.75rem;
+  margin: 0;
+  padding-bottom: 1.5rem;
 }
 
-.editor-steps > div > ol > li:last-child,
-.editor-steps > div > :last-child > .editor-step {
+.docs-content .steps ol > li:last-child,
+.docs-content .steps .react-renderer:last-child > [data-step] {
   padding-bottom: 0;
 }
 
-.editor-steps > div > ol > li::marker {
-  content: none;
+.docs-content .steps ol > li > *,
+.docs-content .steps [data-step] > * {
+  grid-column: 2;
+  min-width: 0;
 }
 
-.editor-steps > div > ol > li::before,
-.editor-step::before {
+.docs-content .steps ol > li::before,
+.docs-content .steps [data-step]::before {
   content: counter(step);
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: grid;
-  place-items: center;
+  grid-row: 1;
+  grid-column: 1;
   width: 1.75rem;
   height: 1.75rem;
-  border: 1px solid var(--border);
   border-radius: 0.5rem;
-  background: var(--muted);
+  background: var(--nb-accent);
+  color: var(--nb-foreground);
+  border: 1px solid var(--nb-border-strong);
   font-size: 0.6875rem;
   font-weight: 600;
+  display: grid;
+  place-items: center;
+  z-index: 1;
 }
 
-.editor-steps > div > ol > li:not(:last-child)::after,
-.editor-steps > div > :not(:last-child) > .editor-step::after {
+.docs-content .steps ol > li:not(:last-child)::after,
+.docs-content .steps .react-renderer:not(:last-child) > [data-step]::after {
   content: "";
   position: absolute;
-  top: 2rem;
-  bottom: 0.25rem;
-  left: calc(0.875rem - 0.5px);
-  width: 1px;
-  background: var(--border);
+  left: calc(1.75rem / 2 - 0.75px);
+  top: 1.75rem;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--nb-border);
 }
 
-.editor-steps > div > ol > li > p:first-child {
-  margin-top: 0.125rem;
+.docs-content .steps ol > li > p {
+  margin: 0;
 }
 
 /* Placeholders on the empty line holding the cursor, from TipTap's Placeholder extension. */

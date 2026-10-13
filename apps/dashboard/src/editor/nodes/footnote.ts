@@ -14,7 +14,11 @@ export const FootnoteDefinition = Node.create({
   defining: true,
   addAttributes: () => ({ label: { default: "", rendered: false } }),
   parseHTML: () => [{ tag: "div[data-footnote]" }],
-  renderHTML: () => ["div", { "data-footnote": "" }, 0],
+  renderHTML: ({ node }) => [
+    "div",
+    { "data-footnote": "", "data-footnote-label": node.attrs.label },
+    0,
+  ],
   markdownTokenizer: {
     name: "footnoteDefinition",
     level: "block",

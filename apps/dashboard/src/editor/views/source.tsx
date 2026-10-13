@@ -63,42 +63,79 @@ export function RawInlineView({ node, updateAttributes, selected }: ReactNodeVie
   );
 }
 
-/** A fenced code block with its language and the rest of the info string, such as `title="a.ts"`. */
+const TITLE = /(?:^|\s)title=(?:"([^"]*)"|'([^']*)')/;
+
+/** The `title="…"` Nimbus shows over a code block, and the rest of the info string after it. */
+function splitMeta(meta: string | null): { title: string | null; rest: string } {
+  const match = meta ? TITLE.exec(meta) : null;
+  if (!meta || !match) return { title: null, rest: meta ?? "" };
+  const rest = (meta.slice(0, match.index) + meta.slice(match.index + match[0].length)).trim();
+  return { title: match[1] ?? match[2], rest };
+}
+
+function joinMeta(title: string | null, rest: string): string | null {
+  const quoted = title && (title.includes('"') ? `title='${title}'` : `title="${title}"`);
+  return [quoted, rest.trim()].filter(Boolean).join(" ") || null;
+}
+
+/** Plain text languages, which Nimbus shows no badge for. */
+const PLAIN = ["text", "plaintext", "plain", "txt"];
+
+/**
+ * A fenced code block as Nimbus's code figure: a title bar when the fence has a title, otherwise a
+ * language badge. The rest of the info string, such as `{1,3-5}`, is edited while the block is.
+ */
 export function CodeBlockView({ node, updateAttributes, selectionInside }: ReactNodeViewProps) {
   const { language, meta } = node.attrs as { language: string | null; meta: string | null };
-  const field =
-    "min-w-0 bg-transparent font-mono text-xs outline-none placeholder:text-muted-foreground/60";
+  const { title, rest } = splitMeta(meta);
+  const field = "min-w-0 bg-transparent outline-none placeholder:text-muted-foreground/60";
+  const languageField = (
+    <input
+      aria-label="Code language"
+      value={language ?? ""}
+      placeholder="Language"
+      spellCheck={false}
+      className={`nb-code-title-lang field-sizing-content min-w-8 ${field}`}
+      onChange={(event) =>
+        updateAttributes({ language: event.target.value.replace(/\s/g, "") || null })
+      }
+    />
+  );
   return (
-    <NodeViewWrapper
-      data-active={!!selectionInside}
-      className="group/block my-6 rounded-lg border bg-muted/50"
-    >
+    <NodeViewWrapper data-active={!!selectionInside} className="group/block nb-code-figure">
       <div
         contentEditable={false}
-        className="flex items-center gap-3 px-4 pt-2 text-muted-foreground"
+        className={`nb-code-title ${title === null ? "hidden group-focus-within/block:flex group-data-[active=true]/block:flex" : ""}`}
       >
         <input
-          aria-label="Code language"
-          value={language ?? ""}
-          placeholder="Language"
+          aria-label="Code title"
+          value={title ?? ""}
+          placeholder="Title, such as file.ts"
           spellCheck={false}
-          className={`field-sizing-content min-w-14 ${field} ${language ? "" : CHROME}`}
+          className={`flex-1 font-medium text-foreground ${field}`}
           onChange={(event) =>
-            updateAttributes({ language: event.target.value.replace(/\s/g, "") || null })
+            updateAttributes({ meta: joinMeta(event.target.value || null, rest) })
           }
         />
-        {(language || meta) && (
-          <input
-            aria-label="Code block meta"
-            value={meta ?? ""}
-            placeholder='title="file.ts"'
-            spellCheck={false}
-            className={`flex-1 ${field} ${meta ? "" : CHROME}`}
-            onChange={(event) => updateAttributes({ meta: event.target.value || null })}
-          />
-        )}
+        <input
+          aria-label="Code block meta"
+          value={rest}
+          placeholder="{1,3-5}"
+          spellCheck={false}
+          className={`field-sizing-content min-w-12 text-muted-foreground ${field} ${rest ? "" : CHROME}`}
+          onChange={(event) => updateAttributes({ meta: joinMeta(title, event.target.value) })}
+        />
+        {languageField}
       </div>
-      <pre className="m-0! rounded-none! border-0! bg-transparent! px-4! pt-1! pb-3!">
+      {title === null && language && !PLAIN.includes(language) && (
+        <div
+          contentEditable={false}
+          className="pointer-events-none absolute top-2 right-2.5 z-10 opacity-75 group-focus-within/block:hidden group-hover/block:opacity-0 group-data-[active=true]/block:hidden"
+        >
+          <span className="nb-code-title-lang font-mono">{language}</span>
+        </div>
+      )}
+      <pre>
         <NodeViewContent<"code"> as="code" />
       </pre>
     </NodeViewWrapper>

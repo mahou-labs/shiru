@@ -6,13 +6,7 @@ import {
   MenuTrigger,
 } from "@shiru/ui/components/menu";
 import { NodeViewContent, NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
-import {
-  IconAlertInfoOutlineDuo18,
-  IconAlertWarningOutlineDuo18,
-  IconLightbulbOutlineDuo18,
-  IconOctagonWarningOutlineDuo18,
-} from "nucleo-ui-outline-duo-18";
-import type { ComponentType, ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import type { AdmonitionAttrs } from "../nodes/admonition";
 import type { ComponentAttrs } from "../nodes/components";
@@ -23,38 +17,38 @@ import { FixedProp, PropField } from "./fields";
 export const CALLOUT_TYPES = ["note", "tip", "caution", "danger"] as const;
 export type CalloutType = (typeof CALLOUT_TYPES)[number];
 
-/** The only place the editor uses color: each callout type keeps its semantic tint, as on the doc. */
-const TONES: Record<
-  CalloutType,
-  { label: string; Icon: ComponentType<{ className?: string }>; className: string }
-> = {
+/** Nimbus's Aside config and its Phosphor icons: `ph:info`, `ph:lightbulb`, `ph:warning` and `ph:warning-circle`. */
+const TONES: Record<CalloutType, { label: string; color: string; tint: string; icon: string }> = {
   note: {
     label: "Note",
-    Icon: IconAlertInfoOutlineDuo18,
-    className: "border-info/24 bg-info/6 [--tone:var(--color-info-foreground)]",
+    color: "var(--nb-info)",
+    tint: "var(--nb-info-muted)",
+    icon: "M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24m0 192a88 88 0 1 1 88-88a88.1 88.1 0 0 1-88 88m16-40a8 8 0 0 1-8 8a16 16 0 0 1-16-16v-40a8 8 0 0 1 0-16a16 16 0 0 1 16 16v40a8 8 0 0 1 8 8m-32-92a12 12 0 1 1 12 12a12 12 0 0 1-12-12",
   },
   tip: {
     label: "Tip",
-    Icon: IconLightbulbOutlineDuo18,
-    className: "border-success/24 bg-success/6 [--tone:var(--color-success-foreground)]",
+    color: "var(--nb-success)",
+    tint: "var(--nb-success-muted)",
+    icon: "M176 232a8 8 0 0 1-8 8H88a8 8 0 0 1 0-16h80a8 8 0 0 1 8 8m40-128a87.55 87.55 0 0 1-33.64 69.21A16.24 16.24 0 0 0 176 186v6a16 16 0 0 1-16 16H96a16 16 0 0 1-16-16v-6a16 16 0 0 0-6.23-12.66A87.59 87.59 0 0 1 40 104.49C39.74 56.83 78.26 17.14 125.88 16A88 88 0 0 1 216 104m-16 0a72 72 0 0 0-73.74-72c-39 .92-70.47 33.39-70.26 72.39a71.65 71.65 0 0 0 27.64 56.3A32 32 0 0 1 96 186v6h64v-6a32.15 32.15 0 0 1 12.47-25.35A71.65 71.65 0 0 0 200 104m-16.11-9.34a57.6 57.6 0 0 0-46.56-46.55a8 8 0 0 0-2.66 15.78c16.57 2.79 30.63 16.85 33.44 33.45A8 8 0 0 0 176 104a9 9 0 0 0 1.35-.11a8 8 0 0 0 6.54-9.23",
   },
   caution: {
     label: "Caution",
-    Icon: IconAlertWarningOutlineDuo18,
-    className: "border-warning/28 bg-warning/8 [--tone:var(--color-warning-foreground)]",
+    color: "var(--nb-warning)",
+    tint: "var(--nb-warning-muted)",
+    icon: "M236.8 188.09L149.35 36.22a24.76 24.76 0 0 0-42.7 0L19.2 188.09a23.51 23.51 0 0 0 0 23.72A24.35 24.35 0 0 0 40.55 224h174.9a24.35 24.35 0 0 0 21.33-12.19a23.51 23.51 0 0 0 .02-23.72m-13.87 15.71a8.5 8.5 0 0 1-7.48 4.2H40.55a8.5 8.5 0 0 1-7.48-4.2a7.59 7.59 0 0 1 0-7.72l87.45-151.87a8.75 8.75 0 0 1 15 0l87.45 151.87a7.59 7.59 0 0 1-.04 7.72M120 144v-40a8 8 0 0 1 16 0v40a8 8 0 0 1-16 0m20 36a12 12 0 1 1-12-12a12 12 0 0 1 12 12",
   },
   danger: {
     label: "Danger",
-    Icon: IconOctagonWarningOutlineDuo18,
-    className:
-      "border-destructive/24 bg-destructive/6 [--tone:var(--color-destructive-foreground)]",
+    color: "var(--nb-danger)",
+    tint: "var(--nb-danger-muted)",
+    icon: "M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24m0 192a88 88 0 1 1 88-88a88.1 88.1 0 0 1-88 88m-8-80V80a8 8 0 0 1 16 0v56a8 8 0 0 1-16 0m20 36a12 12 0 1 1-12-12a12 12 0 0 1 12 12",
   },
 };
 
-/** Admonition keywords Nimbus accepts beyond the four types, styled as the closest type. */
+/** Admonition keywords Nimbus accepts beyond the four types, mapped as its admonition transform maps them. */
 const KEYWORD_TONES: Record<string, CalloutType> = {
   info: "note",
-  important: "note",
+  important: "caution",
   warning: "caution",
 };
 
@@ -71,21 +65,27 @@ type CalloutProps = {
   active: boolean;
 };
 
-/** Laid out like Nimbus's Aside: icon, then the title over the body, on the type's tint. */
+/** Nimbus's Aside: icon, then the title over the body, on the type's tint. */
 function Callout({ type, onType, title, active }: CalloutProps) {
   const tone = TONES[toneOf(type)];
-  const icon = <tone.Icon className="size-4.5" />;
+  const icon = (
+    <svg width="1em" height="1em" viewBox="0 0 256 256" aria-hidden="true">
+      <path fill="currentColor" d={tone.icon} />
+    </svg>
+  );
   return (
     <NodeViewWrapper
+      as="aside"
       data-active={active}
-      className={`group/block my-6 flex items-start gap-3 rounded-lg border px-4 py-3 ${tone.className}`}
+      className="group/block aside-card my-4 flex items-start gap-3 rounded-lg px-4 py-3"
+      style={{ "--_c": tone.color, "--_t": tone.tint } as CSSProperties}
     >
-      <div contentEditable={false} className="flex h-7 shrink-0 items-center text-(--tone)">
+      <span contentEditable={false} className="flex h-[1.375em] shrink-0 items-center">
         {onType ? (
           <Menu>
             <MenuTrigger
               aria-label={`${tone.label}. Change the callout type`}
-              className="-m-1 flex cursor-pointer rounded-md p-1 outline-none transition-colors hover:bg-(--tone)/10 focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex cursor-pointer rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {icon}
             </MenuTrigger>
@@ -102,18 +102,22 @@ function Callout({ type, onType, title, active }: CalloutProps) {
         ) : (
           icon
         )}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div contentEditable={false} className="flex h-7 items-center gap-2">
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div contentEditable={false} className="flex items-center gap-2">
           {title}
         </div>
-        <NodeViewContent className="text-[0.9375rem]/6.5 [&_p]:my-0 [&_p+p]:mt-2" />
+        <NodeViewContent className="aside-card-body text-sm leading-normal" />
       </div>
     </NodeViewWrapper>
   );
 }
 
-const TITLE = "w-full font-semibold text-(--tone) placeholder:text-(--tone)/60";
+/**
+ * Reads like the title Nimbus shows, which falls back to the type's label when there is none. Its
+ * `text-base` loses to the site's prose rule for classed paragraphs, so the size is the body's.
+ */
+const TITLE = "w-full font-semibold leading-snug placeholder:text-(--_c)!";
 
 /** `:::note[Title]`. The keyword and the bracketed title are node attributes. */
 export function AdmonitionView({
