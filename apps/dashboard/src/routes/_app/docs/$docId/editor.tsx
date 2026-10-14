@@ -48,8 +48,8 @@ function Editor() {
   const pages = files?.filter((file) => file.status !== "deleted" && flavorOf(file.path) !== null);
   const current = path ?? (pages?.find((file) => file.path === HOME) ?? pages?.[0])?.path;
   const flavor = current ? flavorOf(current) : null;
-  // PostHog is off in development, where the flag reads undefined and v2 is what gets built.
-  const editorV2 = useFeatureFlagEnabled("editor-v2") ?? import.meta.env.DEV;
+  // PostHog is off in development, where the flag reads undefined and the env var decides.
+  const editorV2 = useFeatureFlagEnabled("editor-v2") ?? import.meta.env.VITE_EDITOR_V2 === "true";
 
   const [creatingIn, setCreatingIn] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<FileStatus | null>(null);
