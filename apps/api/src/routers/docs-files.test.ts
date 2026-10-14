@@ -101,6 +101,7 @@ describe("doc files", () => {
         json: {
           headSha: null,
           targets: {},
+          runs: {},
           drafts: [
             {
               path: "content/index.mdx",

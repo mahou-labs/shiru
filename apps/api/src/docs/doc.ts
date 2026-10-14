@@ -39,6 +39,7 @@ import {
 } from "./git";
 import { LIVE, type TargetLabel } from "./names";
 import type { PublishParams } from "./publish-workflow";
+import { type BuildStep, endRun, enterStep, type Run, startRun } from "./runs";
 
 export type DocInfo = { docId: string; name: string; repo: string; docUrl: string };
 
@@ -51,6 +52,7 @@ export type PublishResult =
 export type DocStatus = {
   headSha: string | null;
   targets: DocBuilds["targets"];
+  runs: Runs;
   drafts: {
     path: string;
     op: Draft["op"];
@@ -59,6 +61,8 @@ export type DocStatus = {
     updatedBy: string;
   }[];
 };
+
+type Runs = Partial<Record<TargetLabel, Run>>;
 
 const ALARM_DELAY_MS = 15 * 60 * 1000;
 const PUBLISH_ATTEMPTS = 3;
@@ -215,10 +219,22 @@ export class Doc extends DurableObject<Env> {
     await this.apply({ type: "finished", target, workflowId, result });
   }
 
+  /** Called by the PublishWorkflow as a build enters each step, for the dashboard's timeline. */
+  buildStep(target: TargetLabel, workflowId: string, step: BuildStep): void {
+    const runs = this.runs();
+    const run = runs[target];
+    if (!run) return;
+    this.setMeta(
+      "runs",
+      JSON.stringify({ ...runs, [target]: enterStep(run, workflowId, step, Date.now()) }),
+    );
+  }
+
   status(): DocStatus {
     return {
       headSha: this.meta("head_sha"),
       targets: this.builds().targets,
+      runs: this.runs(),
       drafts: this.loadDrafts().map((draft) => ({
         path: relative(draft.path),
         op: draft.op,
@@ -255,6 +271,17 @@ export class Doc extends DurableObject<Env> {
     const { state, effects } = applyBuildEvent(this.builds(), event);
     // Recorded before any effect runs, so a crash before `create` leaves an id the alarm can check.
     this.setMeta("builds", JSON.stringify(state));
+    const now = Date.now();
+    const runs = this.runs();
+    for (const [target, run] of Object.entries(runs) as [TargetLabel, Run][]) {
+      runs[target] = endRun(run, state.targets[target], now);
+    }
+    for (const effect of effects) {
+      if (effect.type === "startWorkflow") {
+        runs[effect.target] = startRun(effect.workflowId, effect.sha, now);
+      }
+    }
+    this.setMeta("runs", JSON.stringify(runs));
     for (const effect of effects) {
       switch (effect.type) {
         case "setAlarm":
@@ -449,6 +476,11 @@ export class Doc extends DurableObject<Env> {
     const stored = this.meta("doc");
     if (!stored) throw new Error("init was never called for this doc");
     return JSON.parse(stored) as DocInfo;
+  }
+
+  private runs(): Runs {
+    const stored = this.meta("runs");
+    return stored ? (JSON.parse(stored) as Runs) : {};
   }
 
   private meta(key: string): string | null {

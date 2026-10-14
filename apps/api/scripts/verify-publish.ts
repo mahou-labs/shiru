@@ -100,6 +100,13 @@ async function rpc<T>(procedure: string, input: unknown): Promise<T> {
 type Status = {
   headSha: string | null;
   targets: { live?: { kind: string; deployed: { sha: string } | null; error?: string } };
+  runs: {
+    live?: {
+      sha: string;
+      steps: { queued?: number; preparing?: number; building?: number };
+      ended: { at: number; ok: boolean } | null;
+    };
+  };
   drafts: { path: string; op: string; conflict: boolean; updatedAt: number; updatedBy: string }[];
 };
 
@@ -274,6 +281,22 @@ try {
   console.log(`publish to live (measured here): ${first.seconds.toFixed(1)}s`);
   check("live is built from the head commit", first.status.headSha, published.sha);
   check("Artifacts head matches the Doc head", remoteHead(docId)[0]?.hash, published.sha);
+  const liveRun = first.status.runs.live;
+  const times = [
+    liveRun?.steps.queued,
+    liveRun?.steps.preparing,
+    liveRun?.steps.building,
+    liveRun?.ended?.at,
+  ];
+  check(
+    "the run records every step in order and ends ok",
+    [
+      liveRun?.sha,
+      liveRun?.ended?.ok,
+      times.every((at, i) => typeof at === "number" && (i === 0 || at >= times[i - 1]!)),
+    ],
+    [published.sha, true, true],
+  );
 
   const home = await page("/");
   check(

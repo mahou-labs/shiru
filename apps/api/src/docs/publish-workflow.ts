@@ -42,10 +42,13 @@ export class PublishWorkflow extends WorkflowEntrypoint<Env, PublishParams> {
         "build",
         { retries: { limit: 2, delay: "5 seconds", backoff: "constant" }, timeout: "10 minutes" },
         async (): Promise<BuildResult> => {
+          const doc = docs.getByName(docId);
+          await doc.buildStep(target, event.instanceId, "preparing");
           const files = await readCommitFiles(await this.env.ARTIFACTS.get(repo), sha, docsRoot);
           const builder = builders.getByName(`build-${docId}-${target}`);
           const reset = await builder.reset(files);
           if (!reset.ok) return failure(reset.errors);
+          await doc.buildStep(target, event.instanceId, "building");
           const built = await builder.build({ docUrl, docsRoot });
           return built.ok
             ? { ok: true, templateVersion: built.templateVersion }
