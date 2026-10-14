@@ -23,9 +23,12 @@ import {
   IconPencilOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 
+import { PublishTimeline } from "@/components/publish-timeline";
 import { canPublish, usePublish, type PublishState } from "@/hooks/use-publish";
 import { errorMessage } from "@/lib/errors";
+import { formatDuration } from "@/lib/publish-timeline";
 
+import type { Run } from "../../../api/src/docs/runs";
 import type { AppRouterClient } from "../../../api/src/routers";
 
 type Outputs = InferClientOutputs<AppRouterClient>["docs"];
@@ -36,7 +39,7 @@ const shortSha = (sha: string) => sha.slice(0, 7);
 const files = (count: number) => (count === 1 ? "1 file" : `${count} files`);
 
 export function DocCard({ doc }: { doc: Doc }) {
-  const { state, publish } = usePublish(doc.id, { silent: true });
+  const { state, run, publish } = usePublish(doc.id, { silent: true });
   const live = state && (state.kind === "live" ? state.sha : "live" in state ? state.live : null);
   const host = new URL(doc.url).host;
 
@@ -67,7 +70,10 @@ export function DocCard({ doc }: { doc: Doc }) {
       </CardHeader>
       {state && (
         <CardPanel className="flex flex-col gap-3 text-sm">
-          <StatusLine state={state} />
+          <StatusLine state={state} run={run} />
+          {run && (state.kind === "building" || state.kind === "failed") && (
+            <PublishTimeline run={run} />
+          )}
           {state.kind === "failed" && <BuildError error={state.error} />}
           {publish.error && <PublishErrorAlert error={publish.error} />}
           {publish.data && publish.data.skipped.length > 0 && (
@@ -126,7 +132,7 @@ function StateBadge({ state }: { state: PublishState }) {
   }
 }
 
-function StatusLine({ state }: { state: PublishState }) {
+function StatusLine({ state, run }: { state: PublishState; run?: Run }) {
   const pending =
     state.changes > 0
       ? ` ${files(state.changes)} ready to publish.`
@@ -148,9 +154,7 @@ function StatusLine({ state }: { state: PublishState }) {
           ? `Building. Readers still see ${shortSha(state.live)} until it finishes.`
           : "Building the first version of this site.";
       case "live":
-        return state.atHead
-          ? `Live at ${shortSha(state.sha)}.`
-          : `Live at ${shortSha(state.sha)}. Newer commits are not built yet.`;
+        return `Live at ${shortSha(state.sha)}.${tookLine(run)}${state.atHead ? "" : " Newer commits are not built yet."}`;
       case "failed":
         return state.live
           ? `The last build failed. Readers still see ${shortSha(state.live)}.`
@@ -164,6 +168,13 @@ function StatusLine({ state }: { state: PublishState }) {
       {conflicts}
     </p>
   );
+}
+
+/** How long the last successful publish took, when the timeline has it. */
+function tookLine(run: Run | undefined) {
+  const queued = run?.steps.queued;
+  if (!run?.ended?.ok || queued === undefined) return "";
+  return ` Last publish took ${formatDuration(run.ended.at - queued)}.`;
 }
 
 function BuildError({ error }: { error: string }) {

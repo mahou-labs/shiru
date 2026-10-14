@@ -53,5 +53,5 @@ export function usePublish(docId: string, meta?: { silent?: boolean }) {
     // Publishing commits drafts, so the file tree's statuses change along with the doc status.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.docs.key() }),
   });
-  return { state: status && publishState(status), publish };
+  return { state: status && publishState(status), run: status?.runs[LIVE], publish };
 }
