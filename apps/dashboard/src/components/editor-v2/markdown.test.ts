@@ -5,15 +5,15 @@ import { MarkdownManager } from "@tiptap/markdown";
 import { markdownToMdast, mdxToMdast } from "satteri";
 import { describe, expect, test } from "vite-plus/test";
 
+import type { Flavor } from "@/components/editor/pages";
+
 import {
   createMarked,
-  flavorOf,
   getProp,
   getStringProp,
   markdownExtensions,
   parseBody,
   setProp,
-  type Flavor,
   type JsxProp,
 } from "./markdown";
 import { matchTemplates, TEMPLATES } from "./templates";
@@ -129,20 +129,12 @@ const nimbusPage = [
   "",
 ].join("\n");
 
-const fixtures = new URL("../../../builder/fixtures/", import.meta.url);
+const fixtures = new URL("../../../../builder/fixtures/", import.meta.url);
 
 function fixtureBody(path: string): string {
   const source = readFileSync(new URL(path, fixtures), "utf8");
   return source.replace(/^---\n[\s\S]*?\n---\n/, "");
 }
-
-describe("flavorOf", () => {
-  test("maps page extensions to flavors", () => {
-    expect(flavorOf("docs/content/index.mdx")).toBe("mdx");
-    expect(flavorOf("docs/content/guide.md")).toBe("md");
-    expect(flavorOf("docs/content/data.json")).toBe(null);
-  });
-});
 
 describe("round trip", () => {
   test.each([

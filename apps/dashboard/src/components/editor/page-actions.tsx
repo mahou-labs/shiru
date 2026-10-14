@@ -26,7 +26,7 @@ import { useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { orpc } from "@/utils/orpc";
 
-import type { FileStatus, DocPath } from "../../../api/src/docs/drafts";
+import type { FileStatus, DocPath } from "../../../../api/src/docs/drafts";
 import { newPagePathError, newPageSource, routeOf, suggestPath, withFile } from "./pages";
 import { settled } from "./settled";
 

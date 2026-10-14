@@ -10,6 +10,7 @@ import { Sheet, SheetPopup } from "@shiru/ui/components/sheet";
 import { Skeleton } from "@shiru/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useFeatureFlagEnabled } from "@posthog/react";
 import {
   IconArrowLeftOutlineDuo18,
   IconFileOutlineDuo18,
@@ -20,11 +21,11 @@ import { useState } from "react";
 import { flushSync } from "react-dom";
 import { z } from "zod";
 
-import { flavorOf } from "@/editor/markdown";
-import { DeletePageDialog, NewPageDialog, useDeletePage } from "@/editor/page-actions";
-import { PageEditor } from "@/editor/page-editor";
-import { PageTree } from "@/editor/page-tree";
-import { HOME, PAGES_ROOT } from "@/editor/pages";
+import { DeletePageDialog, NewPageDialog, useDeletePage } from "@/components/editor/page-actions";
+import { PageTree } from "@/components/editor/page-tree";
+import { flavorOf, HOME, PAGES_ROOT } from "@/components/editor/pages";
+import { PageEditor as PageEditorV1 } from "@/components/editor-v1/page-editor";
+import { PageEditor as PageEditorV2 } from "@/components/editor-v2/page-editor";
 import { orpc } from "@/utils/orpc";
 
 import type { FileStatus } from "../../../../../../api/src/docs/drafts";
@@ -47,6 +48,8 @@ function Editor() {
   const pages = files?.filter((file) => file.status !== "deleted" && flavorOf(file.path) !== null);
   const current = path ?? (pages?.find((file) => file.path === HOME) ?? pages?.[0])?.path;
   const flavor = current ? flavorOf(current) : null;
+  // PostHog is off in development, where the flag reads undefined and v2 is what gets built.
+  const editorV2 = useFeatureFlagEnabled("editor-v2") ?? import.meta.env.DEV;
 
   const [creatingIn, setCreatingIn] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<FileStatus | null>(null);
@@ -134,15 +137,26 @@ function Editor() {
         }}
       />
       {current && flavor && current !== closing ? (
-        <PageEditor
-          key={current}
-          docId={docId}
-          path={current}
-          flavor={flavor}
-          file={pages?.find((file) => file.path === current)}
-          autoFocus={focusBody === current}
-          pagesButton={pagesButton}
-        />
+        editorV2 ? (
+          <PageEditorV2
+            key={current}
+            docId={docId}
+            path={current}
+            flavor={flavor}
+            file={pages?.find((file) => file.path === current)}
+            autoFocus={focusBody === current}
+            pagesButton={pagesButton}
+          />
+        ) : (
+          <PageEditorV1
+            key={current}
+            docId={docId}
+            path={current}
+            file={pages?.find((file) => file.path === current)}
+            autoFocus={focusBody === current}
+            pagesButton={pagesButton}
+          />
+        )
       ) : (
         pages &&
         current !== closing && (

@@ -1,6 +1,6 @@
 import { Node, type JSONContent } from "@tiptap/core";
 
-import type { Flavor } from "../markdown";
+import type { Flavor } from "@/components/editor/pages";
 import { renderBlocks, type Syntax } from "./context";
 
 /*

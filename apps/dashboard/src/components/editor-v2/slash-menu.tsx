@@ -46,7 +46,7 @@ import {
   type ComponentType,
 } from "react";
 
-import type { Flavor } from "./markdown";
+import type { Flavor } from "@/components/editor/pages";
 import { matchTemplates, type Template } from "./templates";
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {

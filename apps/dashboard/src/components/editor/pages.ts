@@ -1,9 +1,19 @@
 import { slugify } from "@/lib/slug";
 
-import { DocPath, type FileStatus } from "../../../api/src/docs/drafts";
+import { DocPath, type FileStatus } from "../../../../api/src/docs/drafts";
 
 export const PAGES_ROOT = "content/";
 export const HOME = "content/index.mdx";
+
+/** `.mdx` pages get Nimbus components, admonitions and MDX escaping. `.md` pages are plain GFM. */
+export type Flavor = "md" | "mdx";
+
+/** The flavor of an editable page, or null when the path is not a page. */
+export function flavorOf(path: string): Flavor | null {
+  if (path.endsWith(".mdx")) return "mdx";
+  if (path.endsWith(".md")) return "md";
+  return null;
+}
 
 /** The URL a page serves, as build-site derives it: `content/a/index.mdx` serves `/a`. */
 export function routeOf(path: string) {

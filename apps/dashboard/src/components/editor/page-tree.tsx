@@ -9,7 +9,7 @@ import {
   IconTrashOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 
-import type { FileStatus } from "../../../api/src/docs/drafts";
+import type { FileStatus } from "../../../../api/src/docs/drafts";
 import { isHome, PAGES_ROOT } from "./pages";
 
 export type TreeNode =

@@ -1,6 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 
-import type { Flavor } from "./markdown";
+import type { Flavor } from "@/components/editor/pages";
 
 /**
  * A block the slash menu inserts. `content` is plain ProseMirror JSON, so the menu inserts it and

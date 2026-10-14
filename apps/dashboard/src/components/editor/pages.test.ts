@@ -1,6 +1,14 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { isHome, newPagePathError, newPageSource, routeOf, suggestPath, withFile } from "./pages";
+import {
+  flavorOf,
+  isHome,
+  newPagePathError,
+  newPageSource,
+  routeOf,
+  suggestPath,
+  withFile,
+} from "./pages";
 
 const file = (path: string, status: "unchanged" | "added" | "deleted" = "unchanged") => ({
   path,
@@ -102,5 +110,13 @@ describe("withFile", () => {
     expect(withFile([file("content/a.mdx", "deleted")], file("content/a.mdx"))).toEqual([
       file("content/a.mdx"),
     ]);
+  });
+});
+
+describe("flavorOf", () => {
+  test("maps page extensions to flavors", () => {
+    expect(flavorOf("docs/content/index.mdx")).toBe("mdx");
+    expect(flavorOf("docs/content/guide.md")).toBe("md");
+    expect(flavorOf("docs/content/data.json")).toBe(null);
   });
 });

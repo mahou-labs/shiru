@@ -6,6 +6,8 @@ import { Marked, type marked } from "marked";
 import type { Schema } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 
+import type { Flavor } from "@/components/editor/pages";
+
 import { admonition } from "./nodes/admonition";
 import { Badge } from "./nodes/badge";
 import {
@@ -32,16 +34,6 @@ import { rawBlock, rawInline } from "./nodes/raw";
 
 export { COMPONENTS, type ComponentAttrs } from "./nodes/components";
 export { getProp, getStringProp, setProp, type JsxProp, type JsxPropValue } from "./nodes/props";
-
-/** `.mdx` pages get Nimbus components, admonitions and MDX escaping. `.md` pages are plain GFM. */
-export type Flavor = "md" | "mdx";
-
-/** The flavor of an editable page, or null when the path is not a page. */
-export function flavorOf(path: string): Flavor | null {
-  if (path.endsWith(".mdx")) return "mdx";
-  if (path.endsWith(".md")) return "md";
-  return null;
-}
 
 /**
  * The schema and Markdown rules for a page body, without the Markdown extension or any UI.

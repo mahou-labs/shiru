@@ -6,7 +6,7 @@ import type {
 } from "@tiptap/core";
 import type { Schema } from "@tiptap/pm/model";
 
-import type { Flavor } from "../markdown";
+import type { Flavor } from "@/components/editor/pages";
 
 /** What every node needs to know about the page it parses and renders. */
 export type Syntax = {

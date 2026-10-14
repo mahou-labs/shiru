@@ -4,7 +4,7 @@
  * editor's root carries.
  */
 @import "@fontsource-variable/jetbrains-mono";
-@import "../../../builder/template/src/styles/prose.css";
+@import "../../../../builder/template/src/styles/prose.css";
 
 /* The template's tokens from `src/styles/globals.css`, which `editor.test.ts` keeps in step. */
 .docs-content {
