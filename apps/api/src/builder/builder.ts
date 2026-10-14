@@ -51,14 +51,18 @@ export class Builder extends DurableObject<Env> {
       const slash = path.lastIndexOf("/");
       if (slash > 0) dirs.add(`/work/src/${path.slice(0, slash)}`);
     }
-    await run(container, ["rm", "-rf", "/work"]);
+    // /work/dist is the last good build, which stays served until a new one succeeds.
+    await run(container, ["rm", "-rf", "/work/src", "/work/next"]);
     await run(container, ["mkdir", "-p", ...dirs]);
     const fs = new Files(container);
     for (const { path, content } of files) await fs.writeFile(`/work/src/${path}`, content);
     return { ok: true };
   }
 
-  /** Builds /work/src/<docsRoot> into /work/dist and lists what it wrote. */
+  /**
+   * Builds /work/src/<docsRoot> into /work/next and lists what it wrote. Only a build that succeeds
+   * replaces /work/dist, so a failed one leaves the last good build in place.
+   */
   async build({ docUrl, docsRoot }: { docUrl: string; docsRoot: string }): Promise<BuildResult> {
     const src = sourceDir(docsRoot);
     if (typeof src !== "string") return { ok: false, errors: [src.error] };
@@ -72,15 +76,19 @@ export class Builder extends DurableObject<Env> {
         String(BUILD_TIMEOUT_SECONDS),
         "build-site",
         src,
-        "/work/dist",
+        "/work/next",
       ],
       { SITE_URL: docUrl },
     );
     const doc = parseBuildSiteOutput(build.exitCode, build.stdout, build.stderr);
     if (!doc.ok) return doc;
 
-    const manifest = await output(container, ["dist-manifest", "/work/dist"]);
-    return manifestResult(doc.templateVersion, manifest.exitCode, manifest.stdout);
+    const manifest = await output(container, ["dist-manifest", "/work/next"]);
+    const result = manifestResult(doc.templateVersion, manifest.exitCode, manifest.stdout);
+    if (!result.ok) return result;
+    await run(container, ["rm", "-rf", "/work/dist"]);
+    await run(container, ["mv", "/work/next", "/work/dist"]);
+    return result;
   }
 
   /** The bytes of one built file, by its manifest path. */
