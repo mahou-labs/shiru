@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
             // Overridable so a verify script can point it at its own API server.
             DEV_DOCS_ORIGIN: bindings.text(process.env.DEV_DOCS_ORIGIN ?? "http://localhost:3000"),
           }
-        : { ...domains, DISPATCHER: bindings.dispatchNamespace({ namespace: "production" }) },
+        : { ...domains, DISPATCHER: bindings.dispatchNamespace({ namespace: "shiru-docs" }) },
     },
   };
 });

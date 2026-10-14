@@ -52,7 +52,7 @@ matter whether the commit came from the web editor, a `git push`, or a rollback.
 │               ▼                                                            │
 │        Dispatch Worker  ── hostname → Worker name ──▶ env.DISPATCHER.get() │
 │                                                                            │
-│        Dispatch namespace "production"                                     │
+│        Dispatch namespace "shiru-docs"                                     │
 │          [acme]  [acme--draft]  [acme--pr-12]  [globex]  ...               │
 │          one user Worker per site and per preview, each with its assets    │
 └────────────────────────────────────────────────────────────────────────────┘
