@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
           development ? "http://localhost:3001" : "https://app.shiru.sh",
         ),
         SITE_URL: bindings.text(development ? "http://localhost:3002" : "https://shiru.sh"),
-        // Docs sites live at <slug>.DOCS_DOMAIN. The production domain is not bought yet; `.invalid`
+        // Docs live at <slug>.DOCS_DOMAIN. The production domain is not bought yet; `.invalid`
         // can never resolve, so nothing points at a domain someone else could own.
         DOCS_DOMAIN: bindings.text(development ? "docs.localhost" : "shiru-docs.invalid"),
         BETTER_AUTH_SECRET: bindings.secret(),
@@ -62,17 +62,16 @@ export default defineConfig(({ mode }) => {
         // No PostHog project yet. Switch to bindings.secret() in production once a key exists.
         POSTHOG_KEY: bindings.text(""),
         POSTHOG_HOST: bindings.text("https://us.i.posthog.com"),
-        BUILDER: bindings.durableObject({ worker: "shiru-api", exportName: "Builder" }),
-        SITE_DO: bindings.durableObject({ worker: "shiru-api", exportName: "SiteDO" }),
+        DOCS: bindings.durableObject({ worker: "shiru-api", exportName: "Doc" }),
         PUBLISH_WORKFLOW: bindings.workflow({
           name: "shiru-publish",
           worker: "shiru-api",
           exportName: "PublishWorkflow",
         }),
-        // One repo per managed site. Artifacts has no local simulation, so development uses a
+        // One repo per managed doc. Artifacts has no local simulation, so development uses a
         // real staging namespace; the production namespace is created at first deploy.
         ARTIFACTS: bindings.artifacts({
-          namespace: development ? "shiru-staging" : "shiru-sites",
+          namespace: development ? "shiru-staging" : "shiru-docs",
           dev: { remote: true },
         }),
       },
@@ -80,7 +79,7 @@ export default defineConfig(({ mode }) => {
         // The previous app on this Worker ran a Durable Object; retiring it lets this code deploy.
         BuilderSandbox: exports.durableObject({ state: "deleted" }),
         Builder: exports.durableObject({ storage: "sqlite", container: builder }),
-        SiteDO: exports.durableObject({ storage: "sqlite" }),
+        Doc: exports.durableObject({ storage: "sqlite" }),
         PublishWorkflow: exports.workflow({ name: "shiru-publish" }),
       },
     },

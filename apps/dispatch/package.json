@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "cf dev",
     "build": "cf build",
+    "deploy": "cf deploy --prebuilt",
+    "deploy:dry-run": "cf deploy --prebuilt --dry-run",
     "test": "vp test"
   },
   "dependencies": {

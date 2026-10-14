@@ -91,7 +91,7 @@ app.get("/", (c) => {
 });
 
 export { Builder } from "./builder/builder";
-export { PublishWorkflow } from "./sites/publish-workflow";
-export { SiteDO } from "./sites/site-do";
+export { PublishWorkflow } from "./docs/publish-workflow";
+export { Doc } from "./docs/doc";
 
 export default app;

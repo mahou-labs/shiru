@@ -127,7 +127,7 @@ describe("manifestResult", () => {
     });
   });
 
-  it("rejects entries a hostile container could use to escape the site", () => {
+  it("rejects entries a hostile container could use to escape the doc", () => {
     const traversal = JSON.stringify([{ ...entry, path: "/../x" }]);
     const badHash = JSON.stringify([{ ...entry, hash: "XYZ" }]);
     expect([
@@ -143,7 +143,7 @@ describe("manifestResult", () => {
     );
   });
 
-  it("fails a site whose manifest would not fit in a Workflow step result", () => {
+  it("fails a doc whose manifest would not fit in a Workflow step result", () => {
     const manifest = Array.from({ length: 12_000 }, (_, i) => ({
       ...entry,
       path: `/guides/page-${i}/index.html`,

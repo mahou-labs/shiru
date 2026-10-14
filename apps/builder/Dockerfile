@@ -10,8 +10,7 @@ RUN npm ci --no-audit --no-fund && npm cache clean --force
 COPY template/ ./
 COPY src/ /builder/src/
 
-# build-site imports satteri and zod. They resolve from the template's
-# node_modules, so build-site parses MDX with the same version Astro compiles with.
+# build-site imports zod, which resolves from the template's node_modules.
 RUN ln -s /builder/template/node_modules /builder/node_modules \
   && chmod +x /builder/src/build-site.ts /builder/src/dist-manifest.ts \
   && ln -s /builder/src/build-site.ts /usr/local/bin/build-site \

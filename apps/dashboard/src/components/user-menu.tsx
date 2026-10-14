@@ -39,7 +39,7 @@ export function UserMenu() {
     <SidebarMenu>
       <SidebarMenuItem>
         <Menu>
-          <MenuTrigger render={<SidebarMenuButton size="lg" />}>
+          <MenuTrigger render={<SidebarMenuButton size="lg" tooltip={user.name} />}>
             <Avatar className="size-8 rounded-lg">
               <AvatarImage src={user.image ?? undefined} />
               <AvatarFallback className="rounded-lg">{initials(user.name)}</AvatarFallback>

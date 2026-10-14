@@ -23,24 +23,24 @@ matter whether the commit came from the web editor, a `git push`, or a rollback.
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                               WRITING                                       │
 │                                                                            │
-│  Editor UI ──autosave──▶ App Worker ──▶ SiteDO (drafts)                    │
-│  Editor UI ──Publish───▶ App Worker ──▶ SiteDO ──commit──▶ site repo       │
+│  Editor UI ──autosave──▶ App Worker ──▶ Doc (drafts)                    │
+│  Editor UI ──Publish───▶ App Worker ──▶ Doc ──commit──▶ site repo       │
 │  git push / PR ─────────────────────────────────────────▶ site repo        │
 └────────────────────────────────────────────────────────────────────────────┘
                                                                  │
               site repo = Artifacts repo (managed) or GitHub repo (connected)
                                                                  │
-                           managed: SiteDO starts the build after its commit
-                           connected: push / pull_request webhook → SiteDO
+                           managed: Doc starts the build after its commit
+                           connected: push / pull_request webhook → Doc
                                                                  ▼
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                              BUILDING                                       │
 │                                                                            │
-│  SiteDO.build(target, sha) → PublishWorkflow                               │
+│  Doc.build(target, sha) → PublishWorkflow                               │
 │    step: fetch   → download the tarball for sha, write it into the sandbox │
 │    step: build   → Sandbox: validate config → astro build → dist/          │
 │    step: deploy  → Workflow uploads dist/ through the assets upload API    │
-│    step: report  → SiteDO.buildFinished(...)  (success or failure)         │
+│    step: report  → Doc.buildFinished(...)  (success or failure)         │
 └────────────────────────────────────────────────────────────────────────────┘
                                                                  │
                                                                  ▼
@@ -52,7 +52,7 @@ matter whether the commit came from the web editor, a `git push`, or a rollback.
 │               ▼                                                            │
 │        Dispatch Worker  ── hostname → Worker name ──▶ env.DISPATCHER.get() │
 │                                                                            │
-│        Dispatch namespace "production"                                     │
+│        Dispatch namespace "shiru-docs"                                     │
 │          [acme]  [acme--draft]  [acme--pr-12]  [globex]  ...               │
 │          one user Worker per site and per preview, each with its assets    │
 └────────────────────────────────────────────────────────────────────────────┘
@@ -65,8 +65,8 @@ matter whether the commit came from the web editor, a `git push`, or a rollback.
 | Component       | Cloudflare product                        | Count                             | Responsibility                                                                           |
 | --------------- | ----------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------- |
 | Editor UI       | Static assets on the App Worker           | 1                                 | File tree, MDX editor, autosave indicator, Publish button, publish status, conflict view |
-| App Worker      | Worker                                    | 1                                 | Auth, editor API, GitHub webhooks, routes requests to the right SiteDO                   |
-| SiteDO          | Durable Object (SQLite storage)           | 1 per site                        | Drafts, tree cache, publish state, build lock and coalescing, reconciliation alarm       |
+| App Worker      | Worker                                    | 1                                 | Auth, editor API, GitHub webhooks, routes requests to the right Doc                      |
+| Doc             | Durable Object (SQLite storage)           | 1 per site                        | Drafts, tree cache, publish state, build lock and coalescing, reconciliation alarm       |
 | Site repo       | Artifacts (managed) or GitHub (connected) | 1 per site                        | Source of truth for content and config; one commit per publish                           |
 | Upload staging  | R2                                        | 1 bucket                          | Images uploaded in the editor, held until the next publish commits them                  |
 | PublishWorkflow | Workflows                                 | 1 class                           | Durable, retried fetch, build, deploy, report                                            |
@@ -86,7 +86,7 @@ matter whether the commit came from the web editor, a `git push`, or a rollback.
 A site's source is stored in D1 as a discriminated union:
 
 ```ts
-type SiteSource =
+type DocSource =
   | { kind: "managed"; artifactsRepo: string }
   | {
       kind: "github";
@@ -101,7 +101,7 @@ type SiteSource =
 - **Managed.** The platform owns the repo in Artifacts. The web editor is the usual writer. This suits
   teams with no developers in the loop. Artifacts also accepts `git push` from anyone holding a repo
   token, so a managed site reacts to the `cf.artifacts.repo.pushed` event (delivered through Queues)
-  the same way a connected site reacts to a GitHub push. The SiteDO commits through isomorphic-git,
+  the same way a connected site reacts to a GitHub push. The Doc commits through isomorphic-git,
   because the Artifacts binding reads repos but cannot write them.
 - **Connected.** The client owns the repo on GitHub. Developers push and review there, and the web
   editor commits to the same repo through the GitHub App.
@@ -138,10 +138,10 @@ Both modes are plain Git, so a site keeps its full history when it moves.
 
 ## 4. Editing: drafts and autosave
 
-### SiteDO, one Durable Object per site
+### Doc, one Durable Object per site
 
 A Durable Object has its own storage, and there is exactly one instance per name. It handles
-requests one at a time. `SiteDO("acme")` is the single place where everything about Acme's site is
+requests one at a time. `Doc("acme")` is the single place where everything about Acme's site is
 coordinated.
 
 **Storage (SQLite inside the DO):**
@@ -268,7 +268,7 @@ build(target, sha):
   workflow_id = `${site}-${target}-${seq}`
   targets[target] = { state: building, building_sha: sha, workflow_id, ... }
   set alarm(now + 15 minutes)
-  PublishWorkflow.create({ id: workflow_id, params: { site, target, sha, siteUrl, docsRoot } })
+  PublishWorkflow.create({ id: workflow_id, params: { site, target, sha, docUrl, docsRoot } })
 
 buildFinished(target, workflow_id, result):
   if workflow_id != targets[target].workflow_id: return   # stale report
@@ -296,12 +296,12 @@ Rules:
 ### PublishWorkflow
 
 ```ts
-type Params = { site: string; target: string; sha: string; siteUrl: string; docsRoot: string };
+type Params = { site: string; target: string; sha: string; docUrl: string; docsRoot: string };
 
 export class PublishWorkflow extends WorkflowEntrypoint<Env, Params> {
   async run(event, step) {
-    const { site, target, sha, siteUrl, docsRoot } = event.payload;
-    const siteDO = this.env.SITE_DO.getByName(site);
+    const { site, target, sha, docUrl, docsRoot } = event.payload;
+    const siteDO = this.env.DOCS.getByName(site);
     const builder = this.env.BUILDER.getByName(`build-${site}-${target}`);
 
     try {
@@ -312,7 +312,7 @@ export class PublishWorkflow extends WorkflowEntrypoint<Env, Params> {
       });
 
       const result = await step.do("build", { retries: { limit: 2, delay: "5 seconds" } }, () =>
-        builder.build({ siteUrl }),
+        builder.build({ docUrl }),
       );
 
       await step.do("deploy", { retries: { limit: 3, delay: "5 seconds" } }, async () => {
@@ -406,9 +406,9 @@ The App Worker receives GitHub webhooks.
 1. **Verify `X-Hub-Signature-256`.** Reject anything that fails. Code past this point trusts the
    payload's shape.
 2. **Find the site** from the installation ID and repo name in D1.
-3. **Forward to the SiteDO.**
+3. **Forward to the Doc.**
 
-| Event                                           | SiteDO action                                                                 |
+| Event                                           | Doc action                                                                    |
 | ----------------------------------------------- | ----------------------------------------------------------------------------- |
 | `push` to the site's branch                     | `onPush(ref)`, then `build("live", head_sha)`                                 |
 | `pull_request` opened, synchronize, or reopened | `build("pr-<n>", head.sha)`, then post the preview URL as a deployment status |
@@ -525,8 +525,8 @@ salted hashes.
 
 A preview is another user Worker with a suffixed name, built through the same `build(target, sha)`.
 
-- **The Preview button.** The SiteDO commits the current drafts to a `preview` branch in the site repo
-  without clearing them. Then it calls `build("draft", sha)` with `siteUrl` set to the preview URL.
+- **The Preview button.** The Doc commits the current drafts to a `preview` branch in the site repo
+  without clearing them. Then it calls `build("draft", sha)` with `docUrl` set to the preview URL.
 - **Pull request previews.** Section 6 covers them.
 - **Always rebuild for production. Never promote a preview's files.** Astro bakes `site` into
   canonical URLs, the sitemap, and `llms.txt`. The rebuild is still cheap, because unchanged files are
@@ -539,7 +539,7 @@ A preview is another user Worker with a suffixed name, built through the same `b
 
 A rollback is a revert commit followed by an ordinary publish:
 
-1. The SiteDO creates a commit on the site's branch whose tree equals the tree at the old SHA.
+1. The Doc creates a commit on the site's branch whose tree equals the tree at the old SHA.
 2. The site builds that commit like any other.
 
 Building an old SHA directly would make `deployed_sha` and `head_sha` disagree, and the next publish
@@ -579,7 +579,7 @@ do not exist.
 - **Logs.** Build logs can contain anything the build printed. `redactLog` filters them before the
   editor shows them.
 - **User Workers.** They run in untrusted mode (no shared cache, no `request.cf`).
-- **Editor auth.** The App Worker checks site membership in D1 before forwarding to a SiteDO.
+- **Editor auth.** The App Worker checks site membership in D1 before forwarding to a Doc.
 - **Uploads.** The App Worker checks content type and size before writing to R2.
 
 ---
@@ -605,7 +605,7 @@ Get it correct with a pre-baked image first. Then measure, then add warm sandbox
 | ---------------------------------------------------- | ----------------------------------------------- | -------------------------------------------- |
 | Clients, users, memberships, hostnames, site sources | D1                                              | Cross-site queries                           |
 | Hostname to site lookup cache                        | KV                                              | Read on every request by the Dispatch Worker |
-| Drafts, tree cache, per-target build state           | SiteDO (SQLite)                                 | One per site, single writer                  |
+| Drafts, tree cache, per-target build state           | Doc (SQLite)                                    | One per site, single writer                  |
 | Uploaded images before publish                       | R2 staging                                      | Deleted after commit or when orphaned        |
 | Content, config, images, history                     | Site repo (Artifacts or GitHub)                 | One commit per publish                       |
 | Template, layouts, components                        | Sandbox image                                   | Versioned with the platform                  |
@@ -622,7 +622,7 @@ The design already has the right shape for multiplayer editing:
   stored continuously.
 - **Libraries to evaluate.** `partyserver` and `y-partyserver` (Cloudflare/PartyKit) on the server,
   CodeMirror and `y-codemirror` in the editor.
-- **What changes.** Debounced autosave becomes live sync. SiteDO stays the publish coordinator. On
+- **What changes.** Debounced autosave becomes live sync. Doc stays the publish coordinator. On
   Publish, it asks each changed DocDO for its current text and commits it. Conflict detection against
   `base_blob_sha` stays as it is.
 - **Start with a raw-MDX editor and a rendered preview pane.** Round-tripping WYSIWYG and MDX

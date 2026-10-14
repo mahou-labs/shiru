@@ -22,9 +22,9 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { IconBookOpen2OutlineDuo18 } from "nucleo-ui-outline-duo-18";
 import { useState } from "react";
 
-import { CreateSiteForm } from "@/components/create-site-form";
+import { CreateDocForm } from "@/components/create-doc-form";
 import { Page } from "@/components/page";
-import { SiteCard } from "@/components/site-card";
+import { DocCard } from "@/components/doc-card";
 import { accessLabel } from "@/lib/access";
 import { accessQuery, useSession } from "@/lib/queries";
 import { orpc } from "@/utils/orpc";
@@ -36,8 +36,8 @@ export const Route = createFileRoute("/_app/")({
 function Dashboard() {
   const { user } = useSession();
   const { data: access } = useQuery(accessQuery);
-  const { data: sites } = useQuery(orpc.sites.list.queryOptions());
-  const publicSite = sites?.find((site) => site.visibility === "public");
+  const { data: docs } = useQuery(orpc.docs.list.queryOptions());
+  const publicDoc = docs?.find((doc) => doc.visibility === "public");
   const [creating, setCreating] = useState(false);
 
   return (
@@ -57,9 +57,9 @@ function Dashboard() {
           </AlertAction>
         </Alert>
       )}
-      {sites &&
-        (publicSite ? (
-          <SiteCard site={publicSite} />
+      {docs &&
+        (publicDoc ? (
+          <DocCard doc={publicDoc} />
         ) : (
           <Card>
             <Empty>
@@ -78,7 +78,7 @@ function Dashboard() {
             </Empty>
           </Card>
         ))}
-      {/* Outside the empty state, so a conflict that reveals a site keeps the dialog's message. */}
+      {/* Outside the empty state, so a conflict that reveals a doc keeps the dialog's message. */}
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogPopup className="sm:max-w-md">
           <DialogHeader>
@@ -88,7 +88,7 @@ function Dashboard() {
             </DialogDescription>
           </DialogHeader>
           <DialogPanel>
-            <CreateSiteForm onCreated={() => setCreating(false)} />
+            <CreateDocForm onCreated={() => setCreating(false)} />
           </DialogPanel>
         </DialogPopup>
       </Dialog>

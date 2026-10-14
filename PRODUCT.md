@@ -41,7 +41,7 @@ Publishing from Git is a capability, not a differentiator. Competitors offer it 
 
 - **Documentation MDX.** CommonMark plus GitHub-flavored Markdown (tables, task lists, strikethrough, autolinks), React components, imports, exports and expressions. Whatever Nimbus accepts builds.
 - **Frontmatter.** YAML with a required `title` and an optional `description`, used for the browser title and SEO.
-- **Links and anchors.** Relative `.mdx` links render as extensionless paths. Headings get GitHub-style anchors.
+- **Links and anchors.** Links use site routes such as `/guides/setup/`, as in Nimbus. Shiru does not rewrite content, links or built files. Nimbus's own lint fails a publish on a link to a missing page. Headings get GitHub-style anchors.
 - **Accounts and billing.** Email and password sign-in, organizations, and Polar billing with Starter and Growth plans, monthly or yearly. Each new organization gets a 30-day trial with no checkout required.
 - **Launch state: pre-launch.** Marketing collects waitlist sign-ups. It does not offer self-serve trials yet.
 - **Engine status.** The publishing pipeline is being built in this repository on Nimbus (`docs/plans/publishing-pipeline.md`). It does not publish sites yet.

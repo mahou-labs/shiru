@@ -6,7 +6,7 @@ import path from "node:path";
 
 const base = process.argv[2] ?? "http://localhost:3000";
 const fixtures = path.resolve(import.meta.dirname, "../../builder/fixtures");
-const siteUrl = "https://acme.shiru.sh";
+const docUrl = "https://acme.shiru.sh";
 const { version } = JSON.parse(
   await readFile(path.resolve(import.meta.dirname, "../../builder/template/package.json"), "utf8"),
 );
@@ -56,7 +56,7 @@ async function post(route: string, body: unknown) {
   return { status: response.status, body: (await response.json().catch(() => null)) as Result };
 }
 
-const build = () => post("build", { siteUrl, docsRoot: "docs" });
+const build = () => post("build", { docUrl, docsRoot: "docs" });
 const paths = (result: Result) => new Set(result.manifest?.map((entry) => entry.path));
 const timed = async <T>(work: () => Promise<T>) => {
   const start = performance.now();
@@ -64,7 +64,7 @@ const timed = async <T>(work: () => Promise<T>) => {
   return { value, seconds: ((performance.now() - start) / 1000).toFixed(2) };
 };
 
-const early = await post("build", { siteUrl, docsRoot: "docs" });
+const early = await post("build", { docUrl, docsRoot: "docs" });
 check("build before any reset is refused", early.status, 500);
 
 check(
@@ -137,6 +137,11 @@ check(
     badErrors.some((e) => e.includes("canvas-confetti") && e.includes("content/index.mdx")),
   ],
   [200, false, true],
+);
+check(
+  "bad-import: the last good build is still served",
+  (await fetch(`${base}/dev/builder/${name}/asset?path=/guides/setup/index.html`)).status,
+  200,
 );
 
 console.log();

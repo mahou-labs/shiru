@@ -11,13 +11,18 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  plugins: [
-    cloudflare({ types: { generate: false }, inspectorPort: false }),
-    tailwindcss(),
-    tanstackRouter({
-      target: "react",
-      autoCodeSplitting: true,
-    }),
-    react({ compiler: true }),
-  ],
+  plugins: process.env.VITEST
+    ? []
+    : [
+        cloudflare({ types: { generate: false }, inspectorPort: false }),
+        tailwindcss(),
+        tanstackRouter({
+          target: "react",
+          autoCodeSplitting: true,
+        }),
+        react({ compiler: true }),
+      ],
+  test: {
+    include: ["src/**/*.test.ts"],
+  },
 });

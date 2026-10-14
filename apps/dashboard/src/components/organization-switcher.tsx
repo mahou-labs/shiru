@@ -42,7 +42,7 @@ export function OrganizationSwitcher() {
     <SidebarMenu>
       <SidebarMenuItem>
         <Menu>
-          <MenuTrigger render={<SidebarMenuButton size="lg" />}>
+          <MenuTrigger render={<SidebarMenuButton size="lg" tooltip={active?.name} />}>
             <Avatar className="size-8 rounded-lg">
               <AvatarImage src={active?.logo ?? undefined} />
               <AvatarFallback className="rounded-lg">{initials(active?.name ?? "")}</AvatarFallback>

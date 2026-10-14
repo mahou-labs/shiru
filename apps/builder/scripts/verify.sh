@@ -80,10 +80,8 @@ check "good: HTML links to its Markdown variant" \
   file_contains /out/good/guides/setup/index.html '<link rel="alternate" type="text/markdown" href="https://acme.shiru.sh/guides/setup/index.md">'
 check "good: llms.txt lists the home page under SITE_URL" \
   file_contains /out/good/llms.txt '- [Acme Docs](https://acme.shiru.sh/index.md)'
-check "good: relative .mdx link becomes a route in HTML" file_contains /out/good/index.html 'href="/guides/setup/"'
-check "good: relative .mdx link with anchor becomes a route in Markdown" \
+check "good: page source reaches Nimbus as written" \
   file_contains /out/good/guides/faq/index.md '[setup](/guides/setup/#install)'
-check "good: parent .mdx link becomes / in Markdown" file_contains /out/good/guides/setup/index.md '[overview](/)'
 check "good: component renders" file_contains /out/good/guides/setup/index.html 'Acme needs Node 24 or later.'
 check "good: logo in the header" file_contains /out/good/index.html '<img src="/assets/logo.svg" alt="" class="h-6 w-auto">'
 check "good: navigation label in the sidebar" file_contains /out/good/index.html '>Introduction<'
@@ -142,9 +140,13 @@ check "bad-import: writes no output" file_missing /out/bad-import
 
 build /work/bad-links /out/bad-links
 check "bad-links: exits 1" equals "$code" 1
-check "bad-links: stderr lists missing pages and logo" equals "$stderr" "content/index.mdx:5:10 link ./guides/setup.mdx points to no page in content/
-docs.config.json: logo assets/missing.svg does not exist
+check "bad-links: stderr lists missing pages and logo" equals "$stderr" "docs.config.json: logo assets/missing.svg does not exist
 docs.config.json: navigation[1].items[0].href points to no page in content/"
+
+build /work/broken-link /out/broken-link
+check "broken-link: Nimbus lint fails the build" equals "$code" 1
+check "broken-link: the error names the page, the rule and the link" grep -qF 'content/index.mdx:5:10  error  nimbus/internal-link' <<<"$stdout"
+check "broken-link: writes no output" file_missing /out/broken-link
 
 docker exec "$container" sh -c 'mkdir -p /tmp/m/sub && printf hello >/tmp/m/a.txt && printf hello >/tmp/m/b.css && : >/tmp/m/sub/c.html'
 check "dist-manifest: path, size and a hash that differs by extension" equals \

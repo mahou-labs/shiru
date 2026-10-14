@@ -13,7 +13,7 @@
     "test": "vp test --coverage"
   },
   "dependencies": {
-    "@cloudflare/sandbox": "1.0.0",
+    "@cloudflare/sandbox": "1.0.1",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
@@ -23,7 +23,7 @@
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
     "hono": "^4.13.7",
-    "posthog-node": "^5.55.2",
+    "posthog-node": "^5.55.3",
     "react": "catalog:",
     "react-dom": "catalog:",
     "uuid": "^14.0.3",

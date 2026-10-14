@@ -1,4 +1,4 @@
 export * from "./auth";
 export * from "./billing";
-export * from "./sites";
+export * from "./docs";
 export * from "./waitlist";

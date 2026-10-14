@@ -3,7 +3,7 @@ import { vi } from "vite-plus/test";
 vi.mock("cloudflare:workers", async () => {
   const { env, waitUntil } = await import("./bindings");
   // Base classes only, so modules that declare a Durable Object or import @cloudflare/sandbox load.
-  // DurableObject keeps ctx and env like the runtime's, so the SITE_DO binding runs the real class.
+  // DurableObject keeps ctx and env like the runtime's, so the DOCS binding runs the real class.
   class DurableObject {
     constructor(
       protected ctx: unknown,
@@ -12,6 +12,7 @@ vi.mock("cloudflare:workers", async () => {
   }
   return {
     env,
+    exports: {},
     waitUntil,
     DurableObject,
     WorkerEntrypoint: class {},

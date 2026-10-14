@@ -6,14 +6,11 @@ import { spawn } from "node:child_process";
 import { cp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { stripVTControlCharacters } from "node:util";
-import { markdownToMdast, mdxToMdast, type MdastNode } from "satteri";
-import { markdownFeatures } from "../template/markdown.ts";
 import { type DocsConfig, formatPath, type NavItem, parseDocsConfig } from "./config.ts";
 
 const templateDir = path.resolve(import.meta.dirname, "../template");
 // Astro reports pages at their copy inside the template; authors know them as content/.
 const contentCopyPath = new RegExp(`(?:${RegExp.escape(templateDir)}/)?src/content/docs/`, "g");
-const features = { gfm: true, smartPunctuation: true, ...markdownFeatures };
 
 const [srcRoot, outDir] = process.argv.slice(2);
 const siteUrl = process.env.SITE_URL;
@@ -32,12 +29,6 @@ const pages = files.filter((file) => /\.mdx?$/.test(file));
 const routes = new Set(pages.map(routeOf));
 
 if (!routes.has("/")) errors.push("content/index.mdx is required, it is the home page");
-const prepared = new Map<string, string>();
-for (const page of pages) {
-  const result = preparePage(page, await readFile(path.join(srcRoot, page), "utf8"));
-  errors.push(...result.errors);
-  prepared.set(page, result.source);
-}
 
 const config = await readConfig();
 if (config) {
@@ -79,12 +70,6 @@ for (const dir of [
 await cp(path.join(srcRoot, "content"), path.join(templateDir, "src/content/docs"), {
   recursive: true,
 });
-for (const [page, source] of prepared) {
-  await writeFile(
-    path.join(templateDir, "src/content/docs", path.relative("content", page)),
-    source,
-  );
-}
 if (assets.length > 0) {
   await cp(path.join(srcRoot, "assets"), path.join(templateDir, "public/assets"), {
     recursive: true,
@@ -92,9 +77,15 @@ if (assets.length > 0) {
 }
 await writeFile(path.join(templateDir, "site.json"), JSON.stringify(siteJson, null, 2));
 
-const astro = await runAstroBuild();
+const astro = await runTemplateBin("astro", ["build"]);
 if (astro.code !== 0) {
   finish(1, { ok: false, errors: [`astro build failed:\n${astro.tail}`] });
+}
+// The template's own lint, where its rules (internal links, frontmatter) fail a build. It reads the
+// route list astro build just wrote.
+const lint = await runTemplateBin("nimbus-docs", ["lint"]);
+if (lint.code !== 0) {
+  finish(1, { ok: false, errors: [`nimbus-docs lint failed:\n${lint.tail}`] });
 }
 
 await rm(outDir, { recursive: true, force: true });
@@ -150,80 +141,6 @@ function routeOf(page: string): string {
   return `/${slug}`;
 }
 
-/**
- * Checks one page for links to missing pages, the one page check Nimbus does
- * not make. Also returns the source with
- * file-relative page links (`../setup.mdx#install`) rewritten to routes
- * (`/guides/setup/#install`), the only form Nimbus resolves in both the HTML
- * and the Markdown it emits.
- */
-function preparePage(file: string, source: string): { errors: string[]; source: string } {
-  let tree: MdastNode;
-  try {
-    tree = file.endsWith(".mdx")
-      ? mdxToMdast(source, { features })
-      : markdownToMdast(source, { features });
-  } catch (error) {
-    const message = (error as Error).message;
-    const at = /^(\d+):(\d+): ([\s\S]*)$/.exec(message);
-    return { errors: [at ? `${file}:${at[1]}:${at[2]} ${at[3]}` : `${file} ${message}`], source };
-  }
-
-  const errors: string[] = [];
-  const edits: { offset: number; from: string; to: string }[] = [];
-  const report = (
-    node: { position?: { start: { line: number; column: number } } },
-    message: string,
-  ) => {
-    const start = node.position?.start ?? { line: 1, column: 1 };
-    errors.push(`${file}:${start.line}:${start.column} ${message}`);
-  };
-
-  const visit = (node: MdastNode) => {
-    switch (node.type) {
-      case "link":
-      case "definition": {
-        const [, target, suffix = ""] = /^([^:?#]*\.mdx?)([?#].*)?$/.exec(node.url) ?? [];
-        if (!target || target.startsWith("/")) break;
-        const route = routeOf(path.posix.join(path.posix.dirname(file), target));
-        const offset = destinationOffset(source, node);
-        if (!routes.has(route)) report(node, `link ${node.url} points to no page in content/`);
-        else if (offset >= 0 && source.startsWith(node.url, offset)) {
-          edits.push({
-            offset,
-            from: node.url,
-            to: `${route === "/" ? "/" : `${route}/`}${suffix}`,
-          });
-        } else report(node, `link ${node.url} must be written without escapes`);
-        break;
-      }
-    }
-    if ("children" in node) for (const child of node.children) visit(child as MdastNode);
-  };
-  visit(tree);
-
-  let rewritten = source;
-  for (const { offset, from, to } of edits.sort((a, b) => b.offset - a.offset)) {
-    rewritten = rewritten.slice(0, offset) + to + rewritten.slice(offset + from.length);
-  }
-  return { errors, source: rewritten };
-}
-
-/** Where a link's destination starts in the source: after `](` for links, after `]:` for definitions. */
-function destinationOffset(
-  source: string,
-  node: MdastNode & { type: "link" | "definition" },
-): number {
-  const start = node.position?.start.offset ?? 0;
-  const end = node.position?.end.offset ?? source.length;
-  const after =
-    node.type === "link" ? (node.children.at(-1)?.position?.end.offset ?? start) : start;
-  const marker = node.type === "link" ? /\]\s*\(\s*<?/g : /(?<!\\)\]\s*:\s*<?/g;
-  marker.lastIndex = after;
-  const match = marker.exec(source.slice(0, end));
-  return match ? match.index + match[0].length : -1;
-}
-
 function checkNavigation(items: NavItem[], at: (string | number)[], routes: Set<string>): string[] {
   return items.flatMap((item, i) => {
     if ("items" in item) return checkNavigation(item.items, [...at, i, "items"], routes);
@@ -242,10 +159,13 @@ function toSidebarItem(item: NavItem): SidebarItem {
     : { label: item.label, link: item.href };
 }
 
-/** Runs astro with only the environment it needs; the sandbox passes PATH and SITE_URL and nothing else. */
-function runAstroBuild(): Promise<{ code: number | null; tail: string }> {
+/** Runs a template binary with only the environment it needs; the sandbox passes PATH and SITE_URL and nothing else. */
+function runTemplateBin(
+  bin: string,
+  args: string[],
+): Promise<{ code: number | null; tail: string }> {
   return new Promise((resolve) => {
-    const child = spawn(path.join(templateDir, "node_modules/.bin/astro"), ["build"], {
+    const child = spawn(path.join(templateDir, "node_modules/.bin", bin), args, {
       cwd: templateDir,
       env: {
         PATH: process.env.PATH,
