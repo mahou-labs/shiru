@@ -138,6 +138,11 @@ check(
   ],
   [200, false, true],
 );
+check(
+  "bad-import: the last good build is still served",
+  (await fetch(`${base}/dev/builder/${name}/asset?path=/guides/setup/index.html`)).status,
+  200,
+);
 
 console.log();
 console.log(`manifest entries for good: ${good.size}`);
