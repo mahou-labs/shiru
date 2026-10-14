@@ -42,7 +42,7 @@
     "@tiptap/starter-kit": "^3.32.0",
     "@tiptap/suggestion": "^3.32.0",
     "better-auth": "catalog:",
-    "marked": "^18.1.1",
+    "marked": "^17.0.6",
     "next-themes": "catalog:",
     "nucleo-ui-outline-duo-18": "^1.5.1",
     "posthog-js": "^1.438.9",
