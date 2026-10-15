@@ -21,8 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: voidzero-dev/setup-vp@v1.21.1
+      - uses: actions/checkout@v7
+      - uses: voidzero-dev/setup-vp@v1.21.2
         with:
           node-version: "24"
           cache: true
