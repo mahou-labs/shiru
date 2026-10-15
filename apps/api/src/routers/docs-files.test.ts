@@ -220,7 +220,19 @@ describe("doc files", () => {
     expect(first).toMatch(new RegExp(`^${docId}--[0-9a-f]{8}--live--1$`));
     expect(second).toMatch(new RegExp(`^${docId}--[0-9a-f]{8}--live--1$`));
     expect(second).not.toBe(first);
-    expect(publishWorkflow.created.filter((id) => id.startsWith(docId))).toEqual([first, second]);
+    expect([...publishWorkflow.created.keys()].filter((id) => id.startsWith(docId))).toEqual([
+      first,
+      second,
+    ]);
+    expect(publishWorkflow.created.get(second)).toEqual({
+      docId,
+      slug: "rebuilt",
+      repo: docId,
+      target: "live",
+      sha: head,
+      docUrl: "http://rebuilt.docs.localhost:3003",
+      docsRoot: "docs/",
+    });
     expect(
       ((await client.rpc("docs/status", { docId })).body.json as { headSha: string }).headSha,
     ).toBe(head);

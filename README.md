@@ -78,7 +78,7 @@ Pushes to `main` deploy through the `deploy` job in `.github/workflows/ci.yml`, 
 - `shiru-dashboard` serves `app.shiru.sh`.
 - `shiru-site` serves `shiru.sh`.
 
-The job needs three repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `NUCLEO_LICENSE_KEY`. Production URLs live in each app's Cloudflare config and in `apps/dashboard/.env.production`. The API's `BETTER_AUTH_SECRET`, `POLAR_ACCESS_TOKEN` and `POLAR_WEBHOOK_SECRET` are Worker secrets, set with `cf workers secrets update`.
+The job needs three repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `NUCLEO_LICENSE_KEY`. Production URLs live in each app's Cloudflare config and in `apps/dashboard/.env.production`. The API's `BETTER_AUTH_SECRET`, `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `DISPATCH_ACCOUNT_ID` and `DISPATCH_API_TOKEN` are Worker secrets, set with `cf workers secrets update`. The last two let publishing deploy builds to the `shiru-docs` dispatch namespace. The token needs Workers Scripts Edit on that account. Development never deploys, so local `.env` files leave them out.
 
 To deploy by hand, export `CLOUDFLARE_API_TOKEN`, then run `vp run build` and `vp run deploy`. Schema changes need a migration: run `vp run db:generate` in `apps/api` and commit the new folder in `apps/api/drizzle`.
 

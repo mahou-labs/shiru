@@ -131,6 +131,57 @@ export async function deployDoc({
   return { ok: true, uploaded, reused: Object.keys(assets).length - uploaded };
 }
 
+/** The bindings a deploy reads. */
+export type DeployEnv = {
+  ENVIRONMENT: string;
+  DISPATCH_ACCOUNT_ID: string;
+  DISPATCH_API_TOKEN: string;
+  DISPATCH_NAMESPACE: string;
+};
+
+/**
+ * Puts a finished build live at `scriptName` in the dispatch namespace.
+ * Development sends nothing, because it has no dispatch namespace and serves builds from the
+ * container. A refusal a retry cannot fix (4xx) comes back as an error for the dashboard. One a
+ * retry may fix (5xx, 429, transport, `readAsset`) throws, so the Workflow step rebuilds and
+ * deploys again.
+ */
+export async function deployBuild({
+  env,
+  scriptName,
+  manifest,
+  readAsset,
+  fetch = globalThis.fetch,
+}: {
+  env: DeployEnv;
+  scriptName: string;
+  manifest: ManifestEntry[];
+  readAsset: (path: string) => Promise<Uint8Array>;
+  fetch?: typeof globalThis.fetch;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (env.ENVIRONMENT === "development") return { ok: true };
+  // Skipping here would report a build as Live that nobody can reach.
+  for (const name of ["DISPATCH_ACCOUNT_ID", "DISPATCH_API_TOKEN"] as const) {
+    if (!env[name]) return { ok: false, error: `Deploying is not configured: ${name} is not set` };
+  }
+
+  const result = await deployDoc({
+    account: {
+      id: env.DISPATCH_ACCOUNT_ID,
+      apiToken: env.DISPATCH_API_TOKEN,
+      namespace: env.DISPATCH_NAMESPACE,
+    },
+    scriptName,
+    manifest,
+    readAsset,
+    fetch,
+  });
+  if (result.ok) return { ok: true };
+  const error = `Deploying failed at ${result.step} (HTTP ${result.status}): ${result.message}`;
+  if (result.status >= 500 || result.status === 429) throw new Error(error);
+  return { ok: false, error };
+}
+
 /** Deletes a doc Worker. A Worker that is already gone counts as deleted. */
 export async function deleteDoc({
   account,

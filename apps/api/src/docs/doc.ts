@@ -37,11 +37,11 @@ import {
   readCommitTree,
   receivePackRequest,
 } from "./git";
-import { LIVE, type TargetLabel } from "./names";
+import { type DocSlug, LIVE, type TargetLabel } from "./names";
 import type { PublishParams } from "./publish-workflow";
 import { type BuildStep, endRun, enterStep, type Run, startRun } from "./runs";
 
-export type DocInfo = { docId: string; name: string; repo: string; docUrl: string };
+export type DocInfo = { docId: string; slug: DocSlug; name: string; repo: string; docUrl: string };
 
 export type PublishResult =
   | { kind: "published"; sha: string; skipped: string[] }
@@ -294,6 +294,7 @@ export class Doc extends DurableObject<Env> {
           const doc = this.doc();
           const params: PublishParams = {
             docId: doc.docId,
+            slug: doc.slug,
             repo: doc.repo,
             target: effect.target,
             sha: effect.sha,
