@@ -1,9 +1,9 @@
-import { bindings, defineConfig } from "cf/config";
+import { bindings, defineConfig, triggers } from "cf/config";
 
 export default defineConfig(({ mode }) => {
   const development = mode === "development";
-  // Same placeholder as apps/api until the docs domain is bought.
-  const docsDomain = development ? "docs.localhost" : "shiru-docs.invalid";
+  // Same docs domain as apps/api.
+  const docsDomain = development ? "docs.localhost" : "shiru.page";
   const domains = {
     DOCS_DOMAIN: bindings.text(docsDomain),
     PREVIEW_DOMAIN: bindings.text(`preview.${docsDomain}`),
@@ -15,6 +15,10 @@ export default defineConfig(({ mode }) => {
       entrypoint: "./src/index.ts",
       compatibilityDate: "2026-10-07",
       observability: { enabled: true },
+      // Every doc's hostname. Preview hostnames match too, and route() answers them 404.
+      triggers: development
+        ? []
+        : [triggers.fetch({ pattern: "*.shiru.page/*", zone: "shiru.page" })],
       env: development
         ? {
             ...domains,
