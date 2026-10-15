@@ -14,6 +14,9 @@ import {
 
 // Long enough to survive the gap between the Workflow's reset and build steps.
 const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
+// The "basic" instance type: 1/4 vCPU and 1 GiB. The default, lite (1/16 vCPU, 256 MiB), ran
+// builds past BUILD_TIMEOUT_SECONDS.
+const INSTANCE = { vcpu: 0.25, memoryMib: 1024, diskMb: 4000 };
 
 /**
  * One build sandbox, driven over RPC by the PublishWorkflow. The container
@@ -42,6 +45,7 @@ export class Builder extends DurableObject<Env> {
         image: container.images.builder!,
         entrypoint: ["sleep", "infinity"],
         enableInternet: false,
+        instance: INSTANCE,
       });
       await container.setInactivityTimeout(INACTIVITY_TIMEOUT_MS);
     }
