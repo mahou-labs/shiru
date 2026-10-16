@@ -29,7 +29,10 @@ function SignIn() {
 
   const signIn = useMutation({
     mutationFn: (credentials: Credentials) => authClient.signIn.email(credentials),
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      // Signing in for an agent answers with the next step of its authorization, which the auth
+      // client already follows.
+      if (data.redirect && data.url) return;
       await queryClient.invalidateQueries(sessionQuery);
       await navigate({ href: redirect ?? "/" });
     },
