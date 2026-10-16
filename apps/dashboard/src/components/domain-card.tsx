@@ -51,6 +51,9 @@ type AddError = InferClientErrors<AppRouterClient>["docs"]["domain"]["add"];
 
 const POLL_MS = 10_000;
 
+// Still settling: waiting for DNS, or a removal the cron finishes.
+const POLLED: ReadonlySet<Domain["status"]> = new Set(["pending", "removing"]);
+
 /** The hostname the doc is served at once the domain is active, or null for its own address. */
 const activeHostname = (domain: Domain | null) =>
   domain?.status === "active" ? domain.hostname : null;
@@ -60,7 +63,10 @@ export function DomainCard({ doc }: { doc: Doc }) {
   const queryClient = useQueryClient();
   const query = useQuery({
     ...orpc.docs.domain.get.queryOptions({ input: { docId: doc.id } }),
-    refetchInterval: (query) => (query.state.data?.status === "pending" ? POLL_MS : false),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status && POLLED.has(status) ? POLL_MS : false;
+    },
   });
   const domain = query.data;
 
@@ -307,6 +313,14 @@ function RemoveDomainButton({
     onSuccess: () => {
       queryClient.setQueryData(orpc.docs.domain.get.queryKey({ input: { docId: doc.id } }), null);
     },
+    // A removal that fails part way has already stopped serving the domain, so read both again.
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: orpc.docs.domain.get.queryKey({ input: { docId: doc.id } }),
+        }),
+        queryClient.invalidateQueries({ queryKey: orpc.docs.list.key() }),
+      ]),
   });
 
   return (
