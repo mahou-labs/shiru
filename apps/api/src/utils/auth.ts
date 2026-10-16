@@ -1,9 +1,10 @@
+import { mcp } from "@better-auth/mcp";
 import { checkout, polar, portal, usage, webhooks } from "@polar-sh/better-auth";
 import { createPolarCore } from "@polar-sh/sdk/2026-10";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
-import { organization } from "better-auth/plugins";
+import { jwt, organization } from "better-auth/plugins";
 import { env, waitUntil } from "cloudflare:workers";
 import { and, eq, gt } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
@@ -14,6 +15,12 @@ import { db } from "./db";
 import { sendInvitationEmail, sendPasswordResetEmail, sendVerificationEmail } from "./email";
 
 const production = env.ENVIRONMENT === "production";
+
+/** The MCP server's URL, which every MCP access token names as its audience. */
+export const MCP_RESOURCE = `${env.BETTER_AUTH_URL}/mcp`;
+export const MCP_ISSUER = `${env.BETTER_AUTH_URL}/auth`;
+const MCP_SCOPES = ["docs:read", "docs:write"] as const;
+export type McpScope = (typeof MCP_SCOPES)[number];
 
 async function getActiveOrganization(userId: string) {
   const [membership] = await db
@@ -137,6 +144,23 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    jwt({
+      // The dashboard polls get-session, and has no use for a signed copy of the session.
+      disableSettingJwtHeader: true,
+      // usePlural would otherwise look for a `jwkss` table.
+      schema: { jwks: { modelName: "jwk" } },
+    }),
+    mcp({
+      resource: MCP_RESOURCE,
+      loginPage: `${env.DASHBOARD_URL}/auth/sign-in`,
+      consentPage: `${env.DASHBOARD_URL}/oauth/consent`,
+      scopes: ["offline_access", ...MCP_SCOPES],
+      grantTypes: ["authorization_code", "refresh_token"],
+      // Coding agents register themselves the first time they connect, before anyone signs in.
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+      clientRegistrationDefaultScopes: ["offline_access", ...MCP_SCOPES],
+    }),
     organization({
       allowUserToCreateOrganization: true,
       sendInvitationEmail: async ({ id, email, inviter, organization }) => {
