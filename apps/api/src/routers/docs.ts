@@ -6,53 +6,25 @@ import { z } from "zod";
 import { docs } from "../schema/docs";
 import { DocPath } from "../docs/drafts";
 import { DocSlug } from "../docs/names";
-import type { Doc } from "../docs/doc";
+import {
+  deleteFile,
+  DraftContent,
+  openDoc,
+  publish,
+  readText,
+  saveText,
+  withUrl,
+} from "../docs/service";
 import { db } from "../utils/db";
 import { organizationProcedure, paidProcedure } from "../utils/orpc";
 
-/**
- * Where a doc is served, for the dashboard's links and for the build's canonical URLs. In
- * development the dispatch Worker serves `<slug>.docs.localhost` on port 3003.
- */
-export function docUrl(slug: string) {
-  return env.ENVIRONMENT === "development"
-    ? `http://${slug}.${env.DOCS_DOMAIN}:3003`
-    : `https://${slug}.${env.DOCS_DOMAIN}`;
-}
-
-function withUrl<T extends { slug: string }>(doc: T) {
-  return { ...doc, url: docUrl(doc.slug) };
-}
+export { docUrl } from "../docs/service";
 
 const DOC_ERRORS = { NOT_FOUND: { status: 404, message: "Site not found" } } as const;
 const FILE_ERRORS = { FILE_NOT_FOUND: { status: 404, message: "File not found" } } as const;
 
 const docInput = z.object({ docId: z.string() });
 const fileInput = docInput.extend({ path: DocPath });
-
-// The binding names this Worker by string, so cf/config cannot infer the class.
-const docObjects = () => env.DOCS as DurableObjectNamespace<Doc>;
-
-/** The doc's Doc, or null when the organization has no such doc. */
-async function openDoc(organizationId: string, docId: string) {
-  const [doc] = await db
-    .select()
-    .from(docs)
-    .where(and(eq(docs.id, docId), eq(docs.organizationId, organizationId)));
-  // Connected GitHub sources have no editor yet.
-  if (!doc || doc.source.kind !== "managed") return null;
-  const stub = docObjects().getByName(doc.id);
-  await stub.init({
-    docId: doc.id,
-    slug: doc.slug,
-    name: doc.name,
-    repo: doc.source.artifactsRepo,
-    docUrl: docUrl(doc.slug),
-  });
-  return stub;
-}
-
-const author = (user: { name: string; email: string }) => ({ name: user.name, email: user.email });
 
 /** Editing a managed doc's files. Paths are relative to the doc's docs root. */
 const filesRouter = {
@@ -76,26 +48,19 @@ const filesRouter = {
     .handler(async ({ context, input, errors }) => {
       const doc = await openDoc(context.organizationId, input.docId);
       if (!doc) throw errors.NOT_FOUND();
-      const file = await doc.getFile(input.path);
+      const file = await readText(doc, input.path);
       if (file.kind === "not_found") throw errors.FILE_NOT_FOUND();
-      try {
-        return {
-          path: input.path,
-          content: new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(file.content),
-        };
-      } catch {
-        throw errors.NOT_TEXT();
-      }
+      if (file.kind === "not_text") throw errors.NOT_TEXT();
+      return { path: input.path, content: file.content };
     }),
   /** Saves a draft. Nothing reaches the doc until `docs.publish`. */
   save: paidProcedure
     .errors(DOC_ERRORS)
-    .input(fileInput.extend({ content: z.string().max(1_000_000) }))
+    .input(fileInput.extend({ content: DraftContent }))
     .handler(async ({ context, input, errors }) => {
       const doc = await openDoc(context.organizationId, input.docId);
       if (!doc) throw errors.NOT_FOUND();
-      const content = new TextEncoder().encode(input.content);
-      return doc.saveDraft(input.path, content, author(context.user));
+      return saveText(doc, input.path, input.content, context.user);
     }),
   /** Records a delete draft, or drops the draft of a file that was never published. */
   delete: paidProcedure
@@ -104,7 +69,7 @@ const filesRouter = {
     .handler(async ({ context, input, errors }) => {
       const doc = await openDoc(context.organizationId, input.docId);
       if (!doc) throw errors.NOT_FOUND();
-      const outcome = await doc.deleteFile(input.path, author(context.user));
+      const outcome = await deleteFile(doc, input.path, context.user);
       if (outcome.kind === "not_found") throw errors.FILE_NOT_FOUND();
       return { path: input.path, deleted: true as const };
     }),
@@ -190,7 +155,7 @@ export const docsRouter = {
     .handler(async ({ context, input, errors }) => {
       const doc = await openDoc(context.organizationId, input.docId);
       if (!doc) throw errors.NOT_FOUND();
-      const result = await doc.publish(author(context.user));
+      const result = await publish(doc, context.user);
       if (result.kind === "conflict") throw errors.CONFLICT();
       return result;
     }),

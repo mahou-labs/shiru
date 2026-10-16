@@ -11,6 +11,7 @@
     "test": "vp test run"
   },
   "dependencies": {
+    "@better-auth/oauth-provider": "catalog:",
     "@floating-ui/dom": "^1.8.0",
     "@fontsource-variable/jetbrains-mono": "5.3.0",
     "@iconify-json/ph": "1.2.2",
