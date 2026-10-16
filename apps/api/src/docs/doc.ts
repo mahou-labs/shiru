@@ -34,6 +34,7 @@ import {
 import {
   buildCommit,
   type BuiltCommit,
+  MAIN,
   packfile,
   parseReportStatus,
   type Person,
@@ -41,6 +42,7 @@ import {
   readBlob,
   readCommitTree,
   receivePackRequest,
+  type Ref,
 } from "./git";
 import { type DocSlug, LIVE, type TargetLabel } from "./names";
 import type { PublishParams } from "./publish-workflow";
@@ -192,7 +194,7 @@ export class Doc extends DurableObject<Env> {
         message: "Publish from the editor",
         time: Date.now() / 1000,
       });
-      const pushed = await this.push(head, commit);
+      const pushed = await this.push(MAIN, head, commit);
       if (pushed.kind === "stale") {
         console.log(`publish: main moved past ${head ?? "nothing"} (stale ref); refreshing`);
         await this.refresh();
@@ -349,7 +351,7 @@ export class Doc extends DurableObject<Env> {
     });
   }
 
-  private async push(head: string | null, commit: BuiltCommit): Promise<PushResult> {
+  private async push(ref: Ref, old: string | null, commit: BuiltCommit): Promise<PushResult> {
     const repo = await this.env.ARTIFACTS.get(this.doc().repo);
     const { plaintext } = await repo.createToken("write", TOKEN_TTL_SECONDS);
     const response = await fetch(`${this.meta("remote")}/git-receive-pack`, {
@@ -359,12 +361,12 @@ export class Doc extends DurableObject<Env> {
         "content-type": "application/x-git-receive-pack-request",
         accept: "application/x-git-receive-pack-result",
       },
-      body: receivePackRequest(head, commit.sha, await packfile(commit.objects)),
+      body: receivePackRequest(ref, old, commit.sha, await packfile(commit.objects)),
     });
     const body = await response.text();
     if (!response.ok)
       return { kind: "failed", message: `HTTP ${response.status}: ${body.slice(0, 500)}` };
-    return parseReportStatus(body);
+    return parseReportStatus(ref, body);
   }
 
   // Get, else create, else get again for a create that lost a race. Errors are not classified by
