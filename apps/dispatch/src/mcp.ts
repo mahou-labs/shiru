@@ -40,13 +40,17 @@ const FENCE = /^\s*(`{3,}|~{3,})/;
 
 function sections(page: DocPage): Section[] {
   const result: Section[] = [];
-  const slugs = new Map<string, number>();
-  let current = { heading: page.title, url: page.url, lines: [] as string[] };
+  const slugs = new Set<string>();
+  const preamble = { heading: page.title, url: page.url, lines: [] as string[] };
+  let current = preamble;
   let fence: string | null = null;
 
+  // A heading stays searchable even when a sub-heading follows it directly.
   const flush = () => {
     const text = current.lines.join("\n").trim();
-    if (text) result.push({ page, heading: current.heading, url: current.url, text });
+    if (text || current !== preamble) {
+      result.push({ page, heading: current.heading, url: current.url, text });
+    }
   };
 
   for (const line of page.markdown.split("\n")) {
@@ -68,14 +72,16 @@ function sections(page: DocPage): Section[] {
 }
 
 // github-slugger's rules, which the site uses for heading ids.
-function slug(heading: string, seen: Map<string, number>) {
+// Numbered ids count as taken too, so `Install`, `Install-1`, `Install` get `install-2` last.
+function slug(heading: string, taken: Set<string>) {
   const base = heading
     .toLowerCase()
     .replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, "")
     .replace(/ /g, "-");
-  const count = seen.get(base) ?? 0;
-  seen.set(base, count + 1);
-  return count === 0 ? base : `${base}-${count}`;
+  let id = base;
+  for (let n = 1; taken.has(id); n++) id = `${base}-${n}`;
+  taken.add(id);
+  return id;
 }
 
 function plainText(markdown: string) {

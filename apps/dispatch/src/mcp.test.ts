@@ -115,6 +115,44 @@ describe("searchPages", () => {
     ]);
   });
 
+  it("never gives two headings the same anchor", () => {
+    const page = {
+      title: "Guide",
+      description: null,
+      url: "https://x.test/guide/",
+      markdownUrl: "https://x.test/guide/index.md",
+      markdown: "## Install\n\nfirst\n\n## Install-1\n\nsecond\n\n## Install\n\nthird",
+    };
+
+    expect(searchPages([page], "third", 5)).toEqual([
+      {
+        title: "Guide",
+        heading: "Install",
+        url: "https://x.test/guide/#install-2",
+        excerpt: "third",
+      },
+    ]);
+  });
+
+  it("finds a heading that a sub-heading follows directly", () => {
+    const page = {
+      title: "Guide",
+      description: null,
+      url: "https://x.test/guide/",
+      markdownUrl: "https://x.test/guide/index.md",
+      markdown: "## Authentication\n\n### API keys\n\nCreate a key in settings.",
+    };
+
+    expect(searchPages([page], "authentication", 5)).toEqual([
+      {
+        title: "Guide",
+        heading: "Authentication",
+        url: "https://x.test/guide/#authentication",
+        excerpt: "",
+      },
+    ]);
+  });
+
   it("numbers duplicate anchors and trims long excerpts around the match", () => {
     const filler = "word ".repeat(300);
     const page = {
