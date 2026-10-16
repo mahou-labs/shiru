@@ -7,6 +7,9 @@ export default defineConfig(({ mode }) => {
   const domains = {
     DOCS_DOMAIN: bindings.text(docsDomain),
     PREVIEW_DOMAIN: bindings.text(`preview.${docsDomain}`),
+    // Custom hostnames and doc redirects, written by apps/api. Development has its own local
+    // namespace, so custom domains do not route there.
+    DOMAINS: bindings.kv({ id: "69af27bf639d4f3f8c07d6796320354e" }),
   };
 
   return {
@@ -15,10 +18,9 @@ export default defineConfig(({ mode }) => {
       entrypoint: "./src/index.ts",
       compatibilityDate: "2026-10-07",
       observability: { enabled: true },
-      // Every doc's hostname. Preview hostnames match too, and route() answers them 404.
-      triggers: development
-        ? []
-        : [triggers.fetch({ pattern: "*.shiru.page/*", zone: "shiru.page" })],
+      // Every hostname on the zone: docs, previews (route() answers them 404) and custom
+      // hostnames, which as Cloudflare for SaaS custom hostnames only reach a Worker through `*/*`.
+      triggers: development ? [] : [triggers.fetch({ pattern: "*/*", zone: "shiru.page" })],
       env: development
         ? {
             ...domains,
