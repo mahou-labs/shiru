@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { LIVE, parseHostname, DocSlug, TargetLabel, workerName } from "./names";
+import {
+  DRAFT,
+  LIVE,
+  parseHostname,
+  parseWorkerName,
+  DocSlug,
+  TargetLabel,
+  workerName,
+} from "./names";
 
 const domains = { docs: "shiru.sh", preview: "preview.shiru.sh" };
 
@@ -58,6 +66,29 @@ describe("workerName", () => {
   it("puts other targets after the doc", () => {
     expect(workerName(acme, TargetLabel.parse("pr-12"))).toBe("acme--pr-12");
     expect(workerName(acme, TargetLabel.parse("draft"))).toBe("acme--draft");
+  });
+});
+
+describe("parseWorkerName", () => {
+  it.each([
+    ["acme", { slug: "acme", target: "live" }],
+    ["acme--draft", { slug: "acme", target: "draft" }],
+    ["acme-docs--pr-12", { slug: "acme-docs", target: "pr-12" }],
+  ])("reads %s", (name, expected) => {
+    expect(parseWorkerName(name)).toEqual(expected);
+  });
+
+  it.each(["acme--live", "www", "www--draft", "acme--draft--x", "acme--", "Acme", ""])(
+    "rejects %j",
+    (name) => {
+      expect(parseWorkerName(name)).toBeNull();
+    },
+  );
+
+  it("reads back every name workerName gives", () => {
+    const acme = DocSlug.parse("acme");
+    expect(parseWorkerName(workerName(acme, LIVE))).toEqual({ slug: acme, target: LIVE });
+    expect(parseWorkerName(workerName(acme, DRAFT))).toEqual({ slug: acme, target: DRAFT });
   });
 });
 
