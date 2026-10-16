@@ -306,7 +306,7 @@ try {
   );
   dispatch = spawn("npx", ["cf", "dev"], {
     cwd: path.resolve(api, "../dispatch"),
-    env: { ...process.env, DISPATCH_PORT: args["dispatch-port"], DEV_DOCS_ORIGIN: base },
+    env: { ...process.env, DISPATCH_PORT: args["dispatch-port"], API_ORIGIN: base },
     detached: true,
     stdio: "ignore",
   });

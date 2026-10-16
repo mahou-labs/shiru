@@ -84,9 +84,11 @@ To deploy by hand, export `CLOUDFLARE_API_TOKEN`, then run `vp run build` and `v
 
 ### Docs traffic
 
-`apps/dispatch` is the Dispatch Worker, `shiru-dispatch`. It is the single entry point for docs sites. It maps `<slug>.<docs domain>` to the user Worker named `<slug>` in the `production` dispatch namespace and passes the response through. It answers 404 for preview hosts, custom hostnames, invalid names and slugs with no deployed Worker. Hostname rules come from `apps/api/src/docs/names.ts`.
+`apps/dispatch` is the Dispatch Worker, `shiru-dispatch`. It is the single entry point for docs sites. It maps `<slug>.<docs domain>` to the user Worker named `<slug>` in the `production` dispatch namespace and passes the response through. It answers 404 for custom hostnames, invalid names and slugs with no deployed Worker. Hostname rules come from `apps/api/src/docs/names.ts`.
 
-In development there is no dispatch namespace. `vp run dev` starts the Dispatch Worker on port 3003, and browsers resolve `*.localhost` to your machine, so `http://acme.docs.localhost:3003/` serves site `acme`. It forwards the request to the API's dev-only route `/dev/docs/<slug>/<path>` on `http://localhost:3000`, which serves the site's live build. Previews are not served locally either.
+Previews live at `<label>--<slug>.preview.<docs domain>` and are served from the Worker `<slug>--<label>`, only to members of the doc's organization. A visitor without a preview cookie goes to the API's `/preview/authorize`, which checks the dashboard session and membership and sends a member back with a one-minute signed grant. The Dispatch Worker trades that grant for an hour-long cookie on the preview host. Both Workers sign and check grants with `apps/api/src/docs/preview-access.ts`. A daily cron on the API deletes draft previews nobody requested for 30 days.
+
+In development there is no dispatch namespace. `vp run dev` starts the Dispatch Worker on port 3003, and browsers resolve `*.localhost` to your machine, so `http://acme.docs.localhost:3003/` serves site `acme` and `http://draft--acme.preview.docs.localhost:3003/` its draft preview. It forwards the request to the API's dev-only route `/dev/docs/<worker name>/<path>` on `http://localhost:3000`, which serves the target's build from its build container.
 
 It is built and tested in CI but not deployed. It has no `deploy` script, routes or domains yet, for two reasons:
 
