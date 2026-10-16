@@ -47,8 +47,17 @@ export function DocCard({ doc }: { doc: Doc }) {
   const mcpUrl = `${doc.url}/mcp`;
 
   async function copyMcpCommand() {
-    await navigator.clipboard.writeText(`claude mcp add --transport http ${doc.slug} ${mcpUrl}`);
-    toastManager.add({ type: "success", title: "Command copied" });
+    const command = `claude mcp add --transport http ${doc.slug} ${mcpUrl}`;
+    try {
+      await navigator.clipboard.writeText(command);
+      toastManager.add({ type: "success", title: "Command copied" });
+    } catch {
+      toastManager.add({
+        type: "error",
+        title: "Couldn't copy the command. Run it yourself:",
+        description: command,
+      });
+    }
   }
 
   return (
