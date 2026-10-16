@@ -528,11 +528,27 @@ try {
       path: "content/index.mdx",
       content: `---\ntitle: Verify Docs\n---\n\n${content}\n`,
     });
-  await save("The earlier preview.");
-  const [earlier, later] = await Promise.all([
-    rpc<{ sha: string }>("docs/preview", { docId }),
-    save("The later preview.").then(() => rpc<{ sha: string }>("docs/preview", { docId })),
-  ]);
+  // A save can land before the first preview snapshots the drafts, so both build the same commit
+  // and nothing overlapped. Try again with new edits until the two previews differ.
+  let overlap: { earlier: string; later: string; text: string } | undefined;
+  for (let attempt = 1; attempt <= 5 && !overlap; attempt++) {
+    await save(`The earlier preview, try ${attempt}.`);
+    const [earlier, later] = await Promise.all([
+      rpc<{ sha: string }>("docs/preview", { docId }),
+      save(`The later preview, try ${attempt}.`).then(() =>
+        rpc<{ sha: string }>("docs/preview", { docId }),
+      ),
+    ]);
+    if (earlier.sha !== later.sha) {
+      overlap = {
+        earlier: earlier.sha,
+        later: later.sha,
+        text: `The later preview, try ${attempt}.`,
+      };
+      console.log(`two previews overlapped on try ${attempt}`);
+    }
+  }
+  if (!overlap) throw new Error("two previews never overlapped in 5 tries");
   const settled = await waitFor("both draft builds", BUILD_TIMEOUT_MS, async () => {
     const status = await rpc<Status & { targets: { draft?: Status["targets"]["live"] } }>(
       "docs/status",
@@ -559,13 +575,8 @@ try {
   ) as { hash: string }[];
   check(
     "two overlapping previews leave the later edit on the branch and deployed",
-    [
-      earlier.sha !== later.sha,
-      branchHead[0]?.hash,
-      settled.deployed?.sha,
-      (await overlapping.text()).includes("The later preview."),
-    ],
-    [true, later.sha, later.sha, true],
+    [branchHead[0]?.hash, settled.deployed?.sha, (await overlapping.text()).includes(overlap.text)],
+    [overlap.later, overlap.later, true],
   );
 } catch (error) {
   console.log(`FAIL ${error instanceof Error ? error.message : String(error)}`);
