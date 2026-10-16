@@ -54,9 +54,9 @@ const containers = () =>
 // The server's output, for the verification email and the Doc's stale-ref log line.
 let log = "";
 const containersBefore = containers();
-const server = spawn("npx", ["varlock", "run", "--", "npx", "cf", "dev", "--persist-to", state], {
+const server = spawn("npx", ["varlock", "run", "--", "npx", "cf", "dev"], {
   cwd: api,
-  env: { ...process.env, API_PORT: args.port },
+  env: { ...process.env, API_PORT: args.port, API_STATE_DIR: state },
   detached: true,
 });
 server.stdout.on("data", (chunk) => (log += chunk));
