@@ -53,6 +53,7 @@ function AccountSettings() {
     <Page title="Account" description="Your profile, appearance, and sign-in details.">
       <ProfileCard />
       <AppearanceCard />
+      <AgentCard />
       <PasswordCard />
       <DeleteAccountCard />
     </Page>
@@ -128,6 +129,45 @@ function AppearanceCard() {
             </SelectPopup>
           </Select>
         </Field>
+      </CardPanel>
+    </Card>
+  );
+}
+
+const mcpUrl = `${import.meta.env.VITE_API_URL}/mcp`;
+
+function CopyField({ label, value }: { label: string; value: string }) {
+  async function copy() {
+    await navigator.clipboard.writeText(value);
+    toastManager.add({ type: "success", title: `${label} copied` });
+  }
+
+  return (
+    <Field>
+      <FieldLabel>{label}</FieldLabel>
+      <div className="flex w-full gap-2">
+        <Input value={value} readOnly className="font-mono" />
+        <Button variant="outline" onClick={() => void copy()}>
+          Copy
+        </Button>
+      </div>
+    </Field>
+  );
+}
+
+function AgentCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Connect an agent</CardTitle>
+        <CardDescription>
+          Let Claude Code or another MCP client read and edit your sites. The first time it
+          connects, you approve it in the browser.
+        </CardDescription>
+      </CardHeader>
+      <CardPanel className="flex flex-col gap-4">
+        <CopyField label="Claude Code" value={`claude mcp add --transport http shiru ${mcpUrl}`} />
+        <CopyField label="Server URL" value={mcpUrl} />
       </CardPanel>
     </Card>
   );
