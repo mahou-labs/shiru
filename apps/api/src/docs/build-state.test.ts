@@ -306,6 +306,48 @@ describe("reconciling a building target", () => {
   });
 });
 
+describe("retiring a target", () => {
+  const DRAFT = TargetLabel.parse("draft");
+
+  it("forgets a deployed or failed target and leaves the others", () => {
+    const { state, effects } = run([
+      requested("a"),
+      succeeded("doc-1--live--1"),
+      requested("b", DRAFT),
+      succeeded("doc-1--draft--2", "v1", DRAFT),
+      requested("c", PR),
+      {
+        type: "finished",
+        target: PR,
+        workflowId: "doc-1--pr-12--3",
+        result: { ok: false, error: "x" },
+      },
+      { type: "retired", target: DRAFT },
+      { type: "retired", target: PR },
+      { type: "retired", target: PR },
+    ]);
+    expect(state).toEqual({
+      prefix: "doc-1",
+      seq: 3,
+      targets: { live: { kind: "idle", deployed: { sha: "a", templateVersion: "v1" } } },
+    });
+    expect(effects.slice(-3)).toEqual([[], [], []]);
+  });
+
+  it("keeps a building target, whose build would deploy the Worker again", () => {
+    const { state, effects } = run([requested("a", DRAFT), { type: "retired", target: DRAFT }]);
+    expect(state.targets).toEqual({
+      draft: {
+        kind: "building",
+        build: { sha: "a", workflowId: "doc-1--draft--1" },
+        pendingSha: null,
+        deployed: null,
+      },
+    });
+    expect(effects.at(-1)).toEqual([]);
+  });
+});
+
 describe("isCurrentBuild", () => {
   it("lets only the build a target waits on deploy", () => {
     const building = run([requested("a"), requested("b")]).state;
