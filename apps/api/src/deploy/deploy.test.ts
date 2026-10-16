@@ -5,6 +5,7 @@ import type { ManifestEntry } from "../builder/protocol";
 import {
   contentType,
   deleteDoc,
+  deployBuild,
   deployDoc,
   type DispatchAccount,
   parseResponse,
@@ -563,6 +564,122 @@ describe("deployDoc", () => {
     await expect(
       deployDoc({ account, scriptName: "acme", manifest, ...doc({}), fetch: cf.fetch }),
     ).rejects.toThrow("no /guide/index.html");
+  });
+});
+
+describe("deployBuild", () => {
+  const production = {
+    ENVIRONMENT: "production",
+    DISPATCH_ACCOUNT_ID: "acct1",
+    DISPATCH_API_TOKEN: "api-token",
+    DISPATCH_NAMESPACE: "staging",
+  };
+
+  it("deploys the build to the doc's Worker in production", async () => {
+    const cf = new FakeCloudflare();
+
+    const result = await deployBuild({
+      env: production,
+      scriptName: "acme",
+      manifest,
+      ...doc(files),
+      fetch: cf.fetch,
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect([...cf.scripts.keys()]).toEqual(["acme"]);
+    expect(cf.requests[0]!.url).toBe(`${SCRIPT}/assets-upload-session`);
+    expect(cf.requests[0]!.authorization).toBe("Bearer api-token");
+  });
+
+  it("sends nothing in development", async () => {
+    const cf = new FakeCloudflare();
+
+    const result = await deployBuild({
+      env: { ...production, ENVIRONMENT: "development" },
+      scriptName: "acme",
+      manifest,
+      ...doc(files),
+      fetch: cf.fetch,
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(cf.requests).toEqual([]);
+  });
+
+  it("fails without a request when production has no account or token", async () => {
+    const cf = new FakeCloudflare();
+    const deploy = (env: typeof production) =>
+      deployBuild({ env, scriptName: "acme", manifest, ...doc(files), fetch: cf.fetch });
+
+    expect(await deploy({ ...production, DISPATCH_ACCOUNT_ID: "" })).toEqual({
+      ok: false,
+      error: "Deploying is not configured: DISPATCH_ACCOUNT_ID is not set",
+    });
+    expect(await deploy({ ...production, DISPATCH_API_TOKEN: "" })).toEqual({
+      ok: false,
+      error: "Deploying is not configured: DISPATCH_API_TOKEN is not set",
+    });
+    expect(cf.requests).toEqual([]);
+  });
+
+  it("returns Cloudflare's refusal as an error for the dashboard", async () => {
+    const cf = new FakeCloudflare();
+    cf.failNext(
+      "POST",
+      "/assets-upload-session",
+      403,
+      errorBody(10121, "Workers for Platforms is not enabled"),
+    );
+
+    const result = await deployBuild({
+      env: production,
+      scriptName: "acme",
+      manifest,
+      ...doc(files),
+      fetch: cf.fetch,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error:
+        "Deploying failed at upload-session (HTTP 403): Workers for Platforms is not enabled (10121)",
+    });
+  });
+
+  it("throws on a server error so the step retries, and the retry deploys", async () => {
+    const cf = new FakeCloudflare();
+    cf.failNext("POST", "/assets/upload?base64=true", 502, "<html>Bad gateway</html>");
+    const deploy = () =>
+      deployBuild({
+        env: production,
+        scriptName: "acme",
+        manifest,
+        ...doc(files),
+        fetch: cf.fetch,
+      });
+
+    await expect(deploy()).rejects.toThrow(
+      "Deploying failed at upload (HTTP 502): HTTP 502: <html>Bad gateway</html>",
+    );
+    expect(cf.scripts.size).toBe(0);
+    expect(await deploy()).toEqual({ ok: true });
+    expect([...cf.scripts.keys()]).toEqual(["acme"]);
+  });
+
+  it("throws when Cloudflare rate limits the script upload", async () => {
+    const cf = new FakeCloudflare();
+    cf.failNext("PUT", "/scripts/acme", 429, errorBody(10429, "Too many requests"));
+
+    await expect(
+      deployBuild({
+        env: production,
+        scriptName: "acme",
+        manifest,
+        ...doc(files),
+        fetch: cf.fetch,
+      }),
+    ).rejects.toThrow("Deploying failed at script (HTTP 429): Too many requests (10429)");
   });
 });
 

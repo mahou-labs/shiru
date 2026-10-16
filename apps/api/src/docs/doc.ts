@@ -1,11 +1,16 @@
 import { DurableObject } from "cloudflare:workers";
+import { eq } from "drizzle-orm";
 
+import { docs } from "../schema/docs";
+import { db } from "../utils/db";
 import {
   applyBuildEvent,
   type BuildEvent,
   type BuildResult,
   initialBuilds,
   type InstanceStatus,
+  isCurrentBuild,
+  lookupFailure,
   parseInstanceStatus,
   type DocBuilds,
 } from "./build-state";
@@ -37,11 +42,11 @@ import {
   readCommitTree,
   receivePackRequest,
 } from "./git";
-import { LIVE, type TargetLabel } from "./names";
+import { type DocSlug, LIVE, type TargetLabel } from "./names";
 import type { PublishParams } from "./publish-workflow";
 import { type BuildStep, endRun, enterStep, type Run, startRun } from "./runs";
 
-export type DocInfo = { docId: string; name: string; repo: string; docUrl: string };
+export type DocInfo = { docId: string; slug: DocSlug; name: string; repo: string; docUrl: string };
 
 export type PublishResult =
   | { kind: "published"; sha: string; skipped: string[] }
@@ -245,6 +250,11 @@ export class Doc extends DurableObject<Env> {
     };
   }
 
+  /** Whether `workflowId` is still the build `target` is waiting on, so it may deploy. */
+  isCurrentBuild(target: TargetLabel, workflowId: string): boolean {
+    return isCurrentBuild(this.builds(), target, workflowId);
+  }
+
   /** Reconciles every building target with its Workflow instance, so none stays building forever. */
   override async alarm(): Promise<void> {
     for (const [target, state] of Object.entries(this.builds().targets)) {
@@ -255,8 +265,8 @@ export class Doc extends DurableObject<Env> {
         instance = parseInstanceStatus(
           await (await this.env.PUBLISH_WORKFLOW.get(workflowId)).status(),
         );
-      } catch {
-        instance = { status: "unknown" };
+      } catch (error) {
+        instance = lookupFailure(error);
       }
       await this.apply({
         type: "reconciled",
@@ -291,16 +301,17 @@ export class Doc extends DurableObject<Env> {
           await this.ctx.storage.deleteAlarm();
           break;
         case "startWorkflow": {
-          const doc = this.doc();
-          const params: PublishParams = {
-            docId: doc.docId,
-            repo: doc.repo,
-            target: effect.target,
-            sha: effect.sha,
-            docUrl: doc.docUrl,
-            docsRoot: DOCS_ROOT,
-          };
           try {
+            const doc = await this.buildInfo();
+            const params: PublishParams = {
+              docId: doc.docId,
+              slug: doc.slug,
+              repo: doc.repo,
+              target: effect.target,
+              sha: effect.sha,
+              docUrl: doc.docUrl,
+              docsRoot: DOCS_ROOT,
+            };
             await this.env.PUBLISH_WORKFLOW.create({ id: effect.workflowId, params });
           } catch (error) {
             // The alarm finds the instance missing and starts the build again.
@@ -470,6 +481,20 @@ export class Doc extends DurableObject<Env> {
     const fresh = initialBuilds(`${this.doc().docId}--${crypto.randomUUID().slice(0, 8)}`);
     // State saved before the prefix existed takes a fresh one.
     return stored ? { ...fresh, ...(JSON.parse(stored) as DocBuilds) } : fresh;
+  }
+
+  /**
+   * The stored info a Workflow needs. Docs stored before `slug` was kept here get it from D1, since
+   * an alarm or a finished build can start a Workflow before any request calls `init` again.
+   */
+  private async buildInfo(): Promise<DocInfo> {
+    const doc = this.doc();
+    if (doc.slug) return doc;
+    const [row] = await db.select({ slug: docs.slug }).from(docs).where(eq(docs.id, doc.docId));
+    if (!row) throw new Error(`doc ${doc.docId} is not in the database`);
+    const backfilled = { ...doc, slug: row.slug };
+    this.setMeta("doc", JSON.stringify(backfilled));
+    return backfilled;
   }
 
   private doc(): DocInfo {

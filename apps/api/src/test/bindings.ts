@@ -3,6 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqlite";
 import { drizzle } from "drizzle-orm/node-sqlite";
 
+import type { PublishParams } from "../docs/publish-workflow";
 import * as schema from "../schema";
 
 type SentEmail = { from: string; to: string; subject: string; html: string; text: string };
@@ -204,11 +205,10 @@ function repoHandle(name: string, repo: Repo) {
 
 /** The Workflow binding's `create`, which refuses an instance id it has seen, as the real one does. */
 export const publishWorkflow = {
-  created: [] as string[],
-  async create({ id }: { id: string }) {
-    if (this.created.includes(id))
-      throw new Error(`Workflow instance with id "${id}" already exists`);
-    this.created.push(id);
+  created: new Map<string, PublishParams>(),
+  async create({ id, params }: { id: string; params: PublishParams }) {
+    if (this.created.has(id)) throw new Error(`Workflow instance with id "${id}" already exists`);
+    this.created.set(id, params);
   },
 };
 
@@ -224,6 +224,9 @@ export const env = {
   POLAR_MONTHLY_PRODUCT_ID: "prod_test_monthly",
   POLAR_YEARLY_PRODUCT_ID: "prod_test_yearly",
   ENVIRONMENT: "development",
+  DISPATCH_ACCOUNT_ID: "test-account",
+  DISPATCH_API_TOKEN: "test-dispatch-token",
+  DISPATCH_NAMESPACE: "shiru-docs",
   API_RATE_LIMITER: rateLimiter("api", 300),
   PUBLIC_WRITE_RATE_LIMITER: rateLimiter("public-write", 10),
   POSTHOG_KEY: "",

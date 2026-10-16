@@ -30,7 +30,9 @@ export type InstanceStatus =
   | { status: "complete"; output: BuildResult }
   | { status: "errored"; error: string }
   | { status: "terminated" }
-  // Also what the caller passes when the instance does not exist.
+  // `create` never ran, so nothing is building this target.
+  | { status: "missing" }
+  // The lookup failed or returned a status this code does not know. The instance may still run.
   | { status: "unknown" };
 
 export type BuildEvent =
@@ -132,18 +134,20 @@ function reconcile(
     case "running":
     case "waiting":
     case "paused":
-    case "waitingForPause": {
-      const current = targetState(state, target);
-      const live = current.kind === "building" && current.build.workflowId === workflowId;
-      return { state, effects: live ? [{ type: "setAlarm" }] : [] };
-    }
+    case "waitingForPause":
+    // Starting another build now could leave two deploying to the same Worker.
+    case "unknown":
+      return {
+        state,
+        effects: isCurrentBuild(state, target, workflowId) ? [{ type: "setAlarm" }] : [],
+      };
     case "complete":
       return finish(state, target, workflowId, instance.output);
     case "errored":
       return finish(state, target, workflowId, { ok: false, error: instance.error });
     case "terminated":
       return finish(state, target, workflowId, { ok: false, error: "The build was stopped" });
-    case "unknown":
+    case "missing":
       return restart(state, target, workflowId);
   }
 }
@@ -157,6 +161,18 @@ function restart(state: DocBuilds, target: TargetLabel, workflowId: string): Tra
   }
   const idle = withTarget(state, target, { kind: "idle", deployed: current.deployed });
   return request(idle, target, current.pendingSha ?? current.build.sha, true);
+}
+
+/** Whether `workflowId` is the build `target` is waiting on. Only that build may deploy. */
+export function isCurrentBuild(state: DocBuilds, target: TargetLabel, workflowId: string): boolean {
+  const current = targetState(state, target);
+  return current.kind === "building" && current.build.workflowId === workflowId;
+}
+
+/** Reads why the Workflow binding could not return an instance. */
+export function lookupFailure(error: unknown): InstanceStatus {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("instance.not_found") ? { status: "missing" } : { status: "unknown" };
 }
 
 const buildResult = z.discriminatedUnion("ok", [

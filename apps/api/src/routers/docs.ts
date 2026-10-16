@@ -44,6 +44,7 @@ async function openDoc(organizationId: string, docId: string) {
   const stub = docObjects().getByName(doc.id);
   await stub.init({
     docId: doc.id,
+    slug: doc.slug,
     name: doc.name,
     repo: doc.source.artifactsRepo,
     docUrl: docUrl(doc.slug),

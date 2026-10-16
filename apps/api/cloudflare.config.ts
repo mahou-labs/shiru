@@ -49,6 +49,11 @@ export default defineConfig(({ mode }) => {
             : "dceaf15a-dad4-4809-a4cc-ce048ff90a87",
         ),
         ENVIRONMENT: bindings.text(development ? "development" : "production"),
+        // Builds deploy to this Workers for Platforms namespace, which apps/dispatch serves.
+        // Development never deploys, so neither secret is needed there.
+        DISPATCH_ACCOUNT_ID: bindings.secret(),
+        DISPATCH_API_TOKEN: bindings.secret(),
+        DISPATCH_NAMESPACE: bindings.text("shiru-docs"),
         EMAIL: bindings.sendEmail({ dev: { remote: false } }),
         // Per-IP limits enforced in src/utils/rate-limit.ts. Namespace ids are unique per account.
         API_RATE_LIMITER: bindings.rateLimit({
