@@ -1,0 +1,406 @@
+import { eq } from "drizzle-orm";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+
+import type { Doc } from "../docs/doc";
+import { buildCommit } from "../docs/git";
+import { LIVE } from "../docs/names";
+import { docs, hostnames } from "../schema/docs";
+import { artifacts, db, docObjects, domainsKv, env, publishWorkflow } from "../test/bindings";
+import { createClient } from "../test/client";
+import { FakeCloudflareZone, HOSTNAMES, ZONE_ID, ZONE_TOKEN } from "../test/cloudflare-zone";
+import {
+  addDomain,
+  docUrl,
+  type DomainsEnv,
+  refreshDomain,
+  refreshDomains,
+  removeDomain,
+} from "./domains";
+
+const JAN_1 = new Date("2026-01-01T00:00:00.000Z");
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(JAN_1);
+});
+afterEach(() => vi.useRealTimers());
+
+const production = {
+  ...env,
+  ENVIRONMENT: "production",
+  DOCS_DOMAIN: "shiru.page",
+  CUSTOM_HOSTNAMES_ZONE_ID: ZONE_ID,
+  CUSTOM_HOSTNAMES_API_TOKEN: ZONE_TOKEN,
+  CUSTOM_DOMAIN_TARGET: "cname.shiru.page",
+} as unknown as DomainsEnv;
+
+async function createDoc(slug: string) {
+  const client = createClient();
+  await client.signUpVerified(`${slug}@mailinator.com`);
+  await client.createOrganization(`Org ${slug}`);
+  const { body } = await client.rpc("docs/create", {
+    slug,
+    name: "Acme Docs",
+    visibility: "public",
+  });
+  return { client, docId: (body.json as { id: string }).id };
+}
+
+/** Publishes a first commit and reports its build as deployed, so the doc has a live build. */
+async function publishLive(client: ReturnType<typeof createClient>, docId: string) {
+  await artifacts.create(docId);
+  const commit = await buildCommit({
+    tree: [],
+    changes: [{ path: "docs/content/index.mdx", op: "put", content: new Uint8Array([35]) }],
+    parent: null,
+    author: { name: "Dev", email: "dev@example.com" },
+    message: "import",
+    time: 1760000000,
+  });
+  artifacts.receive(docId, commit.objects, commit.sha);
+  await client.rpc("docs/publish", { docId });
+  const [workflowId] = startedBuilds(docId);
+  const doc = docObjects.getByName(docId) as unknown as Pick<Doc, "buildFinished">;
+  await doc.buildFinished(LIVE, workflowId!, { ok: true, templateVersion: "v1" });
+  return commit.sha;
+}
+
+const startedBuilds = (docId: string) =>
+  [...publishWorkflow.created.keys()].filter((id) => id.startsWith(docId));
+const builtUrls = (docId: string) =>
+  startedBuilds(docId).map((id) => publishWorkflow.created.get(id)!.docUrl);
+
+async function site(docId: string) {
+  const [doc] = await db.select().from(docs).where(eq(docs.id, docId));
+  const [row] = await db.select().from(hostnames).where(eq(hostnames.docId, docId));
+  return { doc: doc!, row: row ?? null };
+}
+
+/** The doc and the domain it has, for the calls that need one. */
+async function withDomain(docId: string) {
+  const { doc, row } = await site(docId);
+  return { doc, row: row! };
+}
+
+const kv = (...keys: string[]) => keys.map((key) => domainsKv.entries.get(key) ?? null);
+
+describe("addDomain", () => {
+  it("registers the hostname with Cloudflare and routes it to the doc while it is pending", async () => {
+    const { docId } = await createDoc("adding");
+    const cloudflare = new FakeCloudflareZone();
+    const { doc } = await site(docId);
+
+    expect(
+      await addDomain({
+        env: production,
+        fetch: cloudflare.fetch,
+        doc,
+        hostname: "docs.adding.com",
+      }),
+    ).toEqual({
+      ok: true,
+      domain: {
+        hostname: "docs.adding.com",
+        status: "pending",
+        record: { type: "CNAME", name: "docs.adding.com", target: "cname.shiru.page" },
+        errors: ["custom hostname does not CNAME to this zone."],
+      },
+    });
+    expect((await site(docId)).row).toEqual({
+      hostname: "docs.adding.com",
+      docId,
+      cloudflareId: "ch-1",
+      status: "pending",
+      createdAt: JAN_1,
+    });
+    expect(kv("host:docs.adding.com", "redirect:adding")).toEqual(["adding", null]);
+    expect(cloudflare.requests.map(({ method, url, json }) => [method, url, json])).toEqual([
+      ["POST", HOSTNAMES, { hostname: "docs.adding.com", ssl: { method: "http", type: "dv" } }],
+    ]);
+  });
+
+  it("reports a doc that already has a domain and a hostname another doc uses", async () => {
+    const first = await createDoc("first-site");
+    const second = await createDoc("second-site");
+    const cloudflare = new FakeCloudflareZone();
+    const add = async (docId: string, hostname: string) =>
+      addDomain({
+        env: production,
+        fetch: cloudflare.fetch,
+        doc: (await site(docId)).doc,
+        hostname,
+      });
+
+    expect((await add(first.docId, "docs.first.com")).ok).toBe(true);
+    expect(await add(first.docId, "help.first.com")).toEqual({
+      ok: false,
+      error: { code: "DOMAIN_EXISTS" },
+    });
+    expect(await add(second.docId, "docs.first.com")).toEqual({
+      ok: false,
+      error: { code: "HOSTNAME_TAKEN" },
+    });
+    expect([...cloudflare.hostnames.values()].map(({ hostname }) => hostname)).toEqual([
+      "docs.first.com",
+    ]);
+  });
+
+  it("lets one of two concurrent adds through and deletes the loser's Cloudflare hostname", async () => {
+    const { docId } = await createDoc("racing");
+    const cloudflare = new FakeCloudflareZone();
+    const { doc } = await site(docId);
+    const add = (hostname: string) =>
+      addDomain({ env: production, fetch: cloudflare.fetch, doc, hostname });
+
+    const results = await Promise.all([add("one.racing.com"), add("two.racing.com")]);
+
+    expect(results.map((result) => (result.ok ? result.domain.hostname : result.error))).toEqual([
+      "one.racing.com",
+      { code: "DOMAIN_EXISTS" },
+    ]);
+    expect([...cloudflare.hostnames.values()].map(({ hostname }) => hostname)).toEqual([
+      "one.racing.com",
+    ]);
+    expect(kv("host:one.racing.com", "host:two.racing.com")).toEqual(["racing", null]);
+  });
+
+  it("returns Cloudflare's refusal and stores nothing", async () => {
+    const { docId } = await createDoc("refused");
+    const cloudflare = new FakeCloudflareZone();
+    cloudflare.failNext("POST", HOSTNAMES, 400, {
+      success: false,
+      errors: [{ code: 1409, message: "Hostname is not allowed." }],
+      result: null,
+    });
+
+    expect(
+      await addDomain({
+        env: production,
+        fetch: cloudflare.fetch,
+        doc: (await site(docId)).doc,
+        hostname: "docs.refused.com",
+      }),
+    ).toEqual({
+      ok: false,
+      error: { code: "HOSTNAME_REJECTED", message: "Hostname is not allowed." },
+    });
+    expect((await site(docId)).row).toBe(null);
+    expect(kv("host:docs.refused.com")).toEqual([null]);
+  });
+
+  it("throws when Cloudflare fails in a way a retry may fix", async () => {
+    const { docId } = await createDoc("unavailable");
+    const cloudflare = new FakeCloudflareZone();
+    cloudflare.failNext("POST", HOSTNAMES, 503, "Service unavailable");
+
+    await expect(
+      addDomain({
+        env: production,
+        fetch: cloudflare.fetch,
+        doc: (await site(docId)).doc,
+        hostname: "docs.unavailable.com",
+      }),
+    ).rejects.toThrow(
+      "Cloudflare custom hostname create failed (HTTP 503): HTTP 503: Service unavailable",
+    );
+    expect((await site(docId)).row).toBe(null);
+  });
+});
+
+describe("refreshDomain", () => {
+  it("serves the doc at its domain once active, and back at its address once it breaks", async () => {
+    const { client, docId } = await createDoc("moving");
+    const sha = await publishLive(client, docId);
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    await addDomain({ ...deps, doc: (await site(docId)).doc, hostname: "docs.moving.com" });
+
+    expect(await refreshDomain({ ...deps, ...(await withDomain(docId)) })).toMatchObject({
+      ok: true,
+      domain: { status: "pending" },
+    });
+    expect(builtUrls(docId)).toEqual(["http://moving.docs.localhost:3003"]);
+
+    cloudflare.activate("ch-1");
+    expect(await refreshDomain({ ...deps, ...(await withDomain(docId)) })).toEqual({
+      ok: true,
+      domain: {
+        hostname: "docs.moving.com",
+        status: "active",
+        record: { type: "CNAME", name: "docs.moving.com", target: "cname.shiru.page" },
+        errors: [],
+      },
+    });
+    expect((await site(docId)).row?.status).toBe("active");
+    expect(kv("host:docs.moving.com", "redirect:moving")).toEqual(["moving", "docs.moving.com"]);
+    expect(builtUrls(docId)).toEqual([
+      "http://moving.docs.localhost:3003",
+      "https://docs.moving.com",
+    ]);
+    expect(publishWorkflow.created.get(startedBuilds(docId)[1]!)?.sha).toBe(sha);
+
+    cloudflare.update("ch-1", { status: "moved" });
+    expect(await refreshDomain({ ...deps, ...(await withDomain(docId)) })).toMatchObject({
+      ok: true,
+      domain: { status: "failed", errors: [] },
+    });
+    expect(kv("host:docs.moving.com", "redirect:moving")).toEqual(["moving", null]);
+    // The rebuild for the domain is still running, so the next build waits for it.
+    expect(builtUrls(docId)).toHaveLength(2);
+    const doc = docObjects.getByName(docId) as unknown as Pick<Doc, "buildFinished">;
+    await doc.buildFinished(LIVE, startedBuilds(docId)[1]!, { ok: true, templateVersion: "v1" });
+    expect(builtUrls(docId)).toEqual([
+      "http://moving.docs.localhost:3003",
+      "https://docs.moving.com",
+      "https://moving.shiru.page",
+    ]);
+  });
+
+  it("fails a domain Cloudflare no longer has", async () => {
+    const { docId } = await createDoc("vanished");
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    await addDomain({ ...deps, doc: (await site(docId)).doc, hostname: "docs.vanished.com" });
+    cloudflare.hostnames.clear();
+
+    expect(await refreshDomain({ ...deps, ...(await withDomain(docId)) })).toMatchObject({
+      ok: true,
+      domain: { status: "failed", errors: ["Cloudflare no longer has this domain"] },
+    });
+    expect((await site(docId)).row?.status).toBe("failed");
+  });
+});
+
+describe("removeDomain", () => {
+  it("deletes the Cloudflare hostname, its routing and the row, and serves the doc at its address", async () => {
+    const { client, docId } = await createDoc("leaving");
+    await publishLive(client, docId);
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    await addDomain({ ...deps, doc: (await site(docId)).doc, hostname: "docs.leaving.com" });
+    cloudflare.activate("ch-1");
+    await refreshDomain({ ...deps, ...(await withDomain(docId)) });
+    const doc = docObjects.getByName(docId) as unknown as Pick<Doc, "buildFinished">;
+    await doc.buildFinished(LIVE, startedBuilds(docId)[1]!, { ok: true, templateVersion: "v1" });
+
+    expect(await removeDomain({ ...deps, ...(await withDomain(docId)) })).toEqual({ ok: true });
+    expect(cloudflare.hostnames.size).toBe(0);
+    expect(kv("host:docs.leaving.com", "redirect:leaving")).toEqual([null, null]);
+    expect((await site(docId)).row).toBe(null);
+    expect(builtUrls(docId)).toEqual([
+      "http://leaving.docs.localhost:3003",
+      "https://docs.leaving.com",
+      "https://leaving.shiru.page",
+    ]);
+  });
+
+  it("keeps the row when Cloudflare fails, so removing can be tried again", async () => {
+    const { docId } = await createDoc("stuck");
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    await addDomain({ ...deps, doc: (await site(docId)).doc, hostname: "docs.stuck.com" });
+    cloudflare.failNext("DELETE", `${HOSTNAMES}/ch-1`, 500, "Internal error");
+
+    await expect(removeDomain({ ...deps, ...(await withDomain(docId)) })).rejects.toThrow(
+      "Cloudflare custom hostname delete failed (HTTP 500): HTTP 500: Internal error",
+    );
+    expect((await site(docId)).row?.hostname).toBe("docs.stuck.com");
+    expect(kv("host:docs.stuck.com")).toEqual(["stuck"]);
+
+    expect(await removeDomain({ ...deps, ...(await withDomain(docId)) })).toEqual({ ok: true });
+    expect((await site(docId)).row).toBe(null);
+  });
+});
+
+describe("refreshDomains", () => {
+  it("syncs pending and active domains and goes on past one that fails", async () => {
+    // Earlier tests' domains point at their own fake zones.
+    await db.delete(hostnames);
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    const docIds = [];
+    for (const name of ["cron-a", "cron-b", "cron-c"]) {
+      const { docId } = await createDoc(name);
+      await addDomain({ ...deps, doc: (await site(docId)).doc, hostname: `docs.${name}.com` });
+      docIds.push(docId);
+    }
+    const ids = [...cloudflare.hostnames.keys()];
+    cloudflare.failNext("GET", `${HOSTNAMES}/${ids[0]}`, 500, "Internal error");
+    for (const id of ids) cloudflare.activate(id);
+    await db.update(hostnames).set({ status: "failed" }).where(eq(hostnames.docId, docIds[2]!));
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await refreshDomains(deps);
+
+    const statuses = await Promise.all(docIds.map(async (id) => (await site(id)).row?.status));
+    expect(statuses).toEqual(["pending", "active", "failed"]);
+    expect(
+      cloudflare.requests.filter(({ method }) => method === "GET").map(({ url }) => url),
+    ).toEqual([`${HOSTNAMES}/ch-1`, `${HOSTNAMES}/ch-2`]);
+    expect(errors.mock.calls.map(([message]) => message)).toEqual([
+      "could not refresh the custom domain docs.cron-a.com",
+    ]);
+    errors.mockRestore();
+  });
+
+  it("does nothing in development", async () => {
+    const cloudflare = new FakeCloudflareZone();
+    await refreshDomains({ env: env as unknown as DomainsEnv, fetch: cloudflare.fetch });
+    expect(cloudflare.requests).toEqual([]);
+  });
+});
+
+describe("without Cloudflare credentials in production", () => {
+  const unconfigured = { ...production, CUSTOM_HOSTNAMES_API_TOKEN: "" } as DomainsEnv;
+  const NOT_CONFIGURED = {
+    ok: false,
+    error: {
+      code: "NOT_CONFIGURED",
+      message: "Custom domains are not configured: CUSTOM_HOSTNAMES_API_TOKEN is not set",
+    },
+  };
+
+  it("refuses to add, refresh or remove domains", async () => {
+    const { docId } = await createDoc("unconfigured");
+    const cloudflare = new FakeCloudflareZone();
+    const { doc } = await site(docId);
+    const row = {
+      hostname: "docs.unconfigured.com",
+      docId,
+      cloudflareId: "ch-9",
+      status: "pending" as const,
+      createdAt: JAN_1,
+    };
+    const deps = { env: unconfigured, fetch: cloudflare.fetch };
+
+    expect(await addDomain({ ...deps, doc, hostname: row.hostname })).toEqual(NOT_CONFIGURED);
+    expect(await refreshDomain({ ...deps, doc, row })).toEqual(NOT_CONFIGURED);
+    expect(await removeDomain({ ...deps, doc, row })).toEqual(NOT_CONFIGURED);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    await refreshDomains(deps);
+    expect(errors.mock.calls).toEqual([
+      [
+        "custom domains not refreshed: Custom domains are not configured: CUSTOM_HOSTNAMES_API_TOKEN is not set",
+      ],
+    ]);
+    errors.mockRestore();
+    expect(cloudflare.requests).toEqual([]);
+  });
+});
+
+describe("docUrl", () => {
+  const productionUrls = { ENVIRONMENT: "production", DOCS_DOMAIN: "shiru.page" } as const;
+  const developmentUrls = { ENVIRONMENT: "development", DOCS_DOMAIN: "docs.localhost" } as const;
+
+  it("serves a doc at its active custom domain in production", () => {
+    expect(docUrl("acme", null, productionUrls)).toBe("https://acme.shiru.page");
+    expect(docUrl("acme", "docs.acme.com", productionUrls)).toBe("https://docs.acme.com");
+  });
+
+  it("serves every doc through the local dispatch Worker in development", () => {
+    expect(docUrl("acme", null, developmentUrls)).toBe("http://acme.docs.localhost:3003");
+    expect(docUrl("acme", "docs.acme.com", developmentUrls)).toBe(
+      "http://acme.docs.localhost:3003",
+    );
+  });
+});

@@ -10,13 +10,14 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
 import { devRoute } from "./builder/dev-route";
+import { refreshDomains } from "./domains/domains";
 import { appRouter } from "./routers";
 import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
 import { captureException } from "./utils/posthog";
 import { rateLimit } from "./utils/rate-limit";
 
-const app = new Hono();
+export const app = new Hono();
 
 app.use(logger());
 app.use(
@@ -94,4 +95,9 @@ export { Builder } from "./builder/builder";
 export { PublishWorkflow } from "./docs/publish-workflow";
 export { Doc } from "./docs/doc";
 
-export default app;
+export default {
+  fetch: app.fetch,
+  scheduled(_controller, _env, ctx) {
+    ctx.waitUntil(refreshDomains({ env }));
+  },
+} satisfies ExportedHandler<Env>;

@@ -4,7 +4,8 @@ import { z } from "zod";
 const NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 // `preview` is reserved too: a doc there could set cookies for every preview host under it.
-const RESERVED_SLUGS: readonly string[] = ["app", "api", "docs", "preview", "t", "www"];
+// `cname` is the target custom domains point their CNAME at.
+const RESERVED_SLUGS: readonly string[] = ["app", "api", "cname", "docs", "preview", "t", "www"];
 
 export const DocSlug = z
   .string()
@@ -22,6 +23,44 @@ export const TargetLabel = z
 export type TargetLabel = z.infer<typeof TargetLabel>;
 
 export const LIVE = TargetLabel.parse("live");
+
+const HOST_LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
+const SHIRU_DOMAINS = ["shiru.sh", "shiru.page"];
+
+function isHostname(hostname: string) {
+  const labels = hostname.split(".");
+  const tld = labels.at(-1)!;
+  return (
+    labels.length >= 2 &&
+    labels.every((label) => HOST_LABEL.test(label)) &&
+    (/^[a-z]{2,}$/.test(tld) || tld.startsWith("xn--"))
+  );
+}
+
+/** A domain an organization serves its docs at, such as `docs.acme.com`. */
+export const CustomHostname = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .transform((hostname) => hostname.replace(/\.$/, ""))
+  .pipe(
+    z
+      .string()
+      .max(253)
+      .refine(isHostname, { message: "Enter a domain like docs.example.com", abort: true })
+      .refine(
+        (hostname) => !SHIRU_DOMAINS.some((d) => hostname === d || hostname.endsWith(`.${d}`)),
+        "This domain belongs to Shiru",
+      ),
+  )
+  .brand<"CustomHostname">();
+export type CustomHostname = z.infer<typeof CustomHostname>;
+
+/** The KV key both Workers use for a custom hostname. Its value is the doc's slug. */
+export const hostKey = (hostname: string) => `host:${hostname}`;
+
+/** The KV key both Workers use for a doc's active custom hostname, which its slug redirects to. */
+export const redirectKey = (slug: DocSlug) => `redirect:${slug}`;
 
 export function workerName(doc: DocSlug, target: TargetLabel) {
   return target === LIVE ? doc : `${doc}--${target}`;

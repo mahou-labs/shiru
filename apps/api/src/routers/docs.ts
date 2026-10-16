@@ -1,27 +1,46 @@
 import { env } from "cloudflare:workers";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, type SQL } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 
-import { docs } from "../schema/docs";
+import { docs, hostnames } from "../schema/docs";
 import { DocPath } from "../docs/drafts";
-import { DocSlug } from "../docs/names";
 import type { Doc } from "../docs/doc";
+import { CustomHostname, DocSlug, parseHostname } from "../docs/names";
+import {
+  activeHostname,
+  addDomain,
+  docInfo,
+  docUrl,
+  type DocRow,
+  type DomainRow,
+  refreshDomain,
+  removeDomain,
+  toDomain,
+} from "../domains/domains";
 import { db } from "../utils/db";
 import { organizationProcedure, paidProcedure } from "../utils/orpc";
 
-/**
- * Where a doc is served, for the dashboard's links and for the build's canonical URLs. In
- * development the dispatch Worker serves `<slug>.docs.localhost` on port 3003.
- */
-export function docUrl(slug: string) {
-  return env.ENVIRONMENT === "development"
-    ? `http://${slug}.${env.DOCS_DOMAIN}:3003`
-    : `https://${slug}.${env.DOCS_DOMAIN}`;
+function withUrl(doc: DocRow, domain: DomainRow | null) {
+  return { ...doc, url: docUrl(doc.slug, activeHostname(domain), env) };
 }
 
-function withUrl<T extends { slug: string }>(doc: T) {
-  return { ...doc, url: docUrl(doc.slug) };
+/** Docs with their custom domains, oldest first. */
+function selectDocs(where: SQL | undefined) {
+  return db
+    .select({ doc: docs, domain: hostnames })
+    .from(docs)
+    .leftJoin(hostnames, eq(hostnames.docId, docs.id))
+    .where(where)
+    .orderBy(asc(docs.createdAt), asc(docs.id));
+}
+
+/** The doc and its custom domain, or undefined when the organization has no such doc. */
+async function findDoc(organizationId: string, docId: string) {
+  const [found] = await selectDocs(
+    and(eq(docs.id, docId), eq(docs.organizationId, organizationId)),
+  );
+  return found;
 }
 
 const DOC_ERRORS = { NOT_FOUND: { status: 404, message: "Site not found" } } as const;
@@ -35,20 +54,13 @@ const docObjects = () => env.DOCS as DurableObjectNamespace<Doc>;
 
 /** The doc's Doc, or null when the organization has no such doc. */
 async function openDoc(organizationId: string, docId: string) {
-  const [doc] = await db
-    .select()
-    .from(docs)
-    .where(and(eq(docs.id, docId), eq(docs.organizationId, organizationId)));
+  const found = await findDoc(organizationId, docId);
+  if (!found) return null;
   // Connected GitHub sources have no editor yet.
-  if (!doc || doc.source.kind !== "managed") return null;
-  const stub = docObjects().getByName(doc.id);
-  await stub.init({
-    docId: doc.id,
-    slug: doc.slug,
-    name: doc.name,
-    repo: doc.source.artifactsRepo,
-    docUrl: docUrl(doc.slug),
-  });
+  const info = docInfo(found.doc, withUrl(found.doc, found.domain).url);
+  if (!info) return null;
+  const stub = docObjects().getByName(info.docId);
+  await stub.init(info);
   return stub;
 }
 
@@ -121,6 +133,72 @@ const filesRouter = {
     }),
 };
 
+const DOMAIN_ERRORS = {
+  DOMAIN_EXISTS: { status: 409, message: "This site already has a custom domain" },
+  HOSTNAME_TAKEN: { status: 409, message: "Another site already uses this domain" },
+  HOSTNAME_NOT_ALLOWED: { status: 400, message: "This domain is already a Shiru address" },
+  HOSTNAME_REJECTED: {
+    status: 422,
+    message: "Cloudflare refused this domain",
+    data: z.object({ message: z.string() }),
+  },
+  NOT_CONFIGURED: { status: 503, message: "Custom domains are not available right now" },
+} as const;
+
+/** One custom domain per doc, served once its CNAME points at Shiru. */
+const domainRouter = {
+  /** The doc's custom domain, synced with Cloudflare while it is not active yet. */
+  get: organizationProcedure
+    .errors({ ...DOC_ERRORS, NOT_CONFIGURED: DOMAIN_ERRORS.NOT_CONFIGURED })
+    .input(docInput)
+    .handler(async ({ context, input, errors }) => {
+      const found = await findDoc(context.organizationId, input.docId);
+      if (!found) throw errors.NOT_FOUND();
+      const { doc, domain } = found;
+      if (!domain) return null;
+      if (domain.status === "active") return toDomain(domain, [], env);
+      const result = await refreshDomain({ env, doc, row: domain });
+      if (!result.ok) throw errors.NOT_CONFIGURED({ message: result.error.message });
+      return result.domain;
+    }),
+  add: paidProcedure
+    .errors({ ...DOC_ERRORS, ...DOMAIN_ERRORS })
+    .input(docInput.extend({ hostname: CustomHostname }))
+    .handler(async ({ context, input, errors }) => {
+      const domains = { docs: env.DOCS_DOMAIN, preview: `preview.${env.DOCS_DOMAIN}` };
+      if (parseHostname(input.hostname, domains).kind !== "custom") {
+        throw errors.HOSTNAME_NOT_ALLOWED();
+      }
+      const found = await findDoc(context.organizationId, input.docId);
+      if (!found) throw errors.NOT_FOUND();
+      const result = await addDomain({ env, doc: found.doc, hostname: input.hostname });
+      if (result.ok) return result.domain;
+      switch (result.error.code) {
+        case "DOMAIN_EXISTS":
+          throw errors.DOMAIN_EXISTS();
+        case "HOSTNAME_TAKEN":
+          throw errors.HOSTNAME_TAKEN();
+        case "HOSTNAME_REJECTED":
+          throw errors.HOSTNAME_REJECTED({ data: { message: result.error.message } });
+        case "NOT_CONFIGURED":
+          throw errors.NOT_CONFIGURED({ message: result.error.message });
+      }
+    }),
+  remove: organizationProcedure
+    .errors({ ...DOC_ERRORS, NOT_CONFIGURED: DOMAIN_ERRORS.NOT_CONFIGURED })
+    .input(docInput)
+    .handler(async ({ context, input, errors }) => {
+      const found = await findDoc(context.organizationId, input.docId);
+      if (!found) throw errors.NOT_FOUND();
+      const { doc, domain } = found;
+      if (domain) {
+        const result = await removeDomain({ env, doc, row: domain });
+        if (!result.ok) throw errors.NOT_CONFIGURED({ message: result.error.message });
+      }
+      return { removed: true as const };
+    }),
+};
+
 export const docsRouter = {
   create: paidProcedure
     .errors({
@@ -153,7 +231,7 @@ export const docsRouter = {
         })
         .onConflictDoNothing()
         .returning();
-      if (doc) return withUrl(doc);
+      if (doc) return withUrl(doc, null);
 
       // The insert skips any unique conflict, so read back which one it hit. A public doc wins
       // because no other address would fix it.
@@ -164,12 +242,8 @@ export const docsRouter = {
       throw publicDoc ? errors.PUBLIC_DOC_EXISTS() : errors.SLUG_TAKEN();
     }),
   list: organizationProcedure.handler(async ({ context }) => {
-    const rows = await db
-      .select()
-      .from(docs)
-      .where(eq(docs.organizationId, context.organizationId))
-      .orderBy(asc(docs.createdAt), asc(docs.id));
-    return rows.map(withUrl);
+    const rows = await selectDocs(eq(docs.organizationId, context.organizationId));
+    return rows.map(({ doc, domain }) => withUrl(doc, domain));
   }),
   checkSlug: organizationProcedure.input(z.object({ slug: DocSlug })).handler(async ({ input }) => {
     const [taken] = await db.select({ id: docs.id }).from(docs).where(eq(docs.slug, input.slug));
@@ -177,6 +251,7 @@ export const docsRouter = {
   }),
   docsDomain: organizationProcedure.handler(() => env.DOCS_DOMAIN),
   files: filesRouter,
+  domain: domainRouter,
   /**
    * Commits every draft not in conflict and builds the commit on the live target. Conflicted
    * drafts stay and come back in `skipped`. `unchanged` means there was nothing to commit.
