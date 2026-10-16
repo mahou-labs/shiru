@@ -1,5 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
+import { eq } from "drizzle-orm";
 
+import { docs } from "../schema/docs";
+import { db } from "../utils/db";
 import {
   applyBuildEvent,
   type BuildEvent,
@@ -298,17 +301,17 @@ export class Doc extends DurableObject<Env> {
           await this.ctx.storage.deleteAlarm();
           break;
         case "startWorkflow": {
-          const doc = this.doc();
-          const params: PublishParams = {
-            docId: doc.docId,
-            slug: doc.slug,
-            repo: doc.repo,
-            target: effect.target,
-            sha: effect.sha,
-            docUrl: doc.docUrl,
-            docsRoot: DOCS_ROOT,
-          };
           try {
+            const doc = await this.buildInfo();
+            const params: PublishParams = {
+              docId: doc.docId,
+              slug: doc.slug,
+              repo: doc.repo,
+              target: effect.target,
+              sha: effect.sha,
+              docUrl: doc.docUrl,
+              docsRoot: DOCS_ROOT,
+            };
             await this.env.PUBLISH_WORKFLOW.create({ id: effect.workflowId, params });
           } catch (error) {
             // The alarm finds the instance missing and starts the build again.
@@ -478,6 +481,20 @@ export class Doc extends DurableObject<Env> {
     const fresh = initialBuilds(`${this.doc().docId}--${crypto.randomUUID().slice(0, 8)}`);
     // State saved before the prefix existed takes a fresh one.
     return stored ? { ...fresh, ...(JSON.parse(stored) as DocBuilds) } : fresh;
+  }
+
+  /**
+   * The stored info a Workflow needs. Docs stored before `slug` was kept here get it from D1, since
+   * an alarm or a finished build can start a Workflow before any request calls `init` again.
+   */
+  private async buildInfo(): Promise<DocInfo> {
+    const doc = this.doc();
+    if (doc.slug) return doc;
+    const [row] = await db.select({ slug: docs.slug }).from(docs).where(eq(docs.id, doc.docId));
+    if (!row) throw new Error(`doc ${doc.docId} is not in the database`);
+    const backfilled = { ...doc, slug: row.slug };
+    this.setMeta("doc", JSON.stringify(backfilled));
+    return backfilled;
   }
 
   private doc(): DocInfo {

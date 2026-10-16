@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
+import type { Doc } from "../docs/doc";
 import { buildCommit } from "../docs/git";
+import { LIVE } from "../docs/names";
 import { artifacts, docObjects, env, publishWorkflow } from "../test/bindings";
 import { createClient } from "../test/client";
 import { docUrl } from "./docs";
@@ -236,6 +238,31 @@ describe("doc files", () => {
     expect(
       ((await client.rpc("docs/status", { docId })).body.json as { headSha: string }).headSha,
     ).toBe(head);
+  });
+
+  it("gives a build started in the background the slug of a doc stored without one", async () => {
+    const { client, docId } = await docOwner("legacy@mailinator.com", "legacy");
+    const head = await pushFirstCommit(docId, { "docs/content/index.mdx": text("# Home\n") });
+    await client.rpc("docs/publish", { docId });
+    const first = [...publishWorkflow.created.keys()].find((id) => id.startsWith(docId))!;
+    const doc = docObjects.getByName(docId) as unknown as Pick<Doc, "build" | "buildFinished">;
+    await doc.build(LIVE, "f".repeat(40));
+
+    // A record from before the slug was stored, as a doc opened before this release kept it.
+    const { ctx } = docObjects.instances.get(docId) as { ctx: { storage: { sql: SqlStorage } } };
+    const [row] = ctx.storage.sql
+      .exec<{ value: string }>("SELECT value FROM meta WHERE key = 'doc'")
+      .toArray();
+    const { slug: _, ...legacy } = JSON.parse(row!.value) as Record<string, unknown>;
+    ctx.storage.sql.exec("UPDATE meta SET value = ? WHERE key = 'doc'", JSON.stringify(legacy));
+
+    await doc.buildFinished(LIVE, first, { ok: true, templateVersion: "v1" });
+
+    const started = [...publishWorkflow.created.entries()].filter(([id]) => id.startsWith(docId));
+    expect(started.map(([, params]) => [params.sha, params.slug])).toEqual([
+      [head, "legacy"],
+      ["f".repeat(40), "legacy"],
+    ]);
   });
 
   it("refuses a path that leaves the docs root", async () => {
