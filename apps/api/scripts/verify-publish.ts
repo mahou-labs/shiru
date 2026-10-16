@@ -521,6 +521,52 @@ try {
     sessionCookie,
   );
   check("a cookie for one preview does not open another", elsewhere.status, 302);
+
+  const save = (content: string) =>
+    rpc("docs/files/save", {
+      docId,
+      path: "content/index.mdx",
+      content: `---\ntitle: Verify Docs\n---\n\n${content}\n`,
+    });
+  await save("The earlier preview.");
+  const [earlier, later] = await Promise.all([
+    rpc<{ sha: string }>("docs/preview", { docId }),
+    save("The later preview.").then(() => rpc<{ sha: string }>("docs/preview", { docId })),
+  ]);
+  const settled = await waitFor("both draft builds", BUILD_TIMEOUT_MS, async () => {
+    const status = await rpc<Status & { targets: { draft?: Status["targets"]["live"] } }>(
+      "docs/status",
+      { docId },
+    );
+    const draft = status.targets.draft;
+    if (draft?.kind === "failed") throw new Error(`draft build failed: ${draft.error}`);
+    return draft?.kind === "idle" ? draft : undefined;
+  });
+  const overlapping = await fetch(`${base}/dev/docs/${slug}--draft/`);
+  const branchHead = cf(
+    "artifacts",
+    "namespaces",
+    "repos",
+    "logs",
+    "get",
+    docId,
+    "--namespace",
+    NAMESPACE,
+    "--limit",
+    "1",
+    "--ref",
+    "preview",
+  ) as { hash: string }[];
+  check(
+    "two overlapping previews leave the later edit on the branch and deployed",
+    [
+      earlier.sha !== later.sha,
+      branchHead[0]?.hash,
+      settled.deployed?.sha,
+      (await overlapping.text()).includes("The later preview."),
+    ],
+    [true, later.sha, later.sha, true],
+  );
 } catch (error) {
   console.log(`FAIL ${error instanceof Error ? error.message : String(error)}`);
   failed++;

@@ -104,6 +104,8 @@ type DraftRow = {
  */
 export class Doc extends DurableObject<Env> {
   private sql: SqlStorage;
+  // The preview that runs last, which the next one waits for. See preview().
+  private previewing: Promise<unknown> = Promise.resolve();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -233,8 +235,19 @@ export class Doc extends DurableObject<Env> {
    * Builds what the editor shows, drafts in conflict included, on the draft target. The drafts
    * are committed to the preview branch and stay drafts. Previewing again with nothing changed
    * pushes and builds nothing.
+   *
+   * One preview runs at a time. The Doc takes other requests while a preview awaits its commit,
+   * push or build, so two at once could push or build an older snapshot after a newer one. Run in
+   * turn, each later preview snapshots the drafts after the earlier one requested its build, so
+   * the newest drafts are always built last.
    */
-  async preview(): Promise<PreviewResult> {
+  preview(): Promise<PreviewResult> {
+    const run = this.previewing.then(() => this.previewInTurn());
+    this.previewing = run.catch(() => {});
+    return run;
+  }
+
+  private async previewInTurn(): Promise<PreviewResult> {
     for (let attempt = 0; attempt < PUBLISH_ATTEMPTS; attempt++) {
       const head = this.meta("head_sha");
       const drafts = this.loadDrafts();
