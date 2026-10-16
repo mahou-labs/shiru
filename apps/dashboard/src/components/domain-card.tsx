@@ -36,7 +36,7 @@ import { toastManager } from "@shiru/ui/components/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { IconArrowUpRightOutlineDuo18, IconCopyOutlineDuo18 } from "nucleo-ui-outline-duo-18";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { errorMessage } from "@/lib/errors";
 import { orpc } from "@/utils/orpc";
@@ -51,25 +51,51 @@ type AddError = InferClientErrors<AppRouterClient>["docs"]["domain"]["add"];
 
 const POLL_MS = 10_000;
 
+/** The hostname the doc is served at once the domain is active, or null for its own address. */
+const activeHostname = (domain: Domain | null) =>
+  domain?.status === "active" ? domain.hostname : null;
+
 /** The doc's custom domain: adding one, the DNS record to create, and whether it works yet. */
 export function DomainCard({ doc }: { doc: Doc }) {
   const queryClient = useQueryClient();
-  const { data: domain, isPending } = useQuery({
+  const query = useQuery({
     ...orpc.docs.domain.get.queryOptions({ input: { docId: doc.id } }),
     refetchInterval: (query) => (query.state.data?.status === "pending" ? POLL_MS : false),
   });
+  const domain = query.data;
 
-  // The doc's URL follows the domain's status, so DocCard's link changes with it.
-  const status = domain === undefined ? undefined : (domain?.status ?? "none");
-  const seenStatus = useRef(status);
+  // The doc's URL follows the domain's status, and loading the domain can change it, the first
+  // load included, so DocCard's link is read again whenever the hostname it should show is known.
+  const servedAt = domain === undefined ? undefined : activeHostname(domain);
   useEffect(() => {
-    const previous = seenStatus.current;
-    seenStatus.current = status;
-    if (previous === undefined || previous === status) return;
+    if (servedAt === undefined) return;
     void queryClient.invalidateQueries({ queryKey: orpc.docs.list.key() });
-  }, [queryClient, status]);
+  }, [queryClient, servedAt]);
 
-  if (isPending) return null;
+  if (query.isPending) return null;
+  // Only a first load that failed. A failed poll keeps showing the domain it already has.
+  if (domain === undefined) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Custom domain</CardTitle>
+        </CardHeader>
+        <CardPanel>
+          <Alert variant="error">
+            <AlertTitle>The custom domain could not be loaded</AlertTitle>
+            <AlertDescription>
+              <p>{errorMessage(query.error)}</p>
+            </AlertDescription>
+          </Alert>
+        </CardPanel>
+        <CardFooter>
+          <Button variant="outline" loading={query.isFetching} onClick={() => query.refetch()}>
+            Try again
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -116,6 +142,8 @@ function StatusBadge({ status }: { status: Domain["status"] }) {
       return <Badge variant="success">Active</Badge>;
     case "failed":
       return <Badge variant="error">Not working</Badge>;
+    case "removing":
+      return <Badge variant="outline">Removing</Badge>;
   }
 }
 
@@ -184,6 +212,11 @@ function DomainDetails({ doc, domain }: { doc: Doc; domain: Domain }) {
         {domain.status === "active" ? (
           <p className="text-muted-foreground">
             Readers who visit {address} are redirected to {domain.hostname}.
+          </p>
+        ) : domain.status === "removing" ? (
+          <p className="text-muted-foreground">
+            {domain.hostname} no longer serves this site, but removing it did not finish. Remove it
+            again.
           </p>
         ) : (
           <>
