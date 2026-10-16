@@ -343,6 +343,28 @@ describe("removeDomain", () => {
 });
 
 describe("routing repair", () => {
+  it("clears the redirect of a broken domain on the next cron run when clearing it failed", async () => {
+    await db.delete(hostnames);
+    const { docId } = await createDoc("broken");
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    await addDomain({ ...deps, doc: (await site(docId)).doc, hostname: "docs.broken.com" });
+    cloudflare.activate("ch-1");
+    await refreshDomain({ ...deps, ...(await withDomain(docId)) });
+    cloudflare.update("ch-1", { status: "moved" });
+    const remove = vi.spyOn(domainsKv, "delete").mockRejectedValueOnce(new Error("KV unavailable"));
+
+    await expect(refreshDomain({ ...deps, ...(await withDomain(docId)) })).rejects.toThrow(
+      "KV unavailable",
+    );
+    remove.mockRestore();
+    expect((await site(docId)).row?.status).toBe("failed");
+    expect(kv("redirect:broken")).toEqual(["docs.broken.com"]);
+
+    await refreshDomains(deps);
+    expect(kv("host:docs.broken.com", "redirect:broken")).toEqual(["broken", null]);
+  });
+
   it("writes a host key that failed to write when the domain was added", async () => {
     const { docId } = await createDoc("repaired");
     const cloudflare = new FakeCloudflareZone();
@@ -367,8 +389,42 @@ describe("routing repair", () => {
   });
 });
 
+describe("an old registration", () => {
+  async function registeredAgain(slug: string) {
+    const { docId } = await createDoc(slug);
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    const hostname = `docs.${slug}.com`;
+    await addDomain({ ...deps, doc: (await site(docId)).doc, hostname });
+    const old = await withDomain(docId);
+    await removeDomain({ ...deps, ...old });
+    vi.setSystemTime(new Date(JAN_1.getTime() + 1000));
+    await addDomain({ ...deps, doc: old.doc, hostname });
+    return { cloudflare, deps, docId, old };
+  }
+
+  it("is not removed again when the same hostname was added again since", async () => {
+    const { cloudflare, deps, docId, old } = await registeredAgain("readded");
+
+    expect(
+      await removeDomain({ ...deps, ...old, row: { ...old.row, status: "removing" } }),
+    ).toEqual({ ok: true });
+    expect((await site(docId)).row).toMatchObject({ cloudflareId: "ch-2", status: "pending" });
+    expect([...cloudflare.hostnames.keys()]).toEqual(["ch-2"]);
+    expect(kv("host:docs.readded.com")).toEqual(["readded"]);
+  });
+
+  it("does not have its status written over the new registration by a stale sync", async () => {
+    const { deps, docId, old } = await registeredAgain("resynced");
+
+    expect(await refreshDomain({ ...deps, ...old })).toEqual({ ok: true, domain: null });
+    expect((await site(docId)).row).toMatchObject({ cloudflareId: "ch-2", status: "pending" });
+    expect(kv("host:docs.resynced.com")).toEqual(["resynced"]);
+  });
+});
+
 describe("refreshDomains", () => {
-  it("syncs pending and active domains, finishes removals and goes on past one that fails", async () => {
+  it("syncs every domain, finishes removals and goes on past one that fails", async () => {
     // Earlier tests' domains point at their own fake zones.
     await db.delete(hostnames);
     const cloudflare = new FakeCloudflareZone();
@@ -389,11 +445,11 @@ describe("refreshDomains", () => {
     await refreshDomains(deps);
 
     const statuses = await Promise.all(docIds.map(async (id) => (await site(id)).row?.status));
-    expect(statuses).toEqual(["pending", "active", "failed", undefined]);
+    expect(statuses).toEqual(["pending", "active", "active", undefined]);
     expect([...cloudflare.hostnames.keys()]).toEqual(["ch-1", "ch-2", "ch-3"]);
     expect(
       cloudflare.requests.filter(({ method }) => method === "GET").map(({ url }) => url),
-    ).toEqual([`${HOSTNAMES}/ch-1`, `${HOSTNAMES}/ch-2`]);
+    ).toEqual([`${HOSTNAMES}/ch-1`, `${HOSTNAMES}/ch-2`, `${HOSTNAMES}/ch-3`]);
     expect(errors.mock.calls.map(([message]) => message)).toEqual([
       "could not sync the custom domain docs.cron-a.com",
     ]);

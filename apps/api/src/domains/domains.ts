@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import type { Doc, DocInfo } from "../docs/doc";
 import { hostKey, LIVE, redirectKey } from "../docs/names";
@@ -189,7 +189,7 @@ export async function removeDomain({
   const cloudflare = cloudflareZone(env);
   if (!cloudflare.ok) return cloudflare;
 
-  const marked = await markRemoving(row.hostname);
+  const marked = await markRemoving(row);
   if (!marked) return { ok: true };
   await project(env, row.hostname, doc);
   // A retry cannot tell whether the domain was active before, so it builds again to be sure.
@@ -199,15 +199,16 @@ export async function removeDomain({
   if (zone && marked.row.cloudflareId !== null) {
     await deleteRegistered(zone, marked.row.cloudflareId, fetch);
   }
-  await db.delete(hostnames).where(eq(hostnames.hostname, row.hostname));
+  await db.delete(hostnames).where(sameRegistration(row));
   await project(env, row.hostname, doc);
   return { ok: true };
 }
 
 /**
- * Syncs every domain that is pending or active with Cloudflare, for the cron, and finishes
- * removals that failed part way. An active domain can still break, for example when its owner
- * points the CNAME elsewhere. One failing domain does not stop the rest.
+ * Syncs every domain with Cloudflare, for the cron, and finishes removals that failed part way.
+ * An active domain can still break, for example when its owner points the CNAME elsewhere, and a
+ * failed one can recover. Each sync also rewrites the domain's routing, so a key a failed write
+ * left behind is fixed within one run. One failing domain does not stop the rest.
  */
 export async function refreshDomains({ env, fetch = globalThis.fetch }: Deps): Promise<void> {
   const cloudflare = cloudflareZone(env);
@@ -220,8 +221,7 @@ export async function refreshDomains({ env, fetch = globalThis.fetch }: Deps): P
   const rows = await db
     .select({ doc: docs, row: hostnames })
     .from(hostnames)
-    .innerJoin(docs, eq(docs.id, hostnames.docId))
-    .where(inArray(hostnames.status, ["pending", "active", "removing"]));
+    .innerJoin(docs, eq(docs.id, hostnames.docId));
   for (const { doc, row } of rows) {
     try {
       if (row.status === "removing") await removeDomain({ env, fetch, doc, row });
@@ -243,8 +243,9 @@ export function toDomain(row: DomainRow, errors: string[], env: DomainsEnv): Dom
 
 /**
  * Moves the row from the status `row` was read with to `status`. A row that changed since, such as
- * one being removed, keeps its status, so a sync that read it earlier cannot undo the change.
- * Routing is written from the row as it ends up either way.
+ * one being removed or a new registration of the same hostname, keeps its status, so a sync that
+ * read it earlier cannot undo the change. Routing is written from the rows as they end up either
+ * way. Null when this registration is gone.
  */
 async function settle(
   env: DomainsEnv,
@@ -257,34 +258,52 @@ async function settle(
     const [updated] = await db
       .update(hostnames)
       .set({ status })
-      .where(and(eq(hostnames.hostname, row.hostname), eq(hostnames.status, row.status)))
+      .where(and(sameRegistration(row), eq(hostnames.status, row.status)))
       .returning();
     if (updated && (row.status === "active") !== (status === "active")) {
       await rebuild(env, doc, row.hostname);
     }
-    settled = updated ?? (await domainRow(row.hostname));
+    settled = updated ?? (await registration(row));
   }
   await project(env, row.hostname, doc);
   return settled;
 }
 
-/** Marks the row `removing`, from whatever status it has now, and returns that status. */
-async function markRemoving(hostname: string) {
+/**
+ * Marks `registration` `removing`, from whatever status it has now, and returns that status. Null
+ * when it is gone, even if the hostname was registered again since.
+ */
+async function markRemoving(registered: DomainRow) {
   for (;;) {
-    const current = await domainRow(hostname);
+    const current = await registration(registered);
     if (!current) return null;
     const [row] = await db
       .update(hostnames)
       .set({ status: "removing" })
-      .where(and(eq(hostnames.hostname, hostname), eq(hostnames.status, current.status)))
+      .where(and(sameRegistration(registered), eq(hostnames.status, current.status)))
       .returning();
     if (row) return { row, was: current.status };
   }
 }
 
-async function domainRow(hostname: string) {
-  const [row] = await db.select().from(hostnames).where(eq(hostnames.hostname, hostname));
-  return row ?? null;
+/**
+ * Matches this registration of the hostname and no later one. The hostname alone is not enough: a
+ * caller holding an old row must not change a domain removed and added again since.
+ */
+function sameRegistration(row: DomainRow) {
+  return and(
+    eq(hostnames.hostname, row.hostname),
+    eq(hostnames.docId, row.docId),
+    eq(hostnames.createdAt, row.createdAt),
+    row.cloudflareId === null
+      ? isNull(hostnames.cloudflareId)
+      : eq(hostnames.cloudflareId, row.cloudflareId),
+  );
+}
+
+async function registration(row: DomainRow) {
+  const [found] = await db.select().from(hostnames).where(sameRegistration(row));
+  return found ?? null;
 }
 
 type Routing = { host: string | null; redirect: string | null };
