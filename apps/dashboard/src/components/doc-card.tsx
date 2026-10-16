@@ -25,6 +25,7 @@ import {
 
 import { PublishTimeline } from "@/components/publish-timeline";
 import { canPublish, usePublish, type PublishState } from "@/hooks/use-publish";
+import { buildErrorSummary } from "@/lib/build-error";
 import { errorMessage } from "@/lib/errors";
 import { formatDuration } from "@/lib/publish-timeline";
 
@@ -178,12 +179,8 @@ function tookLine(run: Run | undefined) {
 }
 
 function BuildError({ error }: { error: string }) {
-  const lines = error.trim().split("\n");
-  // Astro prints timestamped progress lines and a "build failed:" heading before the cause.
-  const summary =
-    lines.find((line) => line.trim() && !/^\d\d:\d\d:\d\d /.test(line) && !line.endsWith(":")) ??
-    lines[0];
-  if (lines.length === 1) {
+  const summary = buildErrorSummary(error);
+  if (!error.trim().includes("\n")) {
     return (
       <p className="rounded-lg border border-destructive/32 bg-destructive/4 px-3 py-2 font-medium text-destructive-foreground">
         {summary}
