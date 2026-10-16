@@ -29,7 +29,7 @@ import {
   repoPath,
   DocPath,
   starterDrafts,
-  toChange,
+  previewCommit,
   type Tree,
   toTree,
 } from "./drafts";
@@ -230,23 +230,16 @@ export class Doc extends DurableObject<Env> {
 
   /**
    * Builds what the editor shows, drafts in conflict included, on the draft target. The drafts
-   * are committed to the preview branch and stay drafts. The commit is a pure function of head and
-   * the drafts, so previewing again with nothing changed pushes and builds nothing.
+   * are committed to the preview branch and stay drafts. Previewing again with nothing changed
+   * pushes and builds nothing.
    */
-  async preview(user: Person): Promise<PreviewResult> {
+  async preview(): Promise<PreviewResult> {
     for (let attempt = 0; attempt < PUBLISH_ATTEMPTS; attempt++) {
       const head = this.meta("head_sha");
       const drafts = this.loadDrafts();
       let sha = head;
       if (drafts.length > 0) {
-        const commit = await buildCommit({
-          tree: [...this.loadTree().values()],
-          changes: drafts.map(toChange),
-          parent: head,
-          author: user,
-          message: "Preview from the editor",
-          time: Math.floor(Math.max(...drafts.map((draft) => draft.updatedAt)) / 1000),
-        });
+        const commit = await previewCommit([...this.loadTree().values()], drafts, head);
         const previewSha = this.meta("preview_sha");
         if (commit.sha !== previewSha) {
           const pushed = await this.push(PREVIEW, previewSha, commit);
@@ -266,13 +259,15 @@ export class Doc extends DurableObject<Env> {
       }
       if (sha === null) return { kind: "empty" };
 
-      await this.build(DRAFT, sha);
+      // Recorded before the build, so a retire that reads the row after this keeps the preview, and
+      // one that ran before it has already forgotten the target, which this build then rebuilds.
       const doc = await this.buildInfo();
       const requestedAt = new Date();
       await db
         .insert(previews)
         .values({ docId: doc.docId, label: DRAFT, requestedAt })
         .onConflictDoUpdate({ target: [previews.docId, previews.label], set: { requestedAt } });
+      await this.build(DRAFT, sha);
       return { kind: "previewing", sha, url: targetUrl(doc.slug, DRAFT) };
     }
     return { kind: "conflict" };
@@ -283,16 +278,21 @@ export class Doc extends DurableObject<Env> {
   }
 
   /**
-   * Deletes `target`'s Worker and forgets its build, unless it is building. The preview row goes
-   * only if nobody requested the target after `requestedBefore`. Running it twice converges.
+   * Deletes `target`'s Worker and forgets its build, unless it is building or someone requested it
+   * after `requestedBefore`, the time the cron chose it by. Running it twice converges.
    */
   async retire(
     target: TargetLabel,
     requestedBefore: number,
-  ): Promise<{ kind: "retired" } | { kind: "busy" }> {
+  ): Promise<{ kind: "retired" } | { kind: "busy" } | { kind: "fresh" }> {
     return this.ctx.blockConcurrencyWhile(async () => {
       if (this.builds().targets[target]?.kind === "building") return { kind: "busy" };
       const doc = await this.buildInfo();
+      const [row] = await db
+        .select({ requestedAt: previews.requestedAt })
+        .from(previews)
+        .where(and(eq(previews.docId, doc.docId), eq(previews.label, target)));
+      if (row && row.requestedAt.getTime() > requestedBefore) return { kind: "fresh" };
       const deleted = await deleteBuild({
         env: this.env,
         scriptName: workerName(doc.slug, target),

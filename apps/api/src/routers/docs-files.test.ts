@@ -425,21 +425,24 @@ describe("retiring stale previews", () => {
     expect(await rows()).toEqual(kept);
   });
 
-  it("keeps the row of a preview requested again while it was being retired", async () => {
+  it("keeps a preview requested again after the cron chose it", async () => {
     const { client, docId } = await previewed("retire-again@mailinator.com", "retire-again");
     await finishDraftBuild(client, docId);
-    vi.setSystemTime(NOW + 40 * DAY);
-    await db
-      .update(previews)
-      .set({ requestedAt: new Date(NOW + 40 * DAY) })
-      .where(eq(previews.docId, docId));
+    const cutoff = NOW + DAY;
+    // The cron chose this preview, then a member previewed the unchanged drafts before the Doc
+    // retired it: nothing rebuilds, only the request time moves.
+    vi.setSystemTime(NOW + 2 * DAY);
+    expect((await client.rpc("docs/preview", { docId })).status).toBe(200);
 
-    const doc = docObjects.getByName(docId) as unknown as Pick<Doc, "retire">;
-    expect(await doc.retire(DRAFT, NOW + 10 * DAY)).toEqual({ kind: "retired" });
+    const doc = docObjects.getByName(docId) as unknown as DurableObjectStub<Doc>;
+    expect(await doc.retire(DRAFT, cutoff)).toEqual({ kind: "fresh" });
+    expect((await doc.status()).targets).toEqual({
+      draft: { kind: "idle", deployed: { sha: expect.any(String), templateVersion: "v1" } },
+    });
     expect(
       (await db.select().from(previews))
         .filter((row) => row.docId === docId)
         .map((row) => row.requestedAt.getTime()),
-    ).toEqual([NOW + 40 * DAY]);
+    ).toEqual([NOW + 2 * DAY]);
   });
 });

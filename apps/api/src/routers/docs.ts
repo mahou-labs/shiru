@@ -194,7 +194,7 @@ export const docsRouter = {
     .handler(async ({ context, input, errors }) => {
       const doc = await openDoc(context.organizationId, input.docId);
       if (!doc) throw errors.NOT_FOUND();
-      const result = await doc.preview(author(context.user));
+      const result = await doc.preview();
       if (result.kind === "conflict") throw errors.CONFLICT();
       return result;
     }),
