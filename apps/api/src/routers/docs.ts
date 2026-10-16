@@ -57,7 +57,7 @@ async function openDoc(organizationId: string, docId: string) {
   const found = await findDoc(organizationId, docId);
   if (!found) return null;
   // Connected GitHub sources have no editor yet.
-  const info = docInfo(found.doc, withUrl(found.doc, found.domain).url);
+  const info = docInfo(found.doc);
   if (!info) return null;
   const stub = docObjects().getByName(info.docId);
   await stub.init(info);

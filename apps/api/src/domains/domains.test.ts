@@ -19,11 +19,18 @@ import {
 
 const JAN_1 = new Date("2026-01-01T00:00:00.000Z");
 
+const development = { ENVIRONMENT: env.ENVIRONMENT, DOCS_DOMAIN: env.DOCS_DOMAIN };
+
+// The Doc reads the shared bindings when a build starts, so its builds get production URLs too.
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(JAN_1);
+  Object.assign(env, { ENVIRONMENT: "production", DOCS_DOMAIN: "shiru.page" });
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  Object.assign(env, development);
+});
 
 const production = {
   ...env,
@@ -219,7 +226,7 @@ describe("refreshDomain", () => {
       ok: true,
       domain: { status: "pending" },
     });
-    expect(builtUrls(docId)).toEqual(["http://moving.docs.localhost:3003"]);
+    expect(builtUrls(docId)).toEqual(["https://moving.shiru.page"]);
 
     cloudflare.activate("ch-1");
     expect(await refreshDomain({ ...deps, ...(await withDomain(docId)) })).toEqual({
@@ -233,10 +240,7 @@ describe("refreshDomain", () => {
     });
     expect((await site(docId)).row?.status).toBe("active");
     expect(kv("host:docs.moving.com", "redirect:moving")).toEqual(["moving", "docs.moving.com"]);
-    expect(builtUrls(docId)).toEqual([
-      "http://moving.docs.localhost:3003",
-      "https://docs.moving.com",
-    ]);
+    expect(builtUrls(docId)).toEqual(["https://moving.shiru.page", "https://docs.moving.com"]);
     expect(publishWorkflow.created.get(startedBuilds(docId)[1]!)?.sha).toBe(sha);
 
     cloudflare.update("ch-1", { status: "moved" });
@@ -250,7 +254,7 @@ describe("refreshDomain", () => {
     const doc = docObjects.getByName(docId) as unknown as Pick<Doc, "buildFinished">;
     await doc.buildFinished(LIVE, startedBuilds(docId)[1]!, { ok: true, templateVersion: "v1" });
     expect(builtUrls(docId)).toEqual([
-      "http://moving.docs.localhost:3003",
+      "https://moving.shiru.page",
       "https://docs.moving.com",
       "https://moving.shiru.page",
     ]);
@@ -288,13 +292,13 @@ describe("removeDomain", () => {
     expect(kv("host:docs.leaving.com", "redirect:leaving")).toEqual([null, null]);
     expect((await site(docId)).row).toBe(null);
     expect(builtUrls(docId)).toEqual([
-      "http://leaving.docs.localhost:3003",
+      "https://leaving.shiru.page",
       "https://docs.leaving.com",
       "https://leaving.shiru.page",
     ]);
   });
 
-  it("keeps the row when Cloudflare fails, so removing can be tried again", async () => {
+  it("stops serving at once and keeps the row while Cloudflare fails, so removing can be tried again", async () => {
     const { docId } = await createDoc("stuck");
     const cloudflare = new FakeCloudflareZone();
     const deps = { env: production, fetch: cloudflare.fetch };
@@ -304,22 +308,73 @@ describe("removeDomain", () => {
     await expect(removeDomain({ ...deps, ...(await withDomain(docId)) })).rejects.toThrow(
       "Cloudflare custom hostname delete failed (HTTP 500): HTTP 500: Internal error",
     );
-    expect((await site(docId)).row?.hostname).toBe("docs.stuck.com");
-    expect(kv("host:docs.stuck.com")).toEqual(["stuck"]);
+    expect((await site(docId)).row?.status).toBe("removing");
+    expect(kv("host:docs.stuck.com")).toEqual([null]);
 
     expect(await removeDomain({ ...deps, ...(await withDomain(docId)) })).toEqual({ ok: true });
     expect((await site(docId)).row).toBe(null);
   });
+
+  it("is not undone by a sync that read the domain before it was removed", async () => {
+    const { client, docId } = await createDoc("stale");
+    await publishLive(client, docId);
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    await addDomain({ ...deps, doc: (await site(docId)).doc, hostname: "docs.stale.com" });
+    const stale = await withDomain(docId);
+    cloudflare.activate("ch-1");
+    const answered = cloudflare.fetch;
+    let removed: Promise<unknown> | undefined;
+    // Cloudflare answers the sync, then the domain is removed before the sync writes anything.
+    const fetch: typeof globalThis.fetch = async (input, init) => {
+      const response = await answered(input, init);
+      if (init?.method === undefined || init.method === "GET") {
+        removed ??= removeDomain({ ...deps, ...(await withDomain(docId)) });
+        await removed;
+      }
+      return response;
+    };
+
+    expect(await refreshDomain({ ...deps, fetch, ...stale })).toEqual({ ok: true, domain: null });
+    expect((await site(docId)).row).toBe(null);
+    expect(kv("host:docs.stale.com", "redirect:stale")).toEqual([null, null]);
+    expect(builtUrls(docId)).toEqual(["https://stale.shiru.page"]);
+  });
+});
+
+describe("routing repair", () => {
+  it("writes a host key that failed to write when the domain was added", async () => {
+    const { docId } = await createDoc("repaired");
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    const put = vi.spyOn(domainsKv, "put").mockRejectedValueOnce(new Error("KV unavailable"));
+
+    await expect(
+      addDomain({ ...deps, doc: (await site(docId)).doc, hostname: "docs.repaired.com" }),
+    ).rejects.toThrow("KV unavailable");
+    put.mockRestore();
+    expect(kv("host:docs.repaired.com")).toEqual([null]);
+
+    cloudflare.activate("ch-1");
+    expect(await refreshDomain({ ...deps, ...(await withDomain(docId)) })).toMatchObject({
+      ok: true,
+      domain: { status: "active" },
+    });
+    expect(kv("host:docs.repaired.com", "redirect:repaired")).toEqual([
+      "repaired",
+      "docs.repaired.com",
+    ]);
+  });
 });
 
 describe("refreshDomains", () => {
-  it("syncs pending and active domains and goes on past one that fails", async () => {
+  it("syncs pending and active domains, finishes removals and goes on past one that fails", async () => {
     // Earlier tests' domains point at their own fake zones.
     await db.delete(hostnames);
     const cloudflare = new FakeCloudflareZone();
     const deps = { env: production, fetch: cloudflare.fetch };
     const docIds = [];
-    for (const name of ["cron-a", "cron-b", "cron-c"]) {
+    for (const name of ["cron-a", "cron-b", "cron-c", "cron-d"]) {
       const { docId } = await createDoc(name);
       await addDomain({ ...deps, doc: (await site(docId)).doc, hostname: `docs.${name}.com` });
       docIds.push(docId);
@@ -328,24 +383,29 @@ describe("refreshDomains", () => {
     cloudflare.failNext("GET", `${HOSTNAMES}/${ids[0]}`, 500, "Internal error");
     for (const id of ids) cloudflare.activate(id);
     await db.update(hostnames).set({ status: "failed" }).where(eq(hostnames.docId, docIds[2]!));
+    await db.update(hostnames).set({ status: "removing" }).where(eq(hostnames.docId, docIds[3]!));
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await refreshDomains(deps);
 
     const statuses = await Promise.all(docIds.map(async (id) => (await site(id)).row?.status));
-    expect(statuses).toEqual(["pending", "active", "failed"]);
+    expect(statuses).toEqual(["pending", "active", "failed", undefined]);
+    expect([...cloudflare.hostnames.keys()]).toEqual(["ch-1", "ch-2", "ch-3"]);
     expect(
       cloudflare.requests.filter(({ method }) => method === "GET").map(({ url }) => url),
     ).toEqual([`${HOSTNAMES}/ch-1`, `${HOSTNAMES}/ch-2`]);
     expect(errors.mock.calls.map(([message]) => message)).toEqual([
-      "could not refresh the custom domain docs.cron-a.com",
+      "could not sync the custom domain docs.cron-a.com",
     ]);
     errors.mockRestore();
   });
 
   it("does nothing in development", async () => {
     const cloudflare = new FakeCloudflareZone();
-    await refreshDomains({ env: env as unknown as DomainsEnv, fetch: cloudflare.fetch });
+    await refreshDomains({
+      env: { ...env, ...development } as unknown as DomainsEnv,
+      fetch: cloudflare.fetch,
+    });
     expect(cloudflare.requests).toEqual([]);
   });
 });

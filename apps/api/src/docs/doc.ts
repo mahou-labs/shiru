@@ -1,8 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
-import { eq } from "drizzle-orm";
 
-import { docs } from "../schema/docs";
-import { db } from "../utils/db";
+import { servedAt } from "../domains/domains";
 import {
   applyBuildEvent,
   type BuildEvent,
@@ -46,7 +44,7 @@ import { type DocSlug, LIVE, type TargetLabel } from "./names";
 import type { PublishParams } from "./publish-workflow";
 import { type BuildStep, endRun, enterStep, type Run, startRun } from "./runs";
 
-export type DocInfo = { docId: string; slug: DocSlug; name: string; repo: string; docUrl: string };
+export type DocInfo = { docId: string; slug: DocSlug; name: string; repo: string };
 
 export type PublishResult =
   | { kind: "published"; sha: string; skipped: string[] }
@@ -115,7 +113,7 @@ export class Doc extends DurableObject<Env> {
 
   /**
    * Records the doc and, the first time, creates its repo and reads head. Safe to call before
-   * every request: after the first call it only refreshes the doc's name and URL.
+   * every request: after the first call it only refreshes the doc's name.
    */
   async init(doc: DocInfo): Promise<void> {
     this.setMeta("doc", JSON.stringify(doc));
@@ -489,17 +487,14 @@ export class Doc extends DurableObject<Env> {
   }
 
   /**
-   * The stored info a Workflow needs. Docs stored before `slug` was kept here get it from D1, since
-   * an alarm or a finished build can start a Workflow before any request calls `init` again.
+   * What a Workflow needs, with the slug and URL read from D1 as the build starts. The URL changes
+   * with the doc's custom domain, and a build waiting in the queue must not use an old one.
    */
-  private async buildInfo(): Promise<DocInfo> {
+  private async buildInfo(): Promise<DocInfo & { docUrl: string }> {
     const doc = this.doc();
-    if (doc.slug) return doc;
-    const [row] = await db.select({ slug: docs.slug }).from(docs).where(eq(docs.id, doc.docId));
-    if (!row) throw new Error(`doc ${doc.docId} is not in the database`);
-    const backfilled = { ...doc, slug: row.slug };
-    this.setMeta("doc", JSON.stringify(backfilled));
-    return backfilled;
+    const served = await servedAt(doc.docId, this.env);
+    if (!served) throw new Error(`doc ${doc.docId} is not in the database`);
+    return { ...doc, slug: served.slug, docUrl: served.url };
   }
 
   private doc(): DocInfo {

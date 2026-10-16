@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import type { Doc, DocInfo } from "../docs/doc";
 import { hostKey, LIVE, redirectKey } from "../docs/names";
@@ -20,7 +20,7 @@ export type DomainRow = typeof hostnames.$inferSelect;
 /** A doc's custom domain, as the dashboard shows it. */
 export type Domain = {
   hostname: string;
-  status: DomainStatus;
+  status: DomainRow["status"];
   /** The one record the customer adds. */
   record: { type: "CNAME"; name: string; target: string };
   /** Why Cloudflare cannot verify the domain or issue its certificate yet. */
@@ -70,16 +70,24 @@ export function docUrl(
 export const activeHostname = (domain: DomainRow | null) =>
   domain?.status === "active" ? domain.hostname : null;
 
+/**
+ * The doc's slug and URL as stored right now. A build reads them when it starts, so a domain that
+ * changes while the build waits in the queue still reaches it.
+ */
+export async function servedAt(docId: string, env: Pick<Env, "ENVIRONMENT" | "DOCS_DOMAIN">) {
+  const [found] = await db
+    .select({ slug: docs.slug, domain: hostnames })
+    .from(docs)
+    .leftJoin(hostnames, eq(hostnames.docId, docs.id))
+    .where(eq(docs.id, docId));
+  if (!found) return null;
+  return { slug: found.slug, url: docUrl(found.slug, activeHostname(found.domain), env) };
+}
+
 /** What the doc's Doc needs to know, or null for a source the editor does not manage. */
-export function docInfo(doc: DocRow, url: string): DocInfo | null {
+export function docInfo(doc: DocRow): DocInfo | null {
   if (doc.source.kind !== "managed") return null;
-  return {
-    docId: doc.id,
-    slug: doc.slug,
-    name: doc.name,
-    repo: doc.source.artifactsRepo,
-    docUrl: url,
-  };
+  return { docId: doc.id, slug: doc.slug, name: doc.name, repo: doc.source.artifactsRepo };
 }
 
 /**
@@ -136,35 +144,41 @@ export async function addDomain({
     return { ok: false, error: { code: mine ? "DOMAIN_EXISTS" : "HOSTNAME_TAKEN" } };
   }
 
-  // Written now rather than once active: Cloudflare only sends the hostname's traffic here once it
-  // is active, so routing never waits on the status sync.
-  await env.DOMAINS.put(hostKey(hostname), doc.slug);
+  // Routed from the start rather than once active: Cloudflare only sends the hostname's traffic
+  // here once it is active, so routing never waits on the status sync.
   const settled = await settle(env, doc, row, created.status);
-  return { ok: true, domain: toDomain(settled, created.errors, env) };
+  return { ok: true, domain: toDomain(settled ?? row, created.errors, env) };
 }
 
-/** Reads the domain's status from Cloudflare and applies what changed. */
+/**
+ * Reads the domain's status from Cloudflare, applies what changed and repairs its routing. Null
+ * when the domain was removed meanwhile.
+ */
 export async function refreshDomain({
   env,
   fetch = globalThis.fetch,
   doc,
   row,
-}: Deps & { doc: DocRow; row: DomainRow }): Promise<Result<{ domain: Domain }>> {
+}: Deps & { doc: DocRow; row: DomainRow }): Promise<Result<{ domain: Domain | null }>> {
   const cloudflare = cloudflareZone(env);
   if (!cloudflare.ok) return cloudflare;
   const { zone } = cloudflare;
-  if (!zone || row.cloudflareId === null) return { ok: true, domain: toDomain(row, [], env) };
 
-  const result = await getCustomHostname({ zone, id: row.cloudflareId, fetch });
-  if (!result.ok) throw cloudflareError(result);
-  const { status, errors } = domainStatus(result.record);
+  let status: DomainStatus | undefined;
+  let errors: string[] = [];
+  if (zone && row.cloudflareId !== null && row.status !== "removing") {
+    const result = await getCustomHostname({ zone, id: row.cloudflareId, fetch });
+    if (!result.ok) throw cloudflareError(result);
+    ({ status, errors } = domainStatus(result.record));
+  }
   const settled = await settle(env, doc, row, status);
-  return { ok: true, domain: toDomain(settled, errors, env) };
+  return { ok: true, domain: settled && toDomain(settled, errors, env) };
 }
 
 /**
- * Removes the domain from Cloudflare, routing and the doc's URL. The row goes after everything
- * that can fail and leave the domain serving, so the user can remove it again.
+ * Stops serving the domain, then deletes it from Cloudflare and the database. The row stays as
+ * `removing` until both are gone, so a failure on the way leaves something to remove again, and a
+ * status sync running meanwhile cannot bring the domain back.
  */
 export async function removeDomain({
   env,
@@ -174,19 +188,26 @@ export async function removeDomain({
 }: Deps & { doc: DocRow; row: DomainRow }): Promise<Result<object>> {
   const cloudflare = cloudflareZone(env);
   if (!cloudflare.ok) return cloudflare;
+
+  const marked = await markRemoving(row.hostname);
+  if (!marked) return { ok: true };
+  await project(env, row.hostname, doc);
+  // A retry cannot tell whether the domain was active before, so it builds again to be sure.
+  if (marked.was === "active" || marked.was === "removing") await rebuild(env, doc, row.hostname);
+
   const { zone } = cloudflare;
-  if (zone && row.cloudflareId !== null) await deleteRegistered(zone, row.cloudflareId, fetch);
-  await env.DOMAINS.delete(hostKey(row.hostname));
-  await redirect(env, doc, row.hostname, row.status === "active", false);
+  if (zone && marked.row.cloudflareId !== null) {
+    await deleteRegistered(zone, marked.row.cloudflareId, fetch);
+  }
   await db.delete(hostnames).where(eq(hostnames.hostname, row.hostname));
-  await rebuild(env, doc, row.hostname, row.status === "active", false);
+  await project(env, row.hostname, doc);
   return { ok: true };
 }
 
 /**
- * Syncs every domain that is pending or active with Cloudflare, for the cron. An active domain
- * can still break, for example when its owner points the CNAME elsewhere. One failing domain does
- * not stop the rest.
+ * Syncs every domain that is pending or active with Cloudflare, for the cron, and finishes
+ * removals that failed part way. An active domain can still break, for example when its owner
+ * points the CNAME elsewhere. One failing domain does not stop the rest.
  */
 export async function refreshDomains({ env, fetch = globalThis.fetch }: Deps): Promise<void> {
   const cloudflare = cloudflareZone(env);
@@ -200,12 +221,13 @@ export async function refreshDomains({ env, fetch = globalThis.fetch }: Deps): P
     .select({ doc: docs, row: hostnames })
     .from(hostnames)
     .innerJoin(docs, eq(docs.id, hostnames.docId))
-    .where(inArray(hostnames.status, ["pending", "active"]));
+    .where(inArray(hostnames.status, ["pending", "active", "removing"]));
   for (const { doc, row } of rows) {
     try {
-      await refreshDomain({ env, fetch, doc, row });
+      if (row.status === "removing") await removeDomain({ env, fetch, doc, row });
+      else await refreshDomain({ env, fetch, doc, row });
     } catch (error) {
-      console.error(`could not refresh the custom domain ${row.hostname}`, error);
+      console.error(`could not sync the custom domain ${row.hostname}`, error);
     }
   }
 }
@@ -219,43 +241,99 @@ export function toDomain(row: DomainRow, errors: string[], env: DomainsEnv): Dom
   };
 }
 
-// The redirect is written before the status, so a failure there leaves the old status and the next
-// refresh tries again. The rebuild runs after it, because every `openDoc` re-inits the Doc with the
-// URL the stored status gives, and a queued build must not start with the old one.
-async function settle(env: DomainsEnv, doc: DocRow, row: DomainRow, status: DomainStatus) {
-  if (status === row.status) return row;
-  const wasActive = row.status === "active";
-  const isActive = status === "active";
-  await redirect(env, doc, row.hostname, wasActive, isActive);
-  await db.update(hostnames).set({ status }).where(eq(hostnames.hostname, row.hostname));
-  await rebuild(env, doc, row.hostname, wasActive, isActive);
-  return { ...row, status };
-}
-
-/** A doc's `<slug>` address redirects to its custom domain exactly while the domain is active. */
-async function redirect(
+/**
+ * Moves the row from the status `row` was read with to `status`. A row that changed since, such as
+ * one being removed, keeps its status, so a sync that read it earlier cannot undo the change.
+ * Routing is written from the row as it ends up either way.
+ */
+async function settle(
   env: DomainsEnv,
   doc: DocRow,
-  hostname: string,
-  wasActive: boolean,
-  isActive: boolean,
-) {
-  if (wasActive === isActive) return;
-  if (isActive) await env.DOMAINS.put(redirectKey(doc.slug), hostname);
-  else await env.DOMAINS.delete(redirectKey(doc.slug));
+  row: DomainRow,
+  status: DomainStatus | undefined,
+): Promise<DomainRow | null> {
+  let settled: DomainRow | null = row;
+  if (status !== undefined && status !== row.status) {
+    const [updated] = await db
+      .update(hostnames)
+      .set({ status })
+      .where(and(eq(hostnames.hostname, row.hostname), eq(hostnames.status, row.status)))
+      .returning();
+    if (updated && (row.status === "active") !== (status === "active")) {
+      await rebuild(env, doc, row.hostname);
+    }
+    settled = updated ?? (await domainRow(row.hostname));
+  }
+  await project(env, row.hostname, doc);
+  return settled;
 }
 
-/** Builds the live target again when the doc's URL changed, so its canonical URLs follow. */
-async function rebuild(
-  env: DomainsEnv,
-  doc: DocRow,
-  hostname: string,
-  wasActive: boolean,
-  isActive: boolean,
-) {
-  const url = docUrl(doc.slug, isActive ? hostname : null, env);
-  if (url === docUrl(doc.slug, wasActive ? hostname : null, env)) return;
-  const info = docInfo(doc, url);
+/** Marks the row `removing`, from whatever status it has now, and returns that status. */
+async function markRemoving(hostname: string) {
+  for (;;) {
+    const current = await domainRow(hostname);
+    if (!current) return null;
+    const [row] = await db
+      .update(hostnames)
+      .set({ status: "removing" })
+      .where(and(eq(hostnames.hostname, hostname), eq(hostnames.status, current.status)))
+      .returning();
+    if (row) return { row, was: current.status };
+  }
+}
+
+async function domainRow(hostname: string) {
+  const [row] = await db.select().from(hostnames).where(eq(hostnames.hostname, hostname));
+  return row ?? null;
+}
+
+type Routing = { host: string | null; redirect: string | null };
+
+/**
+ * Writes the two keys dispatch routes by from the rows as they are now: `hostname` serves its
+ * doc unless it is being removed, and the doc's address redirects to its active domain. It reads
+ * the rows again after writing, so a change that wrote its own keys before this write landed is
+ * written again with what the rows say now. The last write therefore always matches the rows.
+ */
+async function project(env: DomainsEnv, hostname: string, doc: DocRow) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const wanted = await routing(hostname, doc);
+    await Promise.all([
+      wanted.host === null
+        ? env.DOMAINS.delete(hostKey(hostname))
+        : env.DOMAINS.put(hostKey(hostname), wanted.host),
+      wanted.redirect === null
+        ? env.DOMAINS.delete(redirectKey(doc.slug))
+        : env.DOMAINS.put(redirectKey(doc.slug), wanted.redirect),
+    ]);
+    const now = await routing(hostname, doc);
+    if (now.host === wanted.host && now.redirect === wanted.redirect) return;
+  }
+  throw new Error(`the routing for ${hostname} kept changing`);
+}
+
+async function routing(hostname: string, doc: DocRow): Promise<Routing> {
+  const [[served], [own]] = await Promise.all([
+    db
+      .select({ slug: docs.slug, status: hostnames.status })
+      .from(hostnames)
+      .innerJoin(docs, eq(docs.id, hostnames.docId))
+      .where(eq(hostnames.hostname, hostname)),
+    db.select().from(hostnames).where(eq(hostnames.docId, doc.id)),
+  ]);
+  return {
+    host: served && served.status !== "removing" ? served.slug : null,
+    redirect: activeHostname(own ?? null),
+  };
+}
+
+/**
+ * Builds the live target again when the domain moves the doc's URL, so its canonical URLs follow.
+ * The build reads the URL from the database when it starts.
+ */
+async function rebuild(env: DomainsEnv, doc: DocRow, hostname: string) {
+  if (docUrl(doc.slug, hostname, env) === docUrl(doc.slug, null, env)) return;
+  const info = docInfo(doc);
   if (!info) return;
   // The binding names this Worker by string, so cf/config cannot infer the class.
   const stub = (env.DOCS as DurableObjectNamespace<Doc>).getByName(doc.id);

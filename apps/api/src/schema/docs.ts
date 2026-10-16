@@ -37,7 +37,7 @@ export const hostnames = sqliteTable(
       .references(() => docs.id, { onDelete: "cascade" }),
     // The Cloudflare for SaaS custom hostname. Null in development, which never calls Cloudflare.
     cloudflareId: text("cloudflare_id"),
-    status: text("status", { enum: ["pending", "active", "failed"] })
+    status: text("status", { enum: ["pending", "active", "failed", "removing"] })
       .notNull()
       .default("pending"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
