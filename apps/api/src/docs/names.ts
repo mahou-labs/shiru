@@ -25,7 +25,15 @@ export type TargetLabel = z.infer<typeof TargetLabel>;
 export const LIVE = TargetLabel.parse("live");
 
 const HOST_LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
-const SHIRU_DOMAINS = ["shiru.sh", "shiru.page"];
+// Every name under shiru.page is a site's address. Under shiru.sh only the hosts Shiru serves are
+// refused: a custom hostname goes live only once its DNS points at Shiru, so any other name there
+// is safe to register, and Shiru serves its own docs at one.
+const SHIRU_ZONES = ["shiru.page"];
+const SHIRU_HOSTS = ["shiru.sh", "www.shiru.sh", "app.shiru.sh", "api.shiru.sh"];
+
+const belongsToShiru = (hostname: string) =>
+  SHIRU_HOSTS.includes(hostname) ||
+  SHIRU_ZONES.some((zone) => hostname === zone || hostname.endsWith(`.${zone}`));
 
 function isHostname(hostname: string) {
   const labels = hostname.split(".");
@@ -48,10 +56,7 @@ export const CustomHostname = z
       .string()
       .max(253)
       .refine(isHostname, { message: "Enter a domain like docs.example.com", abort: true })
-      .refine(
-        (hostname) => !SHIRU_DOMAINS.some((d) => hostname === d || hostname.endsWith(`.${d}`)),
-        "This domain belongs to Shiru",
-      ),
+      .refine((hostname) => !belongsToShiru(hostname), "This domain belongs to Shiru"),
   )
   .brand<"CustomHostname">();
 export type CustomHostname = z.infer<typeof CustomHostname>;

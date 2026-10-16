@@ -113,6 +113,7 @@ describe("CustomHostname", () => {
     ["docs.xn--p1ai", "docs.xn--p1ai"],
     [`${"a".repeat(63)}.com`, `${"a".repeat(63)}.com`],
     ["notshiru.page", "notshiru.page"],
+    ["Docs.Shiru.SH.", "docs.shiru.sh"],
   ])("accepts %j as %s", (input, hostname) => {
     expect(CustomHostname.parse(input)).toBe(hostname);
   });
@@ -130,7 +131,10 @@ describe("CustomHostname", () => {
     ["docs_acme.com", "Enter a domain like docs.example.com"],
     ["shiru.page", "This domain belongs to Shiru"],
     ["acme.shiru.page", "This domain belongs to Shiru"],
-    ["Docs.Shiru.SH.", "This domain belongs to Shiru"],
+    ["Shiru.SH.", "This domain belongs to Shiru"],
+    ["app.shiru.sh", "This domain belongs to Shiru"],
+    ["api.shiru.sh", "This domain belongs to Shiru"],
+    ["www.shiru.sh", "This domain belongs to Shiru"],
   ])("rejects %j: %s", (input, message) => {
     expect(CustomHostname.safeParse(input).error?.issues.map((issue) => issue.message)).toEqual([
       message,
