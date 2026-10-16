@@ -86,6 +86,6 @@ async function rebuild(docId: string) {
   const live = (await doc.status()).targets[LIVE];
   if (live?.kind === "building") return "This site is building. Reload in a few seconds.";
   if (!live?.deployed) return "This site has not been published yet.";
-  await doc.build(LIVE, live.deployed.sha, true);
+  await doc.rebuild(LIVE);
   return "The build container for this site had stopped, so it is rebuilding. Reload in a few seconds.";
 }

@@ -35,7 +35,13 @@ export const hostnames = sqliteTable(
     docId: text("doc_id")
       .notNull()
       .references(() => docs.id, { onDelete: "cascade" }),
+    // The Cloudflare for SaaS custom hostname. Null in development, which never calls Cloudflare.
+    cloudflareId: text("cloudflare_id"),
+    status: text("status", { enum: ["pending", "active", "failed", "removing"] })
+      .notNull()
+      .default("pending"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
-  (table) => [index("hostnames_docId_idx").on(table.docId)],
+  // One custom domain per doc.
+  (table) => [uniqueIndex("hostnames_docId_unique").on(table.docId)],
 );

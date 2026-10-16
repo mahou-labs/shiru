@@ -1,4 +1,4 @@
-import app from "../index";
+import { app } from "../index";
 import { env, flushWaitUntil, sentEmails } from "./bindings";
 
 const API = "http://localhost:3000";
