@@ -6,6 +6,8 @@ import {
   type BuildResult,
   initialBuilds,
   type InstanceStatus,
+  isCurrentBuild,
+  lookupFailure,
   parseInstanceStatus,
   type DocBuilds,
 } from "./build-state";
@@ -245,6 +247,11 @@ export class Doc extends DurableObject<Env> {
     };
   }
 
+  /** Whether `workflowId` is still the build `target` is waiting on, so it may deploy. */
+  isCurrentBuild(target: TargetLabel, workflowId: string): boolean {
+    return isCurrentBuild(this.builds(), target, workflowId);
+  }
+
   /** Reconciles every building target with its Workflow instance, so none stays building forever. */
   override async alarm(): Promise<void> {
     for (const [target, state] of Object.entries(this.builds().targets)) {
@@ -255,8 +262,8 @@ export class Doc extends DurableObject<Env> {
         instance = parseInstanceStatus(
           await (await this.env.PUBLISH_WORKFLOW.get(workflowId)).status(),
         );
-      } catch {
-        instance = { status: "unknown" };
+      } catch (error) {
+        instance = lookupFailure(error);
       }
       await this.apply({
         type: "reconciled",

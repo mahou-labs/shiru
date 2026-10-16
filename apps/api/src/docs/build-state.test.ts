@@ -5,6 +5,8 @@ import {
   type BuildEvent,
   initialBuilds,
   type InstanceStatus,
+  isCurrentBuild,
+  lookupFailure,
   parseInstanceStatus,
 } from "./build-state";
 import { LIVE, TargetLabel } from "./names";
@@ -257,7 +259,7 @@ describe("reconciling a building target", () => {
   );
 
   it("restarts a build whose instance was never created, with the newest sha", () => {
-    expect(run([requested("a"), reconciled("doc-1--live--1", { status: "unknown" })])).toEqual({
+    expect(run([requested("a"), reconciled("doc-1--live--1", { status: "missing" })])).toEqual({
       state: {
         prefix: "doc-1",
         seq: 2,
@@ -273,7 +275,7 @@ describe("reconciling a building target", () => {
       effects: [start("doc-1--live--1", "a"), start("doc-1--live--2", "a")],
     });
     expect(
-      run([requested("a"), requested("b"), reconciled("doc-1--live--1", { status: "unknown" })])
+      run([requested("a"), requested("b"), reconciled("doc-1--live--1", { status: "missing" })])
         .state.targets[LIVE],
     ).toEqual({
       kind: "building",
@@ -281,6 +283,56 @@ describe("reconciling a building target", () => {
       pendingSha: null,
       deployed: null,
     });
+  });
+
+  it("keeps waiting on a build whose status could not be read, without starting another", () => {
+    expect(
+      run([requested("a"), requested("b"), reconciled("doc-1--live--1", { status: "unknown" })]),
+    ).toEqual({
+      state: {
+        prefix: "doc-1",
+        seq: 1,
+        targets: {
+          live: {
+            kind: "building",
+            build: { sha: "a", workflowId: "doc-1--live--1" },
+            pendingSha: "b",
+            deployed: null,
+          },
+        },
+      },
+      effects: [start("doc-1--live--1", "a"), [], [{ type: "setAlarm" }]],
+    });
+  });
+});
+
+describe("isCurrentBuild", () => {
+  it("lets only the build a target waits on deploy", () => {
+    const building = run([requested("a"), requested("b")]).state;
+    expect(isCurrentBuild(building, LIVE, "doc-1--live--1")).toBe(true);
+    expect(isCurrentBuild(building, PR, "doc-1--live--1")).toBe(false);
+
+    const restarted = run([
+      requested("a"),
+      requested("b"),
+      reconciled("doc-1--live--1", { status: "missing" }),
+    ]).state;
+    expect(isCurrentBuild(restarted, LIVE, "doc-1--live--1")).toBe(false);
+    expect(isCurrentBuild(restarted, LIVE, "doc-1--live--2")).toBe(true);
+
+    const finished = run([requested("a"), succeeded("doc-1--live--1")]).state;
+    expect(isCurrentBuild(finished, LIVE, "doc-1--live--1")).toBe(false);
+  });
+});
+
+describe("lookupFailure", () => {
+  it.each([
+    [new Error("(instance.not_found) Instance does not exist"), { status: "missing" }],
+    [new Error("instance.not_found"), { status: "missing" }],
+    [new Error("Network connection lost."), { status: "unknown" }],
+    ["internal error", { status: "unknown" }],
+  ])("reads %s", (error, expected) => {
+    expect(lookupFailure(error)).toEqual(expected);
   });
 });
 

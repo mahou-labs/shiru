@@ -54,6 +54,9 @@ export class PublishWorkflow extends WorkflowEntrypoint<Env, PublishParams> {
           await doc.buildStep(target, event.instanceId, "building");
           const built = await builder.build({ docUrl, docsRoot });
           if (!built.ok) return failure(built.errors);
+          if (!(await doc.isCurrentBuild(target, event.instanceId))) {
+            return failure(["A newer build replaced this one before it deployed"]);
+          }
           const deployed = await deployBuild({
             env: this.env,
             scriptName: workerName(slug, target),
