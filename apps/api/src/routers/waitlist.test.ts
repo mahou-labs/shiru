@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vite-plus/test";
 
-import app from "../index";
+import { app } from "../index";
 import { waitlistEntries } from "../schema/waitlist";
 import { createClient } from "../test/client";
 import { db } from "../utils/db";

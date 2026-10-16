@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
-import { eq } from "drizzle-orm";
+import { and, eq, lte } from "drizzle-orm";
 
+import { deleteBuild } from "../deploy/deploy";
 import { docs, previews } from "../schema/docs";
 import { db } from "../utils/db";
 import {
@@ -46,7 +47,7 @@ import {
   receivePackRequest,
   type Ref,
 } from "./git";
-import { type DocSlug, DRAFT, LIVE, type TargetLabel } from "./names";
+import { type DocSlug, DRAFT, LIVE, type TargetLabel, workerName } from "./names";
 import type { PublishParams } from "./publish-workflow";
 import { targetUrl } from "./urls";
 import { type BuildStep, endRun, enterStep, type Run, startRun } from "./runs";
@@ -279,6 +280,39 @@ export class Doc extends DurableObject<Env> {
 
   async build(target: TargetLabel, sha: string, rebuild?: boolean): Promise<void> {
     await this.apply({ type: "requested", target, sha, rebuild });
+  }
+
+  /**
+   * Deletes `target`'s Worker and forgets its build, unless it is building. The preview row goes
+   * only if nobody requested the target after `requestedBefore`. Running it twice converges.
+   */
+  async retire(
+    target: TargetLabel,
+    requestedBefore: number,
+  ): Promise<{ kind: "retired" } | { kind: "busy" }> {
+    return this.ctx.blockConcurrencyWhile(async () => {
+      if (this.builds().targets[target]?.kind === "building") return { kind: "busy" };
+      const doc = await this.buildInfo();
+      const deleted = await deleteBuild({
+        env: this.env,
+        scriptName: workerName(doc.slug, target),
+      });
+      if (!deleted.ok) throw new Error(deleted.error);
+
+      await this.apply({ type: "retired", target });
+      const { [target]: _, ...runs } = this.runs();
+      this.setMeta("runs", JSON.stringify(runs));
+      await db
+        .delete(previews)
+        .where(
+          and(
+            eq(previews.docId, doc.docId),
+            eq(previews.label, target),
+            lte(previews.requestedAt, new Date(requestedBefore)),
+          ),
+        );
+      return { kind: "retired" };
+    });
   }
 
   /** Called by the PublishWorkflow when a build ends, on success and on failure. */

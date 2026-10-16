@@ -82,6 +82,8 @@ export const docObjects = {
         const database = new DatabaseSync(":memory:");
         const ctx = {
           id: { name },
+          // One test at a time drives a Doc, so there is nothing to block.
+          blockConcurrencyWhile: <T>(work: () => Promise<T>) => work(),
           storage: {
             sql: sqlStorage(database),
             transactionSync<T>(work: () => T) {

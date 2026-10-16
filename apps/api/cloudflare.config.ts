@@ -1,4 +1,4 @@
-import { bindings, defineConfig, defineContainer, exports } from "cf/config";
+import { bindings, defineConfig, defineContainer, exports, triggers } from "cf/config";
 
 const builder = defineContainer({
   name: "shiru-api-builder",
@@ -16,6 +16,8 @@ export default defineConfig(({ mode }) => {
       compatibilityDate: "2026-10-07",
       compatibilityFlags: ["nodejs_compat"],
       domains: ["api.shiru.sh"],
+      // Daily, to retire preview Workers nobody requested for 30 days.
+      triggers: [triggers.scheduled({ schedule: "0 4 * * *" })],
       observability: {
         enabled: true,
         traces: {

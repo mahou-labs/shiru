@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import app from "./index";
+import { app } from "./index";
 import { createClient } from "./test/client";
 
 describe("public API", () => {

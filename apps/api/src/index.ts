@@ -5,18 +5,22 @@ import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { env } from "cloudflare:workers";
+import { lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
 import { devRoute } from "./builder/dev-route";
+import type { Doc } from "./docs/doc";
 import { appRouter } from "./routers";
+import { previews } from "./schema/docs";
 import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
+import { db } from "./utils/db";
 import { captureException } from "./utils/posthog";
 import { rateLimit } from "./utils/rate-limit";
 
-const app = new Hono();
+export const app = new Hono();
 
 app.use(logger());
 app.use(
@@ -90,8 +94,28 @@ app.get("/", (c) => {
   return c.text("OK");
 });
 
+const PREVIEW_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Daily: deletes the preview Workers nobody requested for 30 days. */
+export async function scheduled(controller: Pick<ScheduledController, "scheduledTime">) {
+  const cutoff = controller.scheduledTime - PREVIEW_TTL_MS;
+  const stale = await db
+    .select()
+    .from(previews)
+    .where(lt(previews.requestedAt, new Date(cutoff)));
+  const docObjects = env.DOCS as DurableObjectNamespace<Doc>;
+  const results = await Promise.allSettled(
+    stale.map((row) => docObjects.getByName(row.docId).retire(row.label, cutoff)),
+  );
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") return;
+    const { docId, label } = stale[index]!;
+    console.error(`could not retire the ${label} preview of ${docId}`, result.reason);
+  });
+}
+
 export { Builder } from "./builder/builder";
 export { PublishWorkflow } from "./docs/publish-workflow";
 export { Doc } from "./docs/doc";
 
-export default app;
+export default { fetch: app.fetch, scheduled } satisfies ExportedHandler<Env>;
