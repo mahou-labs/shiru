@@ -86,6 +86,8 @@ To deploy by hand, export `CLOUDFLARE_API_TOKEN`, then run `vp run build` and `v
 
 `apps/dispatch` is the Dispatch Worker, `shiru-dispatch`. It is the single entry point for docs sites. It maps `<slug>.<docs domain>` to the user Worker named `<slug>` in the `production` dispatch namespace and passes the response through. It answers 404 for preview hosts, custom hostnames, invalid names and slugs with no deployed Worker. Hostname rules come from `apps/api/src/docs/names.ts`.
 
+`/mcp` on each docs host is a read-only MCP server with three tools. `list_pages` lists the pages, `read_page` returns one page as markdown and `search_documentation` finds matching sections. The Dispatch Worker builds them from the site's `llms-full.txt`, so they cover the same pages as that file. Add one to Claude Code with `claude mcp add --transport http acme https://acme.shiru.page/mcp`.
+
 In development there is no dispatch namespace. `vp run dev` starts the Dispatch Worker on port 3003, and browsers resolve `*.localhost` to your machine, so `http://acme.docs.localhost:3003/` serves site `acme`. It forwards the request to the API's dev-only route `/dev/docs/<slug>/<path>` on `http://localhost:3000`, which serves the site's live build. Previews are not served locally either.
 
 It is built and tested in CI but not deployed. It has no `deploy` script, routes or domains yet, for two reasons:

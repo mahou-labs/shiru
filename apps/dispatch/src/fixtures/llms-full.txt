@@ -1,0 +1,37 @@
+# Acme Docs
+
+> How to install and run Acme.
+
+Index: https://acme.shiru.sh/llms.txt
+
+# Acme Docs
+
+> Start here to install and run Acme.
+
+Source: https://acme.shiru.sh/ · Markdown: https://acme.shiru.sh/index.md
+
+Acme turns a config file into a running service. Read the [setup guide](/guides/setup/) first.
+
+# FAQ
+
+Source: https://acme.shiru.sh/guides/faq/ · Markdown: https://acme.shiru.sh/guides/faq/index.md
+
+## Does Acme run offline?
+
+Yes. See [setup](/guides/setup/#install).
+
+# Setup
+
+> Install Acme and start it.
+
+Source: https://acme.shiru.sh/guides/setup/ · Markdown: https://acme.shiru.sh/guides/setup/index.md
+
+## Install
+
+Install the CLI, then go back to the [overview](/).
+
+> **Note**
+>
+> Acme needs Node 24 or later.
+
+![Acme logo](/assets/logo.svg)

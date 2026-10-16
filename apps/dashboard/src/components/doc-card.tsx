@@ -16,10 +16,12 @@ import {
   CollapsiblePanel,
   CollapsibleTrigger,
 } from "@shiru/ui/components/collapsible";
+import { toastManager } from "@shiru/ui/components/toast";
 import { Link } from "@tanstack/react-router";
 import {
   IconArrowUpRightOutlineDuo18,
   IconChevronDownOutlineDuo18,
+  IconCopyOutlineDuo18,
   IconPencilOutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 
@@ -42,6 +44,21 @@ export function DocCard({ doc }: { doc: Doc }) {
   const { state, run, publish } = usePublish(doc.id, { silent: true });
   const live = state && (state.kind === "live" ? state.sha : "live" in state ? state.live : null);
   const host = new URL(doc.url).host;
+  const mcpUrl = `${doc.url}/mcp`;
+
+  async function copyMcpCommand() {
+    const command = `claude mcp add --transport http ${doc.slug} ${mcpUrl}`;
+    try {
+      await navigator.clipboard.writeText(command);
+      toastManager.add({ type: "success", title: "Command copied" });
+    } catch {
+      toastManager.add({
+        type: "error",
+        title: "Couldn't copy the command. Run it yourself:",
+        description: command,
+      });
+    }
+  }
 
   return (
     <Card>
@@ -87,6 +104,21 @@ export function DocCard({ doc }: { doc: Doc }) {
               </AlertDescription>
             </Alert>
           )}
+        </CardPanel>
+      )}
+      {live && (
+        <CardPanel className="flex items-center gap-2 text-sm">
+          <span className="font-medium">MCP server</span>
+          <code className="min-w-0 truncate text-muted-foreground text-xs">{mcpUrl}</code>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            className="ms-auto shrink-0"
+            aria-label="Copy command to add this MCP server to Claude Code"
+            onClick={copyMcpCommand}
+          >
+            <IconCopyOutlineDuo18 />
+          </Button>
         </CardPanel>
       )}
       <CardFooter className="gap-2">
