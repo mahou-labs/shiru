@@ -35,6 +35,9 @@ export default defineConfig(({ mode }) => {
         // shares a site with the dashboard and API.
         DOCS_DOMAIN: bindings.text(development ? "docs.localhost" : "shiru.page"),
         BETTER_AUTH_SECRET: bindings.secret(),
+        // Signs preview access grants; apps/dispatch holds the same value. Development uses a
+        // fixed one so previews work with no setup.
+        PREVIEW_SECRET: development ? bindings.text("dev-preview-secret") : bindings.secret(),
         BETTER_AUTH_URL: bindings.text(
           development ? "http://localhost:3000" : "https://api.shiru.sh",
         ),

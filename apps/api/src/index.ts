@@ -12,6 +12,7 @@ import { logger } from "hono/logger";
 
 import { devRoute } from "./builder/dev-route";
 import type { Doc } from "./docs/doc";
+import { previewRoute } from "./docs/preview-route";
 import { appRouter } from "./routers";
 import { previews } from "./schema/docs";
 import { auth } from "./utils/auth";
@@ -42,6 +43,7 @@ app.onError((error, c) => {
 
 app.on(["POST", "GET"], "/auth/*", (c) => auth.handler(c.req.raw));
 app.route("/dev", devRoute);
+app.route("/preview", previewRoute);
 
 export const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [

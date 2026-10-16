@@ -221,6 +221,7 @@ export const env = {
   DOCS_DOMAIN: "docs.localhost",
   BETTER_AUTH_URL: "http://localhost:3000",
   BETTER_AUTH_SECRET: "test-secret-that-is-at-least-32-characters",
+  PREVIEW_SECRET: "test-preview-secret",
   POLAR_ACCESS_TOKEN: "polar_test_token",
   POLAR_WEBHOOK_SECRET: "polar_test_webhook_secret",
   POLAR_MONTHLY_PRODUCT_ID: "prod_test_monthly",
