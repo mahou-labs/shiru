@@ -4,11 +4,15 @@ import { Separator } from "@shiru/ui/components/separator";
 import { SidebarTrigger } from "@shiru/ui/components/sidebar";
 import { Skeleton } from "@shiru/ui/components/skeleton";
 import { Spinner } from "@shiru/ui/components/spinner";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@shiru/ui/components/tooltip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { IconArrowUpRightOutlineDuo18 } from "nucleo-ui-outline-duo-18";
 import { useState, type ReactNode } from "react";
 
 import { useAutosave, type SaveState } from "@/hooks/use-autosave";
+import { usePreview } from "@/hooks/use-preview";
 import { canPublish, usePublish } from "@/hooks/use-publish";
+import { buildErrorSummary } from "@/lib/build-error";
 import { errorMessage } from "@/lib/errors";
 import { orpc } from "@/utils/orpc";
 
@@ -42,7 +46,7 @@ export function LoadPage({
       path={path}
       pagesButton={pagesButton}
       status={null}
-      actions={<PublishButton docId={docId} />}
+      actions={<DocActions docId={docId} />}
     >
       {error ? (
         <Alert variant="error">
@@ -92,7 +96,7 @@ export function usePageAutosave(docId: string, path: string, read: () => string)
   });
 }
 
-/** A loaded page: its save status, the publish button, and a warning when it is in conflict. */
+/** A loaded page: its save status, the preview and publish buttons, and a warning when it is in conflict. */
 export function PageFrame({
   docId,
   path,
@@ -110,10 +114,10 @@ export function PageFrame({
       pagesButton={pagesButton}
       status={<SaveStatus state={autosave.state} onRetry={() => void autosave.flush()} />}
       actions={
-        <PublishButton
+        <DocActions
           docId={docId}
           edited={autosave.state.kind !== "idle" && autosave.state.kind !== "saved"}
-          beforePublish={autosave.flush}
+          flushPage={autosave.flush}
         />
       }
     >
@@ -196,39 +200,113 @@ function SaveStatus({ state, onRetry }: { state: SaveState; onRetry: () => void 
   }
 }
 
-/**
- * Publishes after the doc's pending edits are saved, which the doc status cannot know of yet: the
- * open page's, and those other pages still have in flight or flushed as they unmounted.
- */
-function PublishButton({
-  docId,
-  edited = false,
-  beforePublish = () => Promise.resolve(),
-}: {
+/** The toolbar's preview and publish controls. */
+function DocActions(props: {
   docId: string;
   edited?: boolean;
-  beforePublish?: () => Promise<unknown>;
+  flushPage?: () => Promise<unknown>;
 }) {
+  return (
+    <>
+      <PreviewButton {...props} />
+      <PublishButton {...props} />
+    </>
+  );
+}
+
+/**
+ * Saves the doc's pending edits, which the doc status cannot know of yet: the open page's, and
+ * those other pages still have in flight or flushed as they unmounted. Resolves false when a save
+ * failed, which already explains itself, so building now would skip the edit.
+ */
+function useFlushEdits(docId: string, flushPage: () => Promise<unknown>) {
   const queryClient = useQueryClient();
-  const { state, publish } = usePublish(docId);
   const [flushing, setFlushing] = useState(false);
 
-  async function onPublish() {
+  async function flush() {
     setFlushing(true);
     try {
-      await beforePublish();
+      await flushPage();
       await settled(queryClient.getMutationCache(), {
         mutationKey: orpc.docs.files.save.mutationKey(),
         predicate: (mutation) =>
           (mutation.state.variables as { docId?: string } | undefined)?.docId === docId,
       });
+      return true;
     } catch {
-      // The failed save already explains itself, and publishing now would skip the edit.
-      return;
+      return false;
     } finally {
       setFlushing(false);
     }
-    publish.mutate({ docId });
+  }
+
+  return { flushing, flush };
+}
+
+/** Builds the drafts as they are now on the draft target, once pending edits are saved. */
+function PreviewButton({
+  docId,
+  flushPage = () => Promise.resolve(),
+}: {
+  docId: string;
+  flushPage?: () => Promise<unknown>;
+}) {
+  const { state, empty, url, preview } = usePreview(docId);
+  const { flushing, flush } = useFlushEdits(docId, flushPage);
+
+  async function onPreview() {
+    if (await flush()) preview.mutate({ docId });
+  }
+
+  const deployed = state && state.kind !== "none" ? state.deployed : null;
+  return (
+    <>
+      {state?.kind === "failed" && (
+        <Tooltip>
+          <TooltipTrigger
+            render={<span className="cursor-default text-destructive-foreground text-xs" />}
+          >
+            Preview failed
+          </TooltipTrigger>
+          <TooltipPopup side="bottom" className="max-w-sm">
+            {buildErrorSummary(state.error)}
+          </TooltipPopup>
+        </Tooltip>
+      )}
+      {deployed && url && (
+        <Button size="sm" variant="ghost" render={<a href={url} target="_blank" rel="noopener" />}>
+          <span className="max-sm:sr-only">Open preview</span>
+          <IconArrowUpRightOutlineDuo18 />
+        </Button>
+      )}
+      <Button
+        size="sm"
+        variant="outline"
+        loading={flushing || preview.isPending}
+        disabled={!state || state.kind === "building" || empty}
+        onClick={() => void onPreview()}
+      >
+        {state?.kind === "building" ? "Building preview…" : "Preview"}
+      </Button>
+    </>
+  );
+}
+
+/** Publishes once the doc's pending edits are saved. */
+function PublishButton({
+  docId,
+  edited = false,
+  flushPage = () => Promise.resolve(),
+}: {
+  docId: string;
+  edited?: boolean;
+  flushPage?: () => Promise<unknown>;
+}) {
+  const { state, publish } = usePublish(docId);
+  const { flushing, flush } = useFlushEdits(docId, flushPage);
+
+  async function onPublish() {
+    if (await flush()) publish.mutate({ docId });
   }
 
   return (
