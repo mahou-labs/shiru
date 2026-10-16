@@ -46,9 +46,10 @@ import {
 } from "./git";
 import { type DocSlug, LIVE, type TargetLabel } from "./names";
 import type { PublishParams } from "./publish-workflow";
+import { targetUrl } from "./urls";
 import { type BuildStep, endRun, enterStep, type Run, startRun } from "./runs";
 
-export type DocInfo = { docId: string; slug: DocSlug; name: string; repo: string; docUrl: string };
+export type DocInfo = { docId: string; slug: DocSlug; name: string; repo: string };
 
 export type PublishResult =
   | { kind: "published"; sha: string; skipped: string[] }
@@ -117,7 +118,7 @@ export class Doc extends DurableObject<Env> {
 
   /**
    * Records the doc and, the first time, creates its repo and reads head. Safe to call before
-   * every request: after the first call it only refreshes the doc's name and URL.
+   * every request: after the first call it only refreshes the doc's name and slug.
    */
   async init(doc: DocInfo): Promise<void> {
     this.setMeta("doc", JSON.stringify(doc));
@@ -311,7 +312,7 @@ export class Doc extends DurableObject<Env> {
               repo: doc.repo,
               target: effect.target,
               sha: effect.sha,
-              docUrl: doc.docUrl,
+              docUrl: targetUrl(doc.slug, effect.target),
               docsRoot: DOCS_ROOT,
             };
             await this.env.PUBLISH_WORKFLOW.create({ id: effect.workflowId, params });

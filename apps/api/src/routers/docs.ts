@@ -5,23 +5,14 @@ import { z } from "zod";
 
 import { docs } from "../schema/docs";
 import { DocPath } from "../docs/drafts";
-import { DocSlug } from "../docs/names";
+import { DocSlug, DRAFT, LIVE } from "../docs/names";
 import type { Doc } from "../docs/doc";
+import { targetUrl } from "../docs/urls";
 import { db } from "../utils/db";
 import { organizationProcedure, paidProcedure } from "../utils/orpc";
 
-/**
- * Where a doc is served, for the dashboard's links and for the build's canonical URLs. In
- * development the dispatch Worker serves `<slug>.docs.localhost` on port 3003.
- */
-export function docUrl(slug: string) {
-  return env.ENVIRONMENT === "development"
-    ? `http://${slug}.${env.DOCS_DOMAIN}:3003`
-    : `https://${slug}.${env.DOCS_DOMAIN}`;
-}
-
 function withUrl<T extends { slug: string }>(doc: T) {
-  return { ...doc, url: docUrl(doc.slug) };
+  return { ...doc, url: targetUrl(doc.slug, LIVE), previewUrl: targetUrl(doc.slug, DRAFT) };
 }
 
 const DOC_ERRORS = { NOT_FOUND: { status: 404, message: "Site not found" } } as const;
@@ -47,7 +38,6 @@ async function openDoc(organizationId: string, docId: string) {
     slug: doc.slug,
     name: doc.name,
     repo: doc.source.artifactsRepo,
-    docUrl: docUrl(doc.slug),
   });
   return stub;
 }

@@ -3,9 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import type { Doc } from "../docs/doc";
 import { buildCommit } from "../docs/git";
 import { LIVE } from "../docs/names";
-import { artifacts, docObjects, env, publishWorkflow } from "../test/bindings";
+import { artifacts, docObjects, publishWorkflow } from "../test/bindings";
 import { createClient } from "../test/client";
-import { docUrl } from "./docs";
 
 const JAN_1 = new Date("2026-01-01T00:00:00.000Z");
 const NOW = JAN_1.getTime();
@@ -289,17 +288,5 @@ describe("doc files", () => {
         },
       },
     });
-  });
-});
-
-describe("docUrl", () => {
-  afterEach(() => {
-    env.ENVIRONMENT = "development";
-  });
-
-  it("serves docs through the local dispatch Worker in development, over https otherwise", () => {
-    expect(docUrl("acme")).toBe("http://acme.docs.localhost:3003");
-    env.ENVIRONMENT = "production";
-    expect(docUrl("acme")).toBe("https://acme.docs.localhost");
   });
 });
