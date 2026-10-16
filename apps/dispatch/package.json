@@ -10,10 +10,12 @@
     "test": "vp test"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",
+    "@modelcontextprotocol/client": "catalog:",
     "@types/node": "catalog:",
     "cf": "catalog:",
     "typescript": "catalog:",

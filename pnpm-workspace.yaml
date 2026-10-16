@@ -31,6 +31,8 @@ catalog:
   drizzle-orm: 1.0.0-rc.4
   vite: npm:@voidzero-dev/vite-plus-core@1.1.0
   vite-plus: 1.1.0
+  "@modelcontextprotocol/server": 2.3.1
+  "@modelcontextprotocol/client": 2.3.1
 minimumReleaseAgeExclude:
   - astro@7.3.8
 overrides:
