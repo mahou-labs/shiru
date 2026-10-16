@@ -110,13 +110,13 @@ export function deleteDraft(
 
 /** The changes publish commits: every draft that is not in conflict. */
 export function committable(drafts: Draft[]): Change[] {
-  return drafts
-    .filter((draft) => !draft.conflict)
-    .map((draft) =>
-      draft.op === "put"
-        ? { path: draft.path, op: "put", content: draft.content }
-        : { path: draft.path, op: "delete" },
-    );
+  return drafts.filter((draft) => !draft.conflict).map(toChange);
+}
+
+export function toChange(draft: Draft): Change {
+  return draft.op === "put"
+    ? { path: draft.path, op: "put", content: draft.content }
+    : { path: draft.path, op: "delete" };
 }
 
 export type DraftUpdate = { clear: string[]; save: Draft[] };

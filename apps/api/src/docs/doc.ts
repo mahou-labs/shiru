@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 
-import { docs } from "../schema/docs";
+import { docs, previews } from "../schema/docs";
 import { db } from "../utils/db";
 import {
   applyBuildEvent,
@@ -28,6 +28,7 @@ import {
   repoPath,
   DocPath,
   starterDrafts,
+  toChange,
   type Tree,
   toTree,
 } from "./drafts";
@@ -36,6 +37,7 @@ import {
   type BuiltCommit,
   MAIN,
   packfile,
+  PREVIEW,
   parseReportStatus,
   type Person,
   type PushResult,
@@ -44,7 +46,7 @@ import {
   receivePackRequest,
   type Ref,
 } from "./git";
-import { type DocSlug, LIVE, type TargetLabel } from "./names";
+import { type DocSlug, DRAFT, LIVE, type TargetLabel } from "./names";
 import type { PublishParams } from "./publish-workflow";
 import { targetUrl } from "./urls";
 import { type BuildStep, endRun, enterStep, type Run, startRun } from "./runs";
@@ -55,6 +57,13 @@ export type PublishResult =
   | { kind: "published"; sha: string; skipped: string[] }
   | { kind: "unchanged"; sha: string | null; skipped: string[] }
   // The branch moved under every attempt.
+  | { kind: "conflict" };
+
+export type PreviewResult =
+  | { kind: "previewing"; sha: string; url: string }
+  // No commit and no drafts: there is nothing to build.
+  | { kind: "empty" }
+  // The preview branch moved under every attempt.
   | { kind: "conflict" };
 
 export type DocStatus = {
@@ -214,6 +223,56 @@ export class Doc extends DurableObject<Env> {
       });
       await this.build(LIVE, commit.sha);
       return { kind: "published", sha: commit.sha, skipped };
+    }
+    return { kind: "conflict" };
+  }
+
+  /**
+   * Builds what the editor shows, drafts in conflict included, on the draft target. The drafts
+   * are committed to the preview branch and stay drafts. The commit is a pure function of head and
+   * the drafts, so previewing again with nothing changed pushes and builds nothing.
+   */
+  async preview(user: Person): Promise<PreviewResult> {
+    for (let attempt = 0; attempt < PUBLISH_ATTEMPTS; attempt++) {
+      const head = this.meta("head_sha");
+      const drafts = this.loadDrafts();
+      let sha = head;
+      if (drafts.length > 0) {
+        const commit = await buildCommit({
+          tree: [...this.loadTree().values()],
+          changes: drafts.map(toChange),
+          parent: head,
+          author: user,
+          message: "Preview from the editor",
+          time: Math.floor(Math.max(...drafts.map((draft) => draft.updatedAt)) / 1000),
+        });
+        const previewSha = this.meta("preview_sha");
+        if (commit.sha !== previewSha) {
+          const pushed = await this.push(PREVIEW, previewSha, commit);
+          if (pushed.kind === "stale") {
+            const repo = await this.env.ARTIFACTS.get(this.doc().repo);
+            const [latest] = await repo.log({ ref: "preview", limit: 1 });
+            if (latest) this.setMeta("preview_sha", latest.hash);
+            else this.sql.exec("DELETE FROM meta WHERE key = 'preview_sha'");
+            continue;
+          }
+          if (pushed.kind === "failed") {
+            throw new Error(`The preview was rejected: ${pushed.message}`);
+          }
+          this.setMeta("preview_sha", commit.sha);
+        }
+        sha = commit.sha;
+      }
+      if (sha === null) return { kind: "empty" };
+
+      await this.build(DRAFT, sha);
+      const doc = await this.buildInfo();
+      const requestedAt = new Date();
+      await db
+        .insert(previews)
+        .values({ docId: doc.docId, label: DRAFT, requestedAt })
+        .onConflictDoUpdate({ target: [previews.docId, previews.label], set: { requestedAt } });
+      return { kind: "previewing", sha, url: targetUrl(doc.slug, DRAFT) };
     }
     return { kind: "conflict" };
   }

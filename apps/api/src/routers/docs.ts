@@ -16,6 +16,9 @@ function withUrl<T extends { slug: string }>(doc: T) {
 }
 
 const DOC_ERRORS = { NOT_FOUND: { status: 404, message: "Site not found" } } as const;
+const CONFLICT_ERRORS = {
+  CONFLICT: { status: 409, message: "The site kept changing while publishing. Try again." },
+} as const;
 const FILE_ERRORS = { FILE_NOT_FOUND: { status: 404, message: "File not found" } } as const;
 
 const docInput = z.object({ docId: z.string() });
@@ -172,15 +175,26 @@ export const docsRouter = {
    * drafts stay and come back in `skipped`. `unchanged` means there was nothing to commit.
    */
   publish: paidProcedure
-    .errors({
-      ...DOC_ERRORS,
-      CONFLICT: { status: 409, message: "The site kept changing while publishing. Try again." },
-    })
+    .errors({ ...DOC_ERRORS, ...CONFLICT_ERRORS })
     .input(docInput)
     .handler(async ({ context, input, errors }) => {
       const doc = await openDoc(context.organizationId, input.docId);
       if (!doc) throw errors.NOT_FOUND();
       const result = await doc.publish(author(context.user));
+      if (result.kind === "conflict") throw errors.CONFLICT();
+      return result;
+    }),
+  /**
+   * Builds head with every draft applied on the draft target, served to the organization's members
+   * at `previewUrl`. The drafts stay drafts. `empty` means there is nothing to build yet.
+   */
+  preview: paidProcedure
+    .errors({ ...DOC_ERRORS, ...CONFLICT_ERRORS })
+    .input(docInput)
+    .handler(async ({ context, input, errors }) => {
+      const doc = await openDoc(context.organizationId, input.docId);
+      if (!doc) throw errors.NOT_FOUND();
+      const result = await doc.preview(author(context.user));
       if (result.kind === "conflict") throw errors.CONFLICT();
       return result;
     }),
