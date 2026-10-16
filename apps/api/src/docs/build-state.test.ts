@@ -13,10 +13,8 @@ import { LIVE, TargetLabel } from "./names";
 
 const PR = TargetLabel.parse("pr-12");
 
-const requested = (sha: string, target = LIVE, rebuild?: boolean): BuildEvent =>
-  rebuild === undefined
-    ? { type: "requested", target, sha }
-    : { type: "requested", target, sha, rebuild };
+const requested = (sha: string, target = LIVE): BuildEvent => ({ type: "requested", target, sha });
+const rebuild: BuildEvent = { type: "rebuild", target: LIVE };
 const succeeded = (workflowId: string, templateVersion = "v1", target = LIVE): BuildEvent => ({
   type: "finished",
   target,
@@ -97,12 +95,80 @@ describe("applyBuildEvent", () => {
         requested("a"),
         succeeded("doc-1--live--1", "v1"),
         requested("a"),
-        requested("a", LIVE, true),
+        rebuild,
         succeeded("doc-1--live--2", "v2"),
       ],
       effects: [start("doc-1--live--1", "a"), CLEAR, [], start("doc-1--live--2", "a"), CLEAR],
       seq: 2,
       targets: { live: { kind: "idle", deployed: { sha: "a", templateVersion: "v2" } } },
+    },
+    {
+      name: "rebuilds a running build's sha once it ends",
+      events: [requested("a"), rebuild, succeeded("doc-1--live--1"), succeeded("doc-1--live--2")],
+      effects: [start("doc-1--live--1", "a"), [], start("doc-1--live--2", "a"), CLEAR],
+      seq: 2,
+      targets: { live: { kind: "idle", deployed: { sha: "a", templateVersion: "v1" } } },
+    },
+    {
+      name: "keeps a newer pending sha over the running one when rebuilding",
+      events: [
+        requested("a"),
+        succeeded("doc-1--live--1"),
+        requested("b"),
+        requested("c"),
+        rebuild,
+        succeeded("doc-1--live--2"),
+      ],
+      effects: [
+        start("doc-1--live--1", "a"),
+        CLEAR,
+        start("doc-1--live--2", "b"),
+        [],
+        [],
+        start("doc-1--live--3", "c"),
+      ],
+      seq: 3,
+      targets: {
+        live: {
+          kind: "building",
+          build: { sha: "c", workflowId: "doc-1--live--3" },
+          pendingSha: null,
+          deployed: { sha: "b", templateVersion: "v1" },
+        },
+      },
+    },
+    {
+      name: "rebuilds the deployed sha after a failed build",
+      events: [
+        requested("a"),
+        succeeded("doc-1--live--1"),
+        requested("b"),
+        failed("doc-1--live--2"),
+        rebuild,
+      ],
+      effects: [
+        start("doc-1--live--1", "a"),
+        CLEAR,
+        start("doc-1--live--2", "b"),
+        CLEAR,
+        start("doc-1--live--3", "a"),
+      ],
+      seq: 3,
+      targets: {
+        live: {
+          kind: "building",
+          build: { sha: "a", workflowId: "doc-1--live--3" },
+          pendingSha: null,
+          deployed: { sha: "a", templateVersion: "v1" },
+        },
+      },
+    },
+    {
+      name: "has nothing to rebuild before anything is deployed",
+      events: [rebuild, requested("a"), failed("doc-1--live--1"), rebuild],
+      effects: [[], start("doc-1--live--1", "a"), CLEAR, []],
+      seq: 1,
+      targets: { live: { kind: "failed", deployed: null, error: "astro build failed" } },
     },
     {
       name: "keeps the deployed version when a build fails",

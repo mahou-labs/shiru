@@ -215,8 +215,13 @@ export class Doc extends DurableObject<Env> {
     return { kind: "conflict" };
   }
 
-  async build(target: TargetLabel, sha: string, rebuild?: boolean): Promise<void> {
-    await this.apply({ type: "requested", target, sha, rebuild });
+  async build(target: TargetLabel, sha: string): Promise<void> {
+    await this.apply({ type: "requested", target, sha });
+  }
+
+  /** Builds what `target` serves again with the doc's current info, such as a new URL. */
+  async rebuild(target: TargetLabel): Promise<void> {
+    await this.apply({ type: "rebuild", target });
   }
 
   /** Called by the PublishWorkflow when a build ends, on success and on failure. */
