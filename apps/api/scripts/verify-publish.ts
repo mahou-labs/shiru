@@ -470,7 +470,7 @@ try {
     [["content/index.mdx"], second.sha, true],
   );
 
-  // targetUrl names the usual dispatch port; this script's dispatch Worker runs on its own.
+  // previewUrl names the usual dispatch port; this script's dispatch Worker runs on its own.
   const viaPreviewDispatch = (location: string, cookie?: string) => {
     const url = new URL(location);
     url.port = args["dispatch-port"];

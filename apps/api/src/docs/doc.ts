@@ -2,7 +2,8 @@ import { DurableObject } from "cloudflare:workers";
 import { and, eq, lte } from "drizzle-orm";
 
 import { deleteBuild } from "../deploy/deploy";
-import { docs, previews } from "../schema/docs";
+import { servedAt } from "../domains/domains";
+import { previews } from "../schema/docs";
 import { db } from "../utils/db";
 import {
   applyBuildEvent,
@@ -49,7 +50,7 @@ import {
 } from "./git";
 import { type DocSlug, DRAFT, LIVE, type TargetLabel, workerName } from "./names";
 import type { PublishParams } from "./publish-workflow";
-import { targetUrl } from "./urls";
+import { previewUrl } from "./urls";
 import { type BuildStep, endRun, enterStep, type Run, startRun } from "./runs";
 
 export type DocInfo = { docId: string; slug: DocSlug; name: string; repo: string };
@@ -128,7 +129,7 @@ export class Doc extends DurableObject<Env> {
 
   /**
    * Records the doc and, the first time, creates its repo and reads head. Safe to call before
-   * every request: after the first call it only refreshes the doc's name and slug.
+   * every request: after the first call it only refreshes the doc's name.
    */
   async init(doc: DocInfo): Promise<void> {
     this.setMeta("doc", JSON.stringify(doc));
@@ -268,13 +269,18 @@ export class Doc extends DurableObject<Env> {
         .values({ docId: doc.docId, label: DRAFT, requestedAt })
         .onConflictDoUpdate({ target: [previews.docId, previews.label], set: { requestedAt } });
       await this.build(DRAFT, sha);
-      return { kind: "previewing", sha, url: targetUrl(doc.slug, DRAFT) };
+      return { kind: "previewing", sha, url: previewUrl(doc.slug, DRAFT) };
     }
     return { kind: "conflict" };
   }
 
-  async build(target: TargetLabel, sha: string, rebuild?: boolean): Promise<void> {
-    await this.apply({ type: "requested", target, sha, rebuild });
+  async build(target: TargetLabel, sha: string): Promise<void> {
+    await this.apply({ type: "requested", target, sha });
+  }
+
+  /** Builds what `target` serves again with the doc's current info, such as a new URL. */
+  async rebuild(target: TargetLabel): Promise<void> {
+    await this.apply({ type: "rebuild", target });
   }
 
   /**
@@ -405,7 +411,7 @@ export class Doc extends DurableObject<Env> {
               repo: doc.repo,
               target: effect.target,
               sha: effect.sha,
-              docUrl: targetUrl(doc.slug, effect.target),
+              docUrl: effect.target === LIVE ? doc.docUrl : previewUrl(doc.slug, effect.target),
               docsRoot: DOCS_ROOT,
             };
             await this.env.PUBLISH_WORKFLOW.create({ id: effect.workflowId, params });
@@ -580,17 +586,14 @@ export class Doc extends DurableObject<Env> {
   }
 
   /**
-   * The stored info a Workflow needs. Docs stored before `slug` was kept here get it from D1, since
-   * an alarm or a finished build can start a Workflow before any request calls `init` again.
+   * What a Workflow needs, with the slug and URL read from D1 as the build starts. The URL changes
+   * with the doc's custom domain, and a build waiting in the queue must not use an old one.
    */
-  private async buildInfo(): Promise<DocInfo> {
+  private async buildInfo(): Promise<DocInfo & { docUrl: string }> {
     const doc = this.doc();
-    if (doc.slug) return doc;
-    const [row] = await db.select({ slug: docs.slug }).from(docs).where(eq(docs.id, doc.docId));
-    if (!row) throw new Error(`doc ${doc.docId} is not in the database`);
-    const backfilled = { ...doc, slug: row.slug };
-    this.setMeta("doc", JSON.stringify(backfilled));
-    return backfilled;
+    const served = await servedAt(doc.docId, this.env);
+    if (!served) throw new Error(`doc ${doc.docId} is not in the database`);
+    return { ...doc, slug: served.slug, docUrl: served.url };
   }
 
   private doc(): DocInfo {

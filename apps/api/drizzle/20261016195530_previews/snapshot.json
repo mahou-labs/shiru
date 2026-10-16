@@ -1,9 +1,9 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "01359cb5-96c4-410c-992c-54208f230262",
+  "id": "7c97643a-1ae1-4961-b2cf-6c01d6fdb5a7",
   "prevIds": [
-    "b8e4a084-bdb8-4bac-af33-5065353ae40c"
+    "4ac5f590-a04e-4fb7-947e-9392e3568216"
   ],
   "ddl": [
     {
@@ -799,6 +799,26 @@
       "table": "hostnames"
     },
     {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "cloudflare_id",
+      "entityType": "columns",
+      "table": "hostnames"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'pending'",
+      "generated": null,
+      "name": "status",
+      "entityType": "columns",
+      "table": "hostnames"
+    },
+    {
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
@@ -1287,10 +1307,10 @@
           "isExpression": false
         }
       ],
-      "isUnique": false,
+      "isUnique": true,
       "where": null,
       "origin": "manual",
-      "name": "hostnames_docId_idx",
+      "name": "hostnames_docId_unique",
       "entityType": "indexes",
       "table": "hostnames"
     },

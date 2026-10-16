@@ -13,6 +13,7 @@ import { logger } from "hono/logger";
 import { devRoute } from "./builder/dev-route";
 import type { Doc } from "./docs/doc";
 import { previewRoute } from "./docs/preview-route";
+import { refreshDomains } from "./domains/domains";
 import { appRouter } from "./routers";
 import { previews } from "./schema/docs";
 import { auth } from "./utils/auth";
@@ -98,9 +99,9 @@ app.get("/", (c) => {
 
 const PREVIEW_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-/** Daily: deletes the preview Workers nobody requested for 30 days. */
-export async function scheduled(controller: Pick<ScheduledController, "scheduledTime">) {
-  const cutoff = controller.scheduledTime - PREVIEW_TTL_MS;
+/** Deletes the preview Workers nobody requested in the 30 days before `now`. */
+export async function retirePreviews(now: number) {
+  const cutoff = now - PREVIEW_TTL_MS;
   const stale = await db
     .select()
     .from(previews)
@@ -120,4 +121,10 @@ export { Builder } from "./builder/builder";
 export { PublishWorkflow } from "./docs/publish-workflow";
 export { Doc } from "./docs/doc";
 
-export default { fetch: app.fetch, scheduled } satisfies ExportedHandler<Env>;
+export default {
+  fetch: app.fetch,
+  scheduled(controller, _env, ctx) {
+    ctx.waitUntil(refreshDomains({ env }));
+    ctx.waitUntil(retirePreviews(controller.scheduledTime));
+  },
+} satisfies ExportedHandler<Env>;

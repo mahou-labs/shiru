@@ -214,6 +214,20 @@ export const publishWorkflow = {
   },
 };
 
+/** An in-memory KV namespace with the calls the domain code makes. */
+export const domainsKv = {
+  entries: new Map<string, string>(),
+  async get(key: string) {
+    return this.entries.get(key) ?? null;
+  },
+  async put(key: string, value: string) {
+    this.entries.set(key, value);
+  },
+  async delete(key: string) {
+    this.entries.delete(key);
+  },
+};
+
 export const env = {
   DB: undefined,
   DASHBOARD_URL: "http://localhost:3001",
@@ -230,6 +244,10 @@ export const env = {
   DISPATCH_ACCOUNT_ID: "test-account",
   DISPATCH_API_TOKEN: "test-dispatch-token",
   DISPATCH_NAMESPACE: "shiru-docs",
+  DOMAINS: domainsKv,
+  CUSTOM_HOSTNAMES_ZONE_ID: "test-zone",
+  CUSTOM_HOSTNAMES_API_TOKEN: "test-hostnames-token",
+  CUSTOM_DOMAIN_TARGET: "cname.docs.localhost",
   API_RATE_LIMITER: rateLimiter("api", 300),
   PUBLIC_WRITE_RATE_LIMITER: rateLimiter("public-write", 10),
   POSTHOG_KEY: "",

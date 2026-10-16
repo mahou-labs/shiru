@@ -1,9 +1,11 @@
 import {
+  DocSlug,
+  hostKey,
   LIVE,
   parseHostname,
+  redirectKey,
   workerName,
   type DocsDomains,
-  type DocSlug,
   type TargetLabel,
 } from "../../api/src/docs/names";
 import {
@@ -18,16 +20,38 @@ import {
 export type Route =
   | { kind: "dispatch"; slug: DocSlug; workerName: string }
   | { kind: "preview"; slug: DocSlug; label: TargetLabel; workerName: string }
+  | { kind: "redirect"; location: string }
   | { kind: "notFound" };
 
-type Served = Exclude<Route, { kind: "notFound" }>;
+type Served = Extract<Route, { kind: "dispatch" | "preview" }>;
 
-// Custom hostnames wait on Cloudflare for SaaS; until then they are not served.
-export function route(hostname: string, domains: DocsDomains): Route {
-  const parsed = parseHostname(hostname, domains);
+/** Reads a key from the DOMAINS namespace that apps/api writes. */
+export type Lookup = (key: string) => Promise<string | null>;
+
+const notFoundRoute: Route = { kind: "notFound" };
+const dispatchRoute = (slug: DocSlug): Route => ({
+  kind: "dispatch",
+  slug,
+  workerName: workerName(slug, LIVE),
+});
+
+/**
+ * Where a request goes. A doc with an active custom domain redirects there, and a custom domain
+ * serves its doc's live Worker. A preview host names its doc's Worker for that target, which
+ * fetchPreview serves to members only.
+ */
+export async function route(url: URL, domains: DocsDomains, lookup: Lookup): Promise<Route> {
+  const parsed = parseHostname(url.hostname, domains);
   switch (parsed.kind) {
-    case "doc":
-      return { kind: "dispatch", slug: parsed.slug, workerName: workerName(parsed.slug, LIVE) };
+    case "doc": {
+      const custom = await lookup(redirectKey(parsed.slug));
+      if (custom === null) return dispatchRoute(parsed.slug);
+      return { kind: "redirect", location: `https://${custom}${url.pathname}${url.search}` };
+    }
+    case "custom": {
+      const slug = DocSlug.safeParse(await lookup(hostKey(parsed.hostname)));
+      return slug.success ? dispatchRoute(slug.data) : notFoundRoute;
+    }
     case "preview":
       return {
         kind: "preview",
@@ -35,8 +59,8 @@ export function route(hostname: string, domains: DocsDomains): Route {
         label: parsed.label,
         workerName: workerName(parsed.slug, parsed.label),
       };
-    default:
-      return { kind: "notFound" };
+    case "invalid":
+      return notFoundRoute;
   }
 }
 
@@ -127,13 +151,24 @@ function splitCookies(header: string | null) {
 
 const notFound = () => new Response("No docs site here", { status: 404 });
 
+// Every asset request passes through here, so lookups may be up to a minute stale.
+const LOOKUP_CACHE_TTL = 60;
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const target = route(new URL(request.url).hostname, {
-      docs: env.DOCS_DOMAIN,
-      preview: env.PREVIEW_DOMAIN,
-    });
+    const target = await route(
+      new URL(request.url),
+      { docs: env.DOCS_DOMAIN, preview: env.PREVIEW_DOMAIN },
+      (key) => env.DOMAINS.get(key, { cacheTtl: LOOKUP_CACHE_TTL }),
+    );
     if (target.kind === "notFound") return notFound();
+    if (target.kind === "redirect") {
+      // Cached for an hour only, so removing the domain does not leave browsers redirecting.
+      return new Response(null, {
+        status: 301,
+        headers: { location: target.location, "cache-control": "max-age=3600" },
+      });
+    }
 
     try {
       return target.kind === "preview"

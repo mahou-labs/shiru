@@ -4,7 +4,8 @@ import { z } from "zod";
 const NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 // `preview` is reserved too: a doc there could set cookies for every preview host under it.
-const RESERVED_SLUGS: readonly string[] = ["app", "api", "docs", "preview", "t", "www"];
+// `cname` is the target custom domains point their CNAME at.
+const RESERVED_SLUGS: readonly string[] = ["app", "api", "cname", "docs", "preview", "t", "www"];
 
 export const DocSlug = z
   .string()
@@ -24,6 +25,49 @@ export type TargetLabel = z.infer<typeof TargetLabel>;
 export const LIVE = TargetLabel.parse("live");
 /** The editor's unpublished drafts, built by the Preview button. */
 export const DRAFT = TargetLabel.parse("draft");
+
+const HOST_LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
+// Every name under shiru.page is a site's address. Under shiru.sh only the hosts Shiru serves are
+// refused: a custom hostname goes live only once its DNS points at Shiru, so any other name there
+// is safe to register, and Shiru serves its own docs at one.
+const SHIRU_ZONES = ["shiru.page"];
+const SHIRU_HOSTS = ["shiru.sh", "www.shiru.sh", "app.shiru.sh", "api.shiru.sh"];
+
+const belongsToShiru = (hostname: string) =>
+  SHIRU_HOSTS.includes(hostname) ||
+  SHIRU_ZONES.some((zone) => hostname === zone || hostname.endsWith(`.${zone}`));
+
+function isHostname(hostname: string) {
+  const labels = hostname.split(".");
+  const tld = labels.at(-1)!;
+  return (
+    labels.length >= 2 &&
+    labels.every((label) => HOST_LABEL.test(label)) &&
+    (/^[a-z]{2,}$/.test(tld) || tld.startsWith("xn--"))
+  );
+}
+
+/** A domain an organization serves its docs at, such as `docs.acme.com`. */
+export const CustomHostname = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .transform((hostname) => hostname.replace(/\.$/, ""))
+  .pipe(
+    z
+      .string()
+      .max(253)
+      .refine(isHostname, { message: "Enter a domain like docs.example.com", abort: true })
+      .refine((hostname) => !belongsToShiru(hostname), "This domain belongs to Shiru"),
+  )
+  .brand<"CustomHostname">();
+export type CustomHostname = z.infer<typeof CustomHostname>;
+
+/** The KV key both Workers use for a custom hostname. Its value is the doc's slug. */
+export const hostKey = (hostname: string) => `host:${hostname}`;
+
+/** The KV key both Workers use for a doc's active custom hostname, which its slug redirects to. */
+export const redirectKey = (slug: DocSlug) => `redirect:${slug}`;
 
 export function workerName(doc: DocSlug, target: TargetLabel) {
   return target === LIVE ? doc : `${doc}--${target}`;

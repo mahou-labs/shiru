@@ -16,8 +16,6 @@ export default defineConfig(({ mode }) => {
       compatibilityDate: "2026-10-07",
       compatibilityFlags: ["nodejs_compat"],
       domains: ["api.shiru.sh"],
-      // Daily, to retire preview Workers nobody requested for 30 days.
-      triggers: [triggers.scheduled({ schedule: "0 4 * * *" })],
       observability: {
         enabled: true,
         traces: {
@@ -59,6 +57,16 @@ export default defineConfig(({ mode }) => {
         DISPATCH_ACCOUNT_ID: bindings.secret(),
         DISPATCH_API_TOKEN: bindings.secret(),
         DISPATCH_NAMESPACE: bindings.text("shiru-docs"),
+        // Custom domains are Cloudflare for SaaS custom hostnames on the shiru.page zone. DOMAINS
+        // maps them to docs for apps/dispatch, which binds the same namespace. Development never
+        // calls Cloudflare, so the token is not needed there.
+        DOMAINS: bindings.kv({ id: "69af27bf639d4f3f8c07d6796320354e" }),
+        CUSTOM_HOSTNAMES_ZONE_ID: bindings.text("3ff277f811a387071e76995af5ab106d"),
+        CUSTOM_HOSTNAMES_API_TOKEN: bindings.secret(),
+        // What a custom domain's CNAME points at.
+        CUSTOM_DOMAIN_TARGET: bindings.text(
+          development ? "cname.docs.localhost" : "cname.shiru.page",
+        ),
         EMAIL: bindings.sendEmail({ dev: { remote: false } }),
         // Per-IP limits enforced in src/utils/rate-limit.ts. Namespace ids are unique per account.
         API_RATE_LIMITER: bindings.rateLimit({
@@ -85,6 +93,8 @@ export default defineConfig(({ mode }) => {
           dev: { remote: true },
         }),
       },
+      // Syncs custom domain status with Cloudflare and retires previews nobody requested for 30 days.
+      triggers: [triggers.scheduled({ schedule: "*/10 * * * *" })],
       exports: {
         // The previous app on this Worker ran a Durable Object; retiring it lets this code deploy.
         BuilderSandbox: exports.durableObject({ state: "deleted" }),

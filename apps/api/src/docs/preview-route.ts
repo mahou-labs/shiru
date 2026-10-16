@@ -8,7 +8,7 @@ import { auth } from "../utils/auth";
 import { db } from "../utils/db";
 import { parseHostname } from "./names";
 import { HANDOFF_PATH, HANDOFF_TTL_MS, safePath, signGrant } from "./preview-access";
-import { docsDomains, targetUrl } from "./urls";
+import { docsDomains, previewUrl } from "./urls";
 
 /**
  * `/preview/authorize?host=&path=` is where the dispatch Worker sends a visitor with no preview
@@ -40,7 +40,7 @@ previewRoute.get("/authorize", async (c) => {
     .where(and(eq(docs.slug, parsed.slug), eq(members.userId, session.user.id)));
   if (!doc) return c.text("No preview here", 404);
 
-  const url = targetUrl(parsed.slug, parsed.label);
+  const url = previewUrl(parsed.slug, parsed.label);
   const token = await signGrant(
     { kind: "handoff", host: new URL(url).hostname, exp: Date.now() + HANDOFF_TTL_MS },
     env.PREVIEW_SECRET,

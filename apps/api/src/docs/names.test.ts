@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  CustomHostname,
+  DocSlug,
   DRAFT,
+  hostKey,
   LIVE,
   parseHostname,
   parseWorkerName,
-  DocSlug,
+  redirectKey,
   TargetLabel,
   workerName,
 } from "./names";
@@ -27,6 +30,7 @@ describe("DocSlug", () => {
     ["", false],
     ["app", false],
     ["api", false],
+    ["cname", false],
     ["docs", false],
     ["preview", false],
     ["t", false],
@@ -122,5 +126,57 @@ describe("parseHostname", () => {
     "x.pr-12--acme.preview.shiru.sh",
   ])("rejects %s", (host) => {
     expect(parseHostname(host, domains)).toEqual({ kind: "invalid" });
+  });
+});
+
+describe("CustomHostname", () => {
+  it.each([
+    ["docs.acme.com", "docs.acme.com"],
+    [" Docs.ACME.com. ", "docs.acme.com"],
+    ["acme.io", "acme.io"],
+    ["help.my-company.co.uk", "help.my-company.co.uk"],
+    ["docs.xn--p1ai", "docs.xn--p1ai"],
+    [`${"a".repeat(63)}.com`, `${"a".repeat(63)}.com`],
+    ["notshiru.page", "notshiru.page"],
+    ["Docs.Shiru.SH.", "docs.shiru.sh"],
+  ])("accepts %j as %s", (input, hostname) => {
+    expect(CustomHostname.parse(input)).toBe(hostname);
+  });
+
+  it.each([
+    ["localhost", "Enter a domain like docs.example.com"],
+    ["not a host", "Enter a domain like docs.example.com"],
+    ["192.168.0.1", "Enter a domain like docs.example.com"],
+    ["-docs.acme.com", "Enter a domain like docs.example.com"],
+    ["docs-.acme.com", "Enter a domain like docs.example.com"],
+    ["docs..acme.com", "Enter a domain like docs.example.com"],
+    ["docs.acme.c", "Enter a domain like docs.example.com"],
+    [`${"a".repeat(64)}.com`, "Enter a domain like docs.example.com"],
+    ["https://docs.acme.com", "Enter a domain like docs.example.com"],
+    ["docs_acme.com", "Enter a domain like docs.example.com"],
+    ["shiru.page", "This domain belongs to Shiru"],
+    ["acme.shiru.page", "This domain belongs to Shiru"],
+    ["Shiru.SH.", "This domain belongs to Shiru"],
+    ["app.shiru.sh", "This domain belongs to Shiru"],
+    ["api.shiru.sh", "This domain belongs to Shiru"],
+    ["www.shiru.sh", "This domain belongs to Shiru"],
+  ])("rejects %j: %s", (input, message) => {
+    expect(CustomHostname.safeParse(input).error?.issues.map((issue) => issue.message)).toEqual([
+      message,
+    ]);
+  });
+
+  it("rejects a hostname longer than 253 characters", () => {
+    const long = `${Array.from({ length: 4 }, () => "a".repeat(63)).join(".")}.com`;
+    expect(CustomHostname.safeParse(long).error?.issues.map((issue) => issue.code)).toEqual([
+      "too_big",
+    ]);
+  });
+});
+
+describe("KV keys", () => {
+  it("keys a custom hostname and a doc's redirect apart", () => {
+    expect(hostKey("docs.acme.com")).toBe("host:docs.acme.com");
+    expect(redirectKey(DocSlug.parse("acme"))).toBe("redirect:acme");
   });
 });

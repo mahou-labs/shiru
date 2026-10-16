@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
-import { app } from "./index";
+import worker, { app } from "./index";
+import { env } from "./test/bindings";
 import { createClient } from "./test/client";
 
 describe("public API", () => {
@@ -51,5 +52,34 @@ describe("CORS", () => {
   it("does not allow other origins", async () => {
     const response = await preflight("https://evil.example");
     expect(response.headers.get("access-control-allow-origin")).toBeNull();
+  });
+});
+
+describe("scheduled", () => {
+  it("syncs custom domains and retires stale previews in the background", async () => {
+    const work: Promise<unknown>[] = [];
+    const logged: unknown[][] = [];
+    const errors = vi.spyOn(console, "error").mockImplementation((...args) => logged.push(args));
+    env.ENVIRONMENT = "production";
+    env.CUSTOM_HOSTNAMES_API_TOKEN = "";
+    try {
+      worker.scheduled(
+        { scheduledTime: Date.now() } as ScheduledController,
+        env as never,
+        { waitUntil: (promise: Promise<unknown>) => work.push(promise) } as never,
+      );
+      await Promise.all(work);
+    } finally {
+      env.ENVIRONMENT = "development";
+      env.CUSTOM_HOSTNAMES_API_TOKEN = "test-hostnames-token";
+      errors.mockRestore();
+    }
+
+    expect(work).toHaveLength(2);
+    expect(logged).toEqual([
+      [
+        "custom domains not refreshed: Custom domains are not configured: CUSTOM_HOSTNAMES_API_TOKEN is not set",
+      ],
+    ]);
   });
 });

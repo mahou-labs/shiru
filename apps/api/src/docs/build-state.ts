@@ -36,7 +36,9 @@ export type InstanceStatus =
   | { status: "unknown" };
 
 export type BuildEvent =
-  | { type: "requested"; target: TargetLabel; sha: string; rebuild?: boolean }
+  | { type: "requested"; target: TargetLabel; sha: string }
+  // Build what the target serves again, so the build picks up changed doc info such as its URL.
+  | { type: "rebuild"; target: TargetLabel }
   | { type: "finished"; target: TargetLabel; workflowId: string; result: BuildResult }
   | { type: "reconciled"; target: TargetLabel; workflowId: string; instance: InstanceStatus }
   // The target's Worker was deleted.
@@ -56,7 +58,9 @@ export function initialBuilds(prefix: string): DocBuilds {
 export function applyBuildEvent(state: DocBuilds, event: BuildEvent): Transition {
   switch (event.type) {
     case "requested":
-      return request(state, event.target, event.sha, event.rebuild ?? false);
+      return request(state, event.target, event.sha, false);
+    case "rebuild":
+      return rebuild(state, event.target);
     case "finished":
       return finish(state, event.target, event.workflowId, event.result);
     case "reconciled":
@@ -79,7 +83,7 @@ function request(state: DocBuilds, target: TargetLabel, sha: string, rebuild: bo
   const unchanged: Transition = { state, effects: [] };
 
   if (current.kind === "building") {
-    if (sha === current.build.sha) return unchanged;
+    if (sha === current.build.sha && !rebuild) return unchanged;
     return { state: withTarget(state, target, { ...current, pendingSha: sha }), effects: [] };
   }
   if (current.kind === "idle" && current.deployed?.sha === sha && !rebuild) return unchanged;
@@ -95,6 +99,17 @@ function request(state: DocBuilds, target: TargetLabel, sha: string, rebuild: bo
     }),
     effects: [{ type: "startWorkflow", workflowId, target, sha }, { type: "setAlarm" }],
   } satisfies Transition;
+}
+
+// A running build captured the old doc info, so it builds again once it ends. A newer pending sha
+// is built then anyway, and rebuilding the deployed sha instead would put older content live.
+function rebuild(state: DocBuilds, target: TargetLabel): Transition {
+  const current = targetState(state, target);
+  if (current.kind === "building") {
+    return request(state, target, current.pendingSha ?? current.build.sha, true);
+  }
+  if (!current.deployed) return { state, effects: [] };
+  return request(state, target, current.deployed.sha, true);
 }
 
 function finish(
@@ -115,11 +130,12 @@ function finish(
       }
     : { kind: "failed", deployed: current.deployed, error: result.error };
   const next = withTarget(state, target, settled);
-  // A pending build runs after a failure too, because the newer commit may fix it.
+  // A pending build runs after a failure too, because the newer commit may fix it. It runs even
+  // when it is the sha just deployed, which only a rebuild queues.
   const drained =
     current.pendingSha === null
       ? { state: next, effects: [] }
-      : request(next, target, current.pendingSha, false);
+      : request(next, target, current.pendingSha, true);
 
   const stillBuilding = Object.values(drained.state.targets).some((t) => t?.kind === "building");
   return stillBuilding

@@ -87,6 +87,6 @@ async function rebuild(docId: string, target: TargetLabel) {
   const state = (await doc.status()).targets[target];
   if (state?.kind === "building") return "This site is building. Reload in a few seconds.";
   if (!state?.deployed) return "Nothing has been built here yet.";
-  await doc.build(target, state.deployed.sha, true);
+  await doc.rebuild(target);
   return "The build container for this site had stopped, so it is rebuilding. Reload in a few seconds.";
 }

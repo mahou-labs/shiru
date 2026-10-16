@@ -10,13 +10,15 @@ export type DeployStep = "upload-session" | "upload" | "script" | "delete";
 export type CloudflareError = { code: number; message: string };
 
 /** Cloudflare refused a request, or answered with something this code cannot use. */
-export type DeployFailure = {
+export type CloudflareFailure<Step extends string> = {
   ok: false;
-  step: DeployStep;
+  step: Step;
   status: number;
   message: string;
   errors: CloudflareError[];
 };
+
+export type DeployFailure = CloudflareFailure<DeployStep>;
 
 export type DeployResult = { ok: true; uploaded: number; reused: number } | DeployFailure;
 
@@ -30,7 +32,7 @@ export type DocWorkerShape = "assets-only" | "assets-with-module";
 
 export const COMPATIBILITY_DATE = "2026-10-01";
 
-const API = "https://api.cloudflare.com/client/v4";
+export const CLOUDFLARE_API = "https://api.cloudflare.com/client/v4";
 
 // Wrangler uploads three buckets at a time; Cloudflare sizes buckets to about 50 MiB.
 const UPLOAD_CONCURRENCY = 3;
@@ -94,7 +96,7 @@ export async function deployDoc({
   const uploads = await uploadBuckets(buckets, async (bucket) =>
     parseResponse(
       "upload",
-      await fetch(`${API}/accounts/${account.id}/workers/assets/upload?base64=true`, {
+      await fetch(`${CLOUDFLARE_API}/accounts/${account.id}/workers/assets/upload?base64=true`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.result.jwt}` },
         body: await bucketForm(bucket, readAsset),
@@ -330,11 +332,11 @@ async function uploadBuckets<B>(
 const errorsSchema = z.array(z.object({ code: z.number(), message: z.string() }));
 
 /** Reads Cloudflare's `{ success, errors, result }` envelope into a typed result or a failure. */
-export async function parseResponse<T>(
-  step: DeployStep,
+export async function parseResponse<T, Step extends string>(
+  step: Step,
   response: Response,
   result: z.ZodType<T>,
-): Promise<{ ok: true; status: number; result: T } | DeployFailure> {
+): Promise<{ ok: true; status: number; result: T } | CloudflareFailure<Step>> {
   const text = await response.text();
   let body: unknown;
   try {
@@ -362,17 +364,17 @@ export async function parseResponse<T>(
   );
 }
 
-function failure(
-  step: DeployStep,
+function failure<Step extends string>(
+  step: Step,
   status: number,
   message: string,
   errors: CloudflareError[] = [],
-): DeployFailure {
+): CloudflareFailure<Step> {
   return { ok: false, step, status, message, errors };
 }
 
 function scriptUrl(account: DispatchAccount, scriptName: string) {
-  return `${API}/accounts/${account.id}/workers/dispatch/namespaces/${account.namespace}/scripts/${scriptName}`;
+  return `${CLOUDFLARE_API}/accounts/${account.id}/workers/dispatch/namespaces/${account.namespace}/scripts/${scriptName}`;
 }
 
 async function readText(readAsset: (path: string) => Promise<Uint8Array>, path: string) {

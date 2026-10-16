@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import type { Doc } from "../docs/doc";
-import { scheduled } from "../index";
+import { retirePreviews } from "../index";
 import { buildCommit } from "../docs/git";
 import { DRAFT, LIVE } from "../docs/names";
 import { previews } from "../schema/docs";
@@ -404,7 +404,7 @@ describe("retiring stale previews", () => {
         .filter(({ docId }) => [stale, building, broken, fresh].some((doc) => doc.docId === docId))
         .map(({ docId, requestedAt }) => [docId, requestedAt.getTime()]);
 
-    await scheduled({ scheduledTime: NOW + 31 * DAY });
+    await retirePreviews(NOW + 31 * DAY);
     const kept = [
       [building.docId, NOW],
       [broken.docId, NOW],
@@ -421,7 +421,7 @@ describe("retiring stale previews", () => {
       runs: ["draft"],
     });
 
-    await scheduled({ scheduledTime: NOW + 31 * DAY });
+    await retirePreviews(NOW + 31 * DAY);
     expect(await rows()).toEqual(kept);
   });
 
