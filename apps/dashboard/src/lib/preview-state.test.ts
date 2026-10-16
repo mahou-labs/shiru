@@ -3,7 +3,7 @@ import { describe, expect, test } from "vite-plus/test";
 import type { TargetState } from "../../../api/src/docs/build-state";
 import type { DocStatus } from "../../../api/src/docs/doc";
 import { DRAFT, LIVE } from "../../../api/src/docs/names";
-import { hasContent, previewState } from "./use-preview";
+import { hasContent, previewState } from "./preview-state";
 
 const deployed = { sha: "b2", templateVersion: "t1" };
 const build = { sha: "c3", workflowId: "w1" };
