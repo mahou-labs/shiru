@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { ManifestEntry } from "../builder/protocol";
 import {
   contentType,
+  deleteBuild,
   deleteDoc,
   deployBuild,
   deployDoc,
@@ -680,6 +681,57 @@ describe("deployBuild", () => {
         fetch: cf.fetch,
       }),
     ).rejects.toThrow("Deploying failed at script (HTTP 429): Too many requests (10429)");
+  });
+});
+
+describe("deleteBuild", () => {
+  const production = {
+    ENVIRONMENT: "production",
+    DISPATCH_ACCOUNT_ID: "acct1",
+    DISPATCH_API_TOKEN: "api-token",
+    DISPATCH_NAMESPACE: "staging",
+  };
+
+  it("deletes the doc's Worker in production, and nothing in development", async () => {
+    const cf = new FakeCloudflare();
+    const remove = (env: typeof production) =>
+      deleteBuild({ env, scriptName: "acme--draft", fetch: cf.fetch });
+
+    expect(await remove({ ...production, ENVIRONMENT: "development" })).toEqual({ ok: true });
+    expect(cf.requests).toEqual([]);
+    expect(await remove(production)).toEqual({ ok: true });
+    expect(cf.requests).toEqual([
+      {
+        method: "DELETE",
+        url: `${API}/dispatch/namespaces/staging/scripts/acme--draft`,
+        authorization: "Bearer api-token",
+      },
+    ]);
+  });
+
+  it("fails without a request when production has no account or token", async () => {
+    const cf = new FakeCloudflare();
+    const remove = (env: typeof production) =>
+      deleteBuild({ env, scriptName: "acme--draft", fetch: cf.fetch });
+
+    expect(await remove({ ...production, DISPATCH_ACCOUNT_ID: "" })).toEqual({
+      ok: false,
+      error: "Deleting is not configured: DISPATCH_ACCOUNT_ID is not set",
+    });
+    expect(await remove({ ...production, DISPATCH_API_TOKEN: "" })).toEqual({
+      ok: false,
+      error: "Deleting is not configured: DISPATCH_API_TOKEN is not set",
+    });
+    expect(cf.requests).toEqual([]);
+  });
+
+  it("returns Cloudflare's refusal as an error", async () => {
+    const cf = new FakeCloudflare();
+    cf.failNext("DELETE", "/scripts/acme--draft", 403, errorBody(10000, "Authentication error"));
+
+    expect(
+      await deleteBuild({ env: production, scriptName: "acme--draft", fetch: cf.fetch }),
+    ).toEqual({ ok: false, error: "Deleting failed (HTTP 403): Authentication error (10000)" });
   });
 });
 

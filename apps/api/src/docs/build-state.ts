@@ -40,7 +40,9 @@ export type BuildEvent =
   // Build what the target serves again, so the build picks up changed doc info such as its URL.
   | { type: "rebuild"; target: TargetLabel }
   | { type: "finished"; target: TargetLabel; workflowId: string; result: BuildResult }
-  | { type: "reconciled"; target: TargetLabel; workflowId: string; instance: InstanceStatus };
+  | { type: "reconciled"; target: TargetLabel; workflowId: string; instance: InstanceStatus }
+  // The target's Worker was deleted.
+  | { type: "retired"; target: TargetLabel };
 
 export type BuildEffect =
   | { type: "startWorkflow"; workflowId: string; target: TargetLabel; sha: string }
@@ -63,6 +65,8 @@ export function applyBuildEvent(state: DocBuilds, event: BuildEvent): Transition
       return finish(state, event.target, event.workflowId, event.result);
     case "reconciled":
       return reconcile(state, event.target, event.workflowId, event.instance);
+    case "retired":
+      return retire(state, event.target);
   }
 }
 
@@ -177,6 +181,13 @@ function restart(state: DocBuilds, target: TargetLabel, workflowId: string): Tra
   }
   const idle = withTarget(state, target, { kind: "idle", deployed: current.deployed });
   return request(idle, target, current.pendingSha ?? current.build.sha, true);
+}
+
+// A building target is never retired: its build would deploy the Worker again.
+function retire(state: DocBuilds, target: TargetLabel): Transition {
+  if (targetState(state, target).kind === "building") return { state, effects: [] };
+  const { [target]: _, ...targets } = state.targets;
+  return { state: { ...state, targets }, effects: [] };
 }
 
 /** Whether `workflowId` is the build `target` is waiting on. Only that build may deploy. */

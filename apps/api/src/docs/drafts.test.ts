@@ -6,6 +6,7 @@ import {
   deleteDraft,
   type Draft,
   overlay,
+  previewCommit,
   putDraft,
   reconcileDrafts,
   DocPath,
@@ -176,5 +177,34 @@ describe("starterDrafts", () => {
         '---\ntitle: "Acme {docs} <\\"beta\\">"\n---\n\nStart writing here.\n',
       ],
     ]);
+  });
+});
+
+describe("previewCommit", () => {
+  const HEAD = "1111111111111111111111111111111111111111";
+  const edit = (updatedBy: string, content = "Only in the preview.\n") => ({
+    ...put("docs/content/index.mdx", content, HELLO, 1_792_000_000_123),
+    updatedBy,
+  });
+
+  it("gives two members previewing the same drafts the same commit", async () => {
+    const ada = await previewCommit([...tree.values()], [edit("ada@example.com")], HEAD);
+    const grace = await previewCommit([...tree.values()], [edit("grace@example.com")], HEAD);
+
+    expect(grace.sha).toBe(ada.sha);
+    const commit = new TextDecoder().decode(ada.objects.find((o) => o.type === "commit")!.body);
+    expect(commit.split("\n").slice(1, 4)).toEqual([
+      `parent ${HEAD}`,
+      "author shiru <preview@shiru.sh> 1792000000 +0000",
+      "committer shiru <preview@shiru.sh> 1792000000 +0000",
+    ]);
+  });
+
+  it("gives other drafts or another head another commit", async () => {
+    const base = await previewCommit([...tree.values()], [edit("ada")], HEAD);
+    const edited = await previewCommit([...tree.values()], [edit("ada", "Changed.\n")], HEAD);
+    const moved = await previewCommit([...tree.values()], [edit("ada")], "2".repeat(40));
+
+    expect(new Set([base.sha, edited.sha, moved.sha]).size).toBe(3);
   });
 });

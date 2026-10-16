@@ -31,11 +31,27 @@ describe("builder dev route", () => {
     ]);
   });
 
-  it("previews only docs that exist, and sends a bare slug to its root", async () => {
+  it("serves only docs that exist, and sends a bare name to its root", async () => {
     const client = createClient();
     const missing = await client.request("/dev/docs/nobody/");
     expect([missing.status, await missing.text()]).toEqual([404, "No site at this address"]);
     const bare = await client.request("/dev/docs/nobody");
     expect([bare.status, bare.headers.get("location")]).toEqual([307, "nobody/"]);
+  });
+
+  it("takes a draft target's worker name, and refuses names no target has", async () => {
+    const client = createClient();
+    const responses = await Promise.all(
+      ["nobody--draft/", "nobody--live/", "nobody--draft--x/", "www/"].map((name) =>
+        client.request(`/dev/docs/${name}`),
+      ),
+    );
+    expect(
+      await Promise.all(
+        responses.map(async (response) => [response.status, await response.text()]),
+      ),
+    ).toEqual(Array.from({ length: 4 }, () => [404, "No site at this address"]));
+    const bare = await client.request("/dev/docs/acme--draft");
+    expect([bare.status, bare.headers.get("location")]).toEqual([307, "acme--draft/"]);
   });
 });

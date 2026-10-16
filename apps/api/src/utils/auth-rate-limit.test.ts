@@ -10,7 +10,8 @@ beforeAll(async () => {
   const { env } = await import("../test/bindings");
   env.ENVIRONMENT = "production";
   ({ createClient } = await import("../test/client"));
-});
+  // A cold import of the whole app, which outlasts the default 10s when the machine is busy.
+}, 30_000);
 
 describe("auth rate limiting in production", () => {
   it("allows 3 sign-in attempts per 10 seconds from one IP", async () => {

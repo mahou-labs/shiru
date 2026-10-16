@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
 import { docs } from "../schema/docs";
-import { LIVE, DocSlug } from "../docs/names";
+import { parseWorkerName, type TargetLabel } from "../docs/names";
 import { contentType, serveAsset } from "../docs/preview";
 import type { Doc } from "../docs/doc";
 import { db } from "../utils/db";
@@ -12,8 +12,9 @@ import type { SourceFile } from "./protocol";
 
 /**
  * Development only. `/dev/builder` lets scripts/verify-builder.ts drive a Builder directly, and
- * `/dev/docs/<slug>/` serves a doc's live build out of its Builder container, since there is no
- * local Workers for Platforms. The dispatch Worker forwards `<slug>.docs.localhost:3003` here.
+ * `/dev/docs/<worker name>/` serves a target's build out of its Builder container, since there is
+ * no local Workers for Platforms. The dispatch Worker forwards `<slug>.docs.localhost:3003` and
+ * `<label>--<slug>.preview.docs.localhost:3003` here.
  */
 export const devRoute = new Hono();
 
@@ -43,18 +44,18 @@ devRoute.get("/builder/:name/asset", async (c) => {
   return new Response(bytes);
 });
 
-devRoute.get("/docs/:slug", (c) => c.redirect(`${c.req.param("slug")}/`, 307));
+devRoute.get("/docs/:name", (c) => c.redirect(`${c.req.param("name")}/`, 307));
 
-devRoute.get("/docs/:slug/*", async (c) => {
-  const slug = c.req.param("slug");
-  const parsed = DocSlug.safeParse(slug);
-  const [doc] = parsed.success
-    ? await db.select({ id: docs.id }).from(docs).where(eq(docs.slug, parsed.data))
+devRoute.get("/docs/:name/*", async (c) => {
+  const name = c.req.param("name");
+  const parsed = parseWorkerName(name);
+  const [doc] = parsed
+    ? await db.select({ id: docs.id }).from(docs).where(eq(docs.slug, parsed.slug))
     : [];
-  if (!doc) return c.text("No site at this address", 404);
+  if (!parsed || !doc) return c.text("No site at this address", 404);
 
-  const path = new URL(c.req.url).pathname.slice(`/dev/docs/${slug}`.length);
-  const container = builder(`build-${doc.id}-${LIVE}`);
+  const path = new URL(c.req.url).pathname.slice(`/dev/docs/${name}`.length);
+  const container = builder(`build-${doc.id}-${parsed.target}`);
   let served;
   try {
     served = await serveAsset(path, async (file) => {
@@ -67,7 +68,7 @@ devRoute.get("/docs/:slug/*", async (c) => {
       }
     });
   } catch {
-    return c.text(await rebuild(doc.id), 503);
+    return c.text(await rebuild(doc.id, parsed.target), 503);
   }
 
   if (served.kind === "redirect") {
@@ -80,12 +81,12 @@ devRoute.get("/docs/:slug/*", async (c) => {
   });
 });
 
-// Containers stop when idle, taking the build with them. Rebuild what was live.
-async function rebuild(docId: string) {
+// Containers stop when idle, taking the build with them. Rebuild what was deployed.
+async function rebuild(docId: string, target: TargetLabel) {
   const doc = docObject(docId);
-  const live = (await doc.status()).targets[LIVE];
-  if (live?.kind === "building") return "This site is building. Reload in a few seconds.";
-  if (!live?.deployed) return "This site has not been published yet.";
-  await doc.rebuild(LIVE);
+  const state = (await doc.status()).targets[target];
+  if (state?.kind === "building") return "This site is building. Reload in a few seconds.";
+  if (!state?.deployed) return "Nothing has been built here yet.";
+  await doc.rebuild(target);
   return "The build container for this site had stopped, so it is rebuilding. Reload in a few seconds.";
 }

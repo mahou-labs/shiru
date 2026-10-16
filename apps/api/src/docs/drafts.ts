@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { sourcePathError } from "../builder/protocol";
-import { blobSha, type Change, type TreeEntry } from "./git";
+import { blobSha, buildCommit, type Change, type TreeEntry } from "./git";
 
 /**
  * A managed doc keeps its docs under `docs/` in its repo, so the repo root stays free for a README
@@ -110,13 +110,29 @@ export function deleteDraft(
 
 /** The changes publish commits: every draft that is not in conflict. */
 export function committable(drafts: Draft[]): Change[] {
-  return drafts
-    .filter((draft) => !draft.conflict)
-    .map((draft) =>
-      draft.op === "put"
-        ? { path: draft.path, op: "put", content: draft.content }
-        : { path: draft.path, op: "delete" },
-    );
+  return drafts.filter((draft) => !draft.conflict).map(toChange);
+}
+
+export function toChange(draft: Draft): Change {
+  return draft.op === "put"
+    ? { path: draft.path, op: "put", content: draft.content }
+    : { path: draft.path, op: "delete" };
+}
+
+/**
+ * The preview branch's commit of every draft on top of `head`. It depends only on head and the
+ * drafts' contents and times, not on who asked, so previewing unchanged drafts gives the same sha
+ * and builds nothing.
+ */
+export function previewCommit(tree: TreeEntry[], drafts: Draft[], head: string | null) {
+  return buildCommit({
+    tree,
+    changes: drafts.map(toChange),
+    parent: head,
+    author: { name: "shiru", email: "preview@shiru.sh" },
+    message: "Preview from the editor",
+    time: Math.floor(Math.max(...drafts.map((draft) => draft.updatedAt)) / 1000),
+  });
 }
 
 export type DraftUpdate = { clear: string[]; save: Draft[] };

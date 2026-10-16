@@ -1,7 +1,8 @@
 // Publishes a doc end to end on this machine: the real HTTP API, the Doc, a commit to the
 // shiru-staging Artifacts namespace, the PublishWorkflow and the Builder container, then reads the
-// built pages back through /dev/docs and through the dispatch Worker. Needs Docker, the cf CLI
-// signed in, git, and apps/api/.env.
+// built pages back through /dev/docs and through the dispatch Worker. Then it previews a draft on
+// the preview branch and opens it through the dispatch Worker's access handoff. Needs Docker, the
+// cf CLI signed in, git, and apps/api/.env.
 //
 // Usage: node scripts/verify-publish.ts [--port 3010] [--dispatch-port 3013] [--state <dir>]
 // It starts its own `cf dev` on --port with state in --state (a new temp dir by default) and its
@@ -54,9 +55,9 @@ const containers = () =>
 // The server's output, for the verification email and the Doc's stale-ref log line.
 let log = "";
 const containersBefore = containers();
-const server = spawn("npx", ["varlock", "run", "--", "npx", "cf", "dev", "--persist-to", state], {
+const server = spawn("npx", ["varlock", "run", "--", "npx", "cf", "dev"], {
   cwd: api,
-  env: { ...process.env, API_PORT: args.port },
+  env: { ...process.env, API_PORT: args.port, API_STATE_DIR: state },
   detached: true,
 });
 server.stdout.on("data", (chunk) => (log += chunk));
@@ -306,7 +307,7 @@ try {
   );
   dispatch = spawn("npx", ["cf", "dev"], {
     cwd: path.resolve(api, "../dispatch"),
-    env: { ...process.env, DISPATCH_PORT: args["dispatch-port"], DEV_DOCS_ORIGIN: base },
+    env: { ...process.env, DISPATCH_PORT: args["dispatch-port"], API_ORIGIN: base },
     detached: true,
     stdio: "ignore",
   });
@@ -412,6 +413,170 @@ try {
     "the deleted page is gone, answered by the built 404 page",
     [gone.status, gone.type, gone.text.includes("<html")],
     [404, "text/html; charset=utf-8", true],
+  );
+
+  await rpc("docs/files/save", {
+    docId,
+    path: "content/index.mdx",
+    content: "---\ntitle: Verify Docs\n---\n\nOnly in the preview.\n",
+  });
+  const previewed = await rpc<{ kind: string; sha: string; url: string }>("docs/preview", {
+    docId,
+  });
+  const previewHost = `draft--${slug}.preview.docs.localhost`;
+  check(
+    "a preview commits the drafts for the draft target",
+    [previewed.kind, previewed.url],
+    ["previewing", `http://${previewHost}:3003`],
+  );
+  const previewBranch = cf(
+    "artifacts",
+    "namespaces",
+    "repos",
+    "logs",
+    "get",
+    docId,
+    "--namespace",
+    NAMESPACE,
+    "--limit",
+    "1",
+    "--ref",
+    "preview",
+  ) as { hash: string; parents: string[] }[];
+  check(
+    "the preview branch holds the preview commit on top of main",
+    [previewBranch[0]?.hash, previewBranch[0]?.parents, remoteHead(docId)[0]?.hash],
+    [previewed.sha, [second.sha], second.sha],
+  );
+  const again = await rpc<{ sha: string }>("docs/preview", { docId });
+  check("previewing unchanged drafts gives the same commit", again.sha, previewed.sha);
+
+  const previewStatus = await waitFor("the draft build", BUILD_TIMEOUT_MS, async () => {
+    const status = await rpc<Status & { targets: { draft?: Status["targets"]["live"] } }>(
+      "docs/status",
+      { docId },
+    );
+    const draft = status.targets.draft;
+    if (draft?.kind === "failed") throw new Error(`draft build failed: ${draft.error}`);
+    return draft?.kind === "idle" && draft.deployed?.sha === previewed.sha ? status : undefined;
+  });
+  check(
+    "previewing keeps the draft and leaves live alone",
+    [
+      previewStatus.drafts.map((draft) => draft.path),
+      previewStatus.headSha,
+      (await page("/")).text.includes("The second version."),
+    ],
+    [["content/index.mdx"], second.sha, true],
+  );
+
+  // previewUrl names the usual dispatch port; this script's dispatch Worker runs on its own.
+  const viaPreviewDispatch = (location: string, cookie?: string) => {
+    const url = new URL(location);
+    url.port = args["dispatch-port"];
+    return fetch(url, { redirect: "manual", headers: cookie ? { cookie } : {} });
+  };
+  const handoffQuery = new URLSearchParams({ host: previewHost, path: "/?tab=1" }).toString();
+  const anonymous = await viaPreviewDispatch(`http://${previewHost}/?tab=1`);
+  const authorize = anonymous.headers.get("location") ?? "";
+  check(
+    "a visitor without a preview cookie goes to the API to authorize",
+    [anonymous.status, authorize],
+    [302, `${base}/preview/authorize?${handoffQuery}`],
+  );
+  const signedOut = await fetch(authorize, { redirect: "manual" });
+  check(
+    "a signed-out visitor is sent to the dashboard to sign in",
+    [signedOut.status, signedOut.headers.get("location")],
+    [302, `${DASHBOARD}/preview?${handoffQuery}`],
+  );
+  const member = await request(authorize.slice(base.length));
+  const handoff = new URL(member.headers.get("location") ?? "http://invalid");
+  check(
+    "a member is sent back to the preview host with a handoff grant",
+    [member.status, handoff.origin, handoff.pathname, handoff.searchParams.get("path")],
+    [302, `http://${previewHost}:3003`, "/__shiru/preview-auth", "/?tab=1"],
+  );
+  const granted = await viaPreviewDispatch(handoff.href);
+  const sessionCookie = granted.headers.get("set-cookie")?.split(";")[0] ?? "";
+  check(
+    "the handoff sets the preview cookie and returns to the page",
+    [granted.status, granted.headers.get("location"), sessionCookie.split("=")[0]],
+    [302, "/?tab=1", "__Host-shiru-preview"],
+  );
+  const preview = await viaPreviewDispatch(`http://${previewHost}/`, sessionCookie);
+  check(
+    "the preview serves the drafts, kept out of search engines",
+    [
+      preview.status,
+      preview.headers.get("x-robots-tag"),
+      (await preview.text()).includes("Only in the preview."),
+    ],
+    [200, "noindex", true],
+  );
+  const tampered = await viaPreviewDispatch(`http://${previewHost}/`, `${sessionCookie}x`);
+  check("a tampered cookie is sent to authorize again", tampered.status, 302);
+  const elsewhere = await viaPreviewDispatch(
+    `http://draft--other.preview.docs.localhost/`,
+    sessionCookie,
+  );
+  check("a cookie for one preview does not open another", elsewhere.status, 302);
+
+  const save = (content: string) =>
+    rpc("docs/files/save", {
+      docId,
+      path: "content/index.mdx",
+      content: `---\ntitle: Verify Docs\n---\n\n${content}\n`,
+    });
+  // A save can land before the first preview snapshots the drafts, so both build the same commit
+  // and nothing overlapped. Try again with new edits until the two previews differ.
+  let overlap: { earlier: string; later: string; text: string } | undefined;
+  for (let attempt = 1; attempt <= 5 && !overlap; attempt++) {
+    await save(`The earlier preview, try ${attempt}.`);
+    const [earlier, later] = await Promise.all([
+      rpc<{ sha: string }>("docs/preview", { docId }),
+      save(`The later preview, try ${attempt}.`).then(() =>
+        rpc<{ sha: string }>("docs/preview", { docId }),
+      ),
+    ]);
+    if (earlier.sha !== later.sha) {
+      overlap = {
+        earlier: earlier.sha,
+        later: later.sha,
+        text: `The later preview, try ${attempt}.`,
+      };
+      console.log(`two previews overlapped on try ${attempt}`);
+    }
+  }
+  if (!overlap) throw new Error("two previews never overlapped in 5 tries");
+  const settled = await waitFor("both draft builds", BUILD_TIMEOUT_MS, async () => {
+    const status = await rpc<Status & { targets: { draft?: Status["targets"]["live"] } }>(
+      "docs/status",
+      { docId },
+    );
+    const draft = status.targets.draft;
+    if (draft?.kind === "failed") throw new Error(`draft build failed: ${draft.error}`);
+    return draft?.kind === "idle" ? draft : undefined;
+  });
+  const overlapping = await fetch(`${base}/dev/docs/${slug}--draft/`);
+  const branchHead = cf(
+    "artifacts",
+    "namespaces",
+    "repos",
+    "logs",
+    "get",
+    docId,
+    "--namespace",
+    NAMESPACE,
+    "--limit",
+    "1",
+    "--ref",
+    "preview",
+  ) as { hash: string }[];
+  check(
+    "two overlapping previews leave the later edit on the branch and deployed",
+    [branchHead[0]?.hash, settled.deployed?.sha, (await overlapping.text()).includes(overlap.text)],
+    [overlap.later, overlap.later, true],
   );
 } catch (error) {
   console.log(`FAIL ${error instanceof Error ? error.message : String(error)}`);

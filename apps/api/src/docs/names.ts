@@ -23,6 +23,8 @@ export const TargetLabel = z
 export type TargetLabel = z.infer<typeof TargetLabel>;
 
 export const LIVE = TargetLabel.parse("live");
+/** The editor's unpublished drafts, built by the Preview button. */
+export const DRAFT = TargetLabel.parse("draft");
 
 const HOST_LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 // Every name under shiru.page is a site's address. Under shiru.sh only the hosts Shiru serves are
@@ -69,6 +71,18 @@ export const redirectKey = (slug: DocSlug) => `redirect:${slug}`;
 
 export function workerName(doc: DocSlug, target: TargetLabel) {
   return target === LIVE ? doc : `${doc}--${target}`;
+}
+
+/** The inverse of `workerName`, or null for a name it never returns. */
+export function parseWorkerName(name: string): { slug: DocSlug; target: TargetLabel } | null {
+  const [slug, label, ...rest] = name.split("--");
+  const parsedSlug = DocSlug.safeParse(slug);
+  if (rest.length > 0 || !parsedSlug.success) return null;
+  if (label === undefined) return { slug: parsedSlug.data, target: LIVE };
+  const parsedLabel = TargetLabel.safeParse(label);
+  // The live target is named after the doc alone, never `<slug>--live`.
+  if (!parsedLabel.success || parsedLabel.data === LIVE) return null;
+  return { slug: parsedSlug.data, target: parsedLabel.data };
 }
 
 export type DocsDomains = { docs: string; preview: string };

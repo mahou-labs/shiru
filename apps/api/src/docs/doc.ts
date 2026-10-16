@@ -1,6 +1,10 @@
 import { DurableObject } from "cloudflare:workers";
+import { and, eq, lte } from "drizzle-orm";
 
+import { deleteBuild } from "../deploy/deploy";
 import { servedAt } from "../domains/domains";
+import { previews } from "../schema/docs";
+import { db } from "../utils/db";
 import {
   applyBuildEvent,
   type BuildEvent,
@@ -26,22 +30,27 @@ import {
   repoPath,
   DocPath,
   starterDrafts,
+  previewCommit,
   type Tree,
   toTree,
 } from "./drafts";
 import {
   buildCommit,
   type BuiltCommit,
+  MAIN,
   packfile,
+  PREVIEW,
   parseReportStatus,
   type Person,
   type PushResult,
   readBlob,
   readCommitTree,
   receivePackRequest,
+  type Ref,
 } from "./git";
-import { type DocSlug, LIVE, type TargetLabel } from "./names";
+import { type DocSlug, DRAFT, LIVE, type TargetLabel, workerName } from "./names";
 import type { PublishParams } from "./publish-workflow";
+import { previewUrl } from "./urls";
 import { type BuildStep, endRun, enterStep, type Run, startRun } from "./runs";
 
 export type DocInfo = { docId: string; slug: DocSlug; name: string; repo: string };
@@ -50,6 +59,13 @@ export type PublishResult =
   | { kind: "published"; sha: string; skipped: string[] }
   | { kind: "unchanged"; sha: string | null; skipped: string[] }
   // The branch moved under every attempt.
+  | { kind: "conflict" };
+
+export type PreviewResult =
+  | { kind: "previewing"; sha: string; url: string }
+  // No commit and no drafts: there is nothing to build.
+  | { kind: "empty" }
+  // The preview branch moved under every attempt.
   | { kind: "conflict" };
 
 export type DocStatus = {
@@ -88,6 +104,8 @@ type DraftRow = {
  */
 export class Doc extends DurableObject<Env> {
   private sql: SqlStorage;
+  // The preview that runs last, which the next one waits for. See preview().
+  private previewing: Promise<unknown> = Promise.resolve();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -190,7 +208,7 @@ export class Doc extends DurableObject<Env> {
         message: "Publish from the editor",
         time: Date.now() / 1000,
       });
-      const pushed = await this.push(head, commit);
+      const pushed = await this.push(MAIN, head, commit);
       if (pushed.kind === "stale") {
         console.log(`publish: main moved past ${head ?? "nothing"} (stale ref); refreshing`);
         await this.refresh();
@@ -213,6 +231,62 @@ export class Doc extends DurableObject<Env> {
     return { kind: "conflict" };
   }
 
+  /**
+   * Builds what the editor shows, drafts in conflict included, on the draft target. The drafts
+   * are committed to the preview branch and stay drafts. Previewing again with nothing changed
+   * pushes and builds nothing.
+   *
+   * One preview runs at a time. The Doc takes other requests while a preview awaits its commit,
+   * push or build, so two at once could push or build an older snapshot after a newer one. Run in
+   * turn, each later preview snapshots the drafts after the earlier one requested its build, so
+   * the newest drafts are always built last.
+   */
+  preview(): Promise<PreviewResult> {
+    const run = this.previewing.then(() => this.previewInTurn());
+    this.previewing = run.catch(() => {});
+    return run;
+  }
+
+  private async previewInTurn(): Promise<PreviewResult> {
+    for (let attempt = 0; attempt < PUBLISH_ATTEMPTS; attempt++) {
+      const head = this.meta("head_sha");
+      const drafts = this.loadDrafts();
+      let sha = head;
+      if (drafts.length > 0) {
+        const commit = await previewCommit([...this.loadTree().values()], drafts, head);
+        const previewSha = this.meta("preview_sha");
+        if (commit.sha !== previewSha) {
+          const pushed = await this.push(PREVIEW, previewSha, commit);
+          if (pushed.kind === "stale") {
+            const repo = await this.env.ARTIFACTS.get(this.doc().repo);
+            const [latest] = await repo.log({ ref: "preview", limit: 1 });
+            if (latest) this.setMeta("preview_sha", latest.hash);
+            else this.sql.exec("DELETE FROM meta WHERE key = 'preview_sha'");
+            continue;
+          }
+          if (pushed.kind === "failed") {
+            throw new Error(`The preview was rejected: ${pushed.message}`);
+          }
+          this.setMeta("preview_sha", commit.sha);
+        }
+        sha = commit.sha;
+      }
+      if (sha === null) return { kind: "empty" };
+
+      // Recorded before the build, so a retire that reads the row after this keeps the preview, and
+      // one that ran before it has already forgotten the target, which this build then rebuilds.
+      const doc = await this.buildInfo();
+      const requestedAt = new Date();
+      await db
+        .insert(previews)
+        .values({ docId: doc.docId, label: DRAFT, requestedAt })
+        .onConflictDoUpdate({ target: [previews.docId, previews.label], set: { requestedAt } });
+      await this.build(DRAFT, sha);
+      return { kind: "previewing", sha, url: previewUrl(doc.slug, DRAFT) };
+    }
+    return { kind: "conflict" };
+  }
+
   async build(target: TargetLabel, sha: string): Promise<void> {
     await this.apply({ type: "requested", target, sha });
   }
@@ -220,6 +294,44 @@ export class Doc extends DurableObject<Env> {
   /** Builds what `target` serves again with the doc's current info, such as a new URL. */
   async rebuild(target: TargetLabel): Promise<void> {
     await this.apply({ type: "rebuild", target });
+  }
+
+  /**
+   * Deletes `target`'s Worker and forgets its build, unless it is building or someone requested it
+   * after `requestedBefore`, the time the cron chose it by. Running it twice converges.
+   */
+  async retire(
+    target: TargetLabel,
+    requestedBefore: number,
+  ): Promise<{ kind: "retired" } | { kind: "busy" } | { kind: "fresh" }> {
+    return this.ctx.blockConcurrencyWhile(async () => {
+      if (this.builds().targets[target]?.kind === "building") return { kind: "busy" };
+      const doc = await this.buildInfo();
+      const [row] = await db
+        .select({ requestedAt: previews.requestedAt })
+        .from(previews)
+        .where(and(eq(previews.docId, doc.docId), eq(previews.label, target)));
+      if (row && row.requestedAt.getTime() > requestedBefore) return { kind: "fresh" };
+      const deleted = await deleteBuild({
+        env: this.env,
+        scriptName: workerName(doc.slug, target),
+      });
+      if (!deleted.ok) throw new Error(deleted.error);
+
+      await this.apply({ type: "retired", target });
+      const { [target]: _, ...runs } = this.runs();
+      this.setMeta("runs", JSON.stringify(runs));
+      await db
+        .delete(previews)
+        .where(
+          and(
+            eq(previews.docId, doc.docId),
+            eq(previews.label, target),
+            lte(previews.requestedAt, new Date(requestedBefore)),
+          ),
+        );
+      return { kind: "retired" };
+    });
   }
 
   /** Called by the PublishWorkflow when a build ends, on success and on failure. */
@@ -312,7 +424,7 @@ export class Doc extends DurableObject<Env> {
               repo: doc.repo,
               target: effect.target,
               sha: effect.sha,
-              docUrl: doc.docUrl,
+              docUrl: effect.target === LIVE ? doc.docUrl : previewUrl(doc.slug, effect.target),
               docsRoot: DOCS_ROOT,
             };
             await this.env.PUBLISH_WORKFLOW.create({ id: effect.workflowId, params });
@@ -352,7 +464,7 @@ export class Doc extends DurableObject<Env> {
     });
   }
 
-  private async push(head: string | null, commit: BuiltCommit): Promise<PushResult> {
+  private async push(ref: Ref, old: string | null, commit: BuiltCommit): Promise<PushResult> {
     const repo = await this.env.ARTIFACTS.get(this.doc().repo);
     const { plaintext } = await repo.createToken("write", TOKEN_TTL_SECONDS);
     const response = await fetch(`${this.meta("remote")}/git-receive-pack`, {
@@ -362,12 +474,12 @@ export class Doc extends DurableObject<Env> {
         "content-type": "application/x-git-receive-pack-request",
         accept: "application/x-git-receive-pack-result",
       },
-      body: receivePackRequest(head, commit.sha, await packfile(commit.objects)),
+      body: receivePackRequest(ref, old, commit.sha, await packfile(commit.objects)),
     });
     const body = await response.text();
     if (!response.ok)
       return { kind: "failed", message: `HTTP ${response.status}: ${body.slice(0, 500)}` };
-    return parseReportStatus(body);
+    return parseReportStatus(ref, body);
   }
 
   // Get, else create, else get again for a create that lost a race. Errors are not classified by
