@@ -25,6 +25,7 @@ import { useState } from "react";
 import { CreateDocForm } from "@/components/create-doc-form";
 import { Page } from "@/components/page";
 import { DocCard } from "@/components/doc-card";
+import { DomainCard } from "@/components/domain-card";
 import { accessLabel } from "@/lib/access";
 import { accessQuery, useSession } from "@/lib/queries";
 import { orpc } from "@/utils/orpc";
@@ -59,7 +60,10 @@ function Dashboard() {
       )}
       {docs &&
         (publicDoc ? (
-          <DocCard doc={publicDoc} />
+          <>
+            <DocCard doc={publicDoc} />
+            <DomainCard doc={publicDoc} />
+          </>
         ) : (
           <Card>
             <Empty>
