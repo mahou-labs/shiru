@@ -3,12 +3,14 @@ import {
   StreamableHTTPClientTransport,
   type OAuthClientProvider,
 } from "@modelcontextprotocol/client";
+import { deriveDpopAth, deriveDpopJkt } from "better-auth/oauth2";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { buildCommit } from "../docs/git";
 import app from "../index";
 import { artifacts, flushWaitUntil } from "../test/bindings";
 import { createClient } from "../test/client";
+import { auth, MCP_ISSUER, MCP_RESOURCE } from "../utils/auth";
 
 const JAN_1 = new Date("2026-01-01T00:00:00.000Z");
 
@@ -195,6 +197,167 @@ describe("mcp discovery", () => {
       grant_types_supported: ["authorization_code", "refresh_token"],
       code_challenge_methods_supported: ["S256"],
     });
+  });
+});
+
+/** Calls `list_sites` with the given credentials, as an agent would after connecting. */
+const listSites = (headers: Record<string, string>) =>
+  callApp(MCP_URL, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+      ...headers,
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: { name: "list_sites", arguments: {} },
+    }),
+  });
+
+const rejection = (message: string) => ({
+  jsonrpc: "2.0",
+  error: { code: -32000, message },
+  id: null,
+});
+
+async function signedInUser(email: string) {
+  const browser = createClient();
+  await browser.signUpVerified(email, "Ada");
+  const session = await (await browser.request("/auth/get-session")).json();
+  return { browser, userId: (session as { user: { id: string } }).user.id };
+}
+
+/** Signs an access token with the server's own keys, for claims the OAuth flow never issues. */
+const signAccessToken = async (payload: Record<string, unknown>) =>
+  (
+    await auth.api.signJWT({
+      body: {
+        payload: { iss: MCP_ISSUER, aud: MCP_RESOURCE, scope: "docs:read", ...payload },
+      },
+    })
+  ).token;
+
+const base64url = (value: string | ArrayBuffer) =>
+  Buffer.from(
+    typeof value === "string" ? new TextEncoder().encode(value) : new Uint8Array(value),
+  ).toString("base64url");
+
+/** A DPoP key pair, and proofs of possession for requests to `/mcp` (RFC 9449). */
+async function dpopKey() {
+  const { privateKey, publicKey } = (await crypto.subtle.generateKey(
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign", "verify"],
+  )) as CryptoKeyPair;
+  const { kty, crv, x, y } = (await crypto.subtle.exportKey("jwk", publicKey)) as JsonWebKey;
+  const jwk = { kty, crv, x, y };
+  return {
+    jkt: await deriveDpopJkt(jwk),
+    async proof(accessToken: string) {
+      const header = base64url(JSON.stringify({ typ: "dpop+jwt", alg: "ES256", jwk }));
+      const claims = base64url(
+        JSON.stringify({
+          htm: "POST",
+          htu: MCP_URL.href,
+          iat: Math.floor(Date.now() / 1000),
+          jti: crypto.randomUUID(),
+          ath: await deriveDpopAth(accessToken),
+        }),
+      );
+      const signature = await crypto.subtle.sign(
+        { name: "ECDSA", hash: "SHA-256" },
+        privateKey,
+        new TextEncoder().encode(`${header}.${claims}`),
+      );
+      return `${header}.${claims}.${base64url(signature)}`;
+    },
+  };
+}
+
+describe("mcp access tokens", () => {
+  it("rejects an access token once it expires", async () => {
+    const { browser } = await siteOwner("token-expiry@mailinator.com", "token-expiry");
+    const { state } = await connectAgent(browser);
+    const authorization = `Bearer ${state.tokens!.access_token}`;
+
+    expect(state.tokens!.expires_in).toBe(3600);
+    vi.setSystemTime(JAN_1.getTime() + 3599 * 1000);
+    expect((await listSites({ authorization })).status).toBe(200);
+
+    vi.setSystemTime(JAN_1.getTime() + 3601 * 1000);
+    const expired = await listSites({ authorization });
+    expect(expired.status).toBe(401);
+    expect(expired.headers.get("www-authenticate")).toBe(
+      'Bearer resource_metadata="http://localhost:3000/.well-known/oauth-protected-resource/mcp"',
+    );
+    expect(await expired.json()).toEqual(rejection("invalid access token"));
+  });
+
+  it("rejects tokens signed by the server for another issuer or audience", async () => {
+    const { browser, userId } = await signedInUser("token-claims@mailinator.com");
+
+    const valid = await listSites({
+      authorization: `Bearer ${await signAccessToken({ sub: userId })}`,
+    });
+    expect(valid.status).toBe(200);
+
+    const otherIssuer = await signAccessToken({ sub: userId, iss: "http://localhost:3000" });
+    const otherAudience = await signAccessToken({ sub: userId, aud: "http://localhost:3000" });
+    // The session JWT the jwt plugin hands the browser is signed with the same keys.
+    const { token: sessionJwt } = (await (await browser.request("/auth/token")).json()) as {
+      token: string;
+    };
+    const noUser = await signAccessToken({ sub: "no-such-user" });
+    for (const token of [otherIssuer, otherAudience, sessionJwt, noUser]) {
+      const response = await listSites({ authorization: `Bearer ${token}` });
+      expect(response.status).toBe(401);
+      expect(await response.json()).toEqual(rejection("invalid access token"));
+    }
+  });
+
+  it("requires a fresh proof from the bound key for a DPoP-bound token", async () => {
+    const { userId } = await signedInUser("token-dpop@mailinator.com");
+    const key = await dpopKey();
+    const token = await signAccessToken({ sub: userId, cnf: { jkt: key.jkt } });
+
+    const asBearer = await listSites({ authorization: `Bearer ${token}` });
+    expect(asBearer.status).toBe(401);
+    expect(await asBearer.json()).toEqual(
+      rejection("DPoP-bound access token requires the DPoP authorization scheme"),
+    );
+
+    const withoutProof = await listSites({ authorization: `DPoP ${token}` });
+    expect(withoutProof.status).toBe(401);
+    expect(await withoutProof.json()).toEqual(rejection("DPoP proof header is required"));
+
+    const otherKey = await dpopKey();
+    const wrongKey = await listSites({
+      authorization: `DPoP ${token}`,
+      dpop: await otherKey.proof(token),
+    });
+    expect(wrongKey.status).toBe(401);
+    expect(await wrongKey.json()).toEqual(
+      rejection("DPoP proof key does not match the bound token"),
+    );
+
+    const proof = await key.proof(token);
+    expect((await listSites({ authorization: `DPoP ${token}`, dpop: proof })).status).toBe(200);
+    const replayed = await listSites({ authorization: `DPoP ${token}`, dpop: proof });
+    expect(replayed.status).toBe(401);
+    expect(await replayed.json()).toEqual(rejection("DPoP proof jti has already been used"));
+
+    const unbound = await signAccessToken({ sub: userId });
+    const dpopForBearer = await listSites({
+      authorization: `DPoP ${unbound}`,
+      dpop: await key.proof(unbound),
+    });
+    expect(dpopForBearer.status).toBe(401);
+    expect(await dpopForBearer.json()).toEqual(
+      rejection("DPoP authorization requires a DPoP-bound access token"),
+    );
   });
 });
 
