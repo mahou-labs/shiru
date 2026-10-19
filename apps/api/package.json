@@ -13,7 +13,10 @@
     "test": "vp test --coverage"
   },
   "dependencies": {
+    "@better-auth/mcp": "catalog:",
+    "@better-auth/oauth-provider": "catalog:",
     "@cloudflare/sandbox": "1.0.1",
+    "@modelcontextprotocol/server": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
@@ -31,6 +34,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",
+    "@modelcontextprotocol/client": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

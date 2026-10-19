@@ -1,13 +1,16 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 
 import { sessionQuery } from "@/lib/queries";
-import { redirectSearch } from "@/lib/redirect";
+import { isOAuthRequest, redirectSearch } from "@/lib/redirect";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: redirectSearch,
-  beforeLoad: async ({ context, search }) => {
+  beforeLoad: async ({ context, search, location }) => {
     const session = await context.queryClient.fetchQuery(sessionQuery);
-    if (session) throw redirect({ href: search.redirect ?? "/" });
+    // An agent asking the user to sign in again keeps them here, to resume its authorization.
+    if (session && !isOAuthRequest(location.searchStr)) {
+      throw redirect({ href: search.redirect ?? "/" });
+    }
   },
   component: AuthLayout,
 });

@@ -10,7 +10,8 @@ beforeAll(async () => {
   const { env } = await import("../test/bindings");
   env.ENVIRONMENT = "production";
   ({ createClient } = await import("../test/client"));
-});
+  // Reloading builds a second database and app, which can take over 10s while other files run.
+}, 30_000);
 
 describe("auth rate limiting in production", () => {
   it("allows 3 sign-in attempts per 10 seconds from one IP", async () => {

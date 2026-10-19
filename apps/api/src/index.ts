@@ -10,6 +10,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
 import { devRoute } from "./builder/dev-route";
+import { serveMcp } from "./mcp/server";
 import { appRouter } from "./routers";
 import { auth } from "./utils/auth";
 import { createContext } from "./utils/context";
@@ -37,6 +38,9 @@ app.onError((error, c) => {
 });
 
 app.on(["POST", "GET"], "/auth/*", (c) => auth.handler(c.req.raw));
+// OAuth discovery lives at the origin root (RFC 8414, RFC 9728), outside Better Auth's base path.
+app.get("/.well-known/*", (c) => auth.handler(c.req.raw));
+app.all("/mcp", (c) => serveMcp(c.req.raw));
 app.route("/dev", devRoute);
 
 export const apiHandler = new OpenAPIHandler(appRouter, {

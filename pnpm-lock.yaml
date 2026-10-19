@@ -164,6 +164,12 @@ settings:
 
 catalogs:
   default:
+    '@better-auth/mcp':
+      specifier: 1.7.7
+      version: 1.7.7
+    '@better-auth/oauth-provider':
+      specifier: 1.7.7
+      version: 1.7.7
     '@cloudflare/vite-plugin':
       specifier: 2.0.0-beta.sha-52b0dc0e9
       version: 2.0.0-beta.sha-52b0dc0e9
@@ -250,9 +256,18 @@ importers:
 
   apps/api:
     dependencies:
+      '@better-auth/mcp':
+        specifier: 'catalog:'
+        version: 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.7(drizzle-kit@1.0.0-rc.4)(drizzle-orm@1.0.0-rc.4(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.1(effect@4.0.0))(@effect/sql-sqlite-do@4.0.1(effect@4.0.0))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(effect@4.0.0)(postgres@3.4.9)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.7))(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.3))(better-call@1.4.0(zod@4.6.7))
+      '@better-auth/oauth-provider':
+        specifier: 'catalog:'
+        version: 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.7(drizzle-kit@1.0.0-rc.4)(drizzle-orm@1.0.0-rc.4(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.1(effect@4.0.0))(@effect/sql-sqlite-do@4.0.1(effect@4.0.0))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(effect@4.0.0)(postgres@3.4.9)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.7))(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.3))(better-call@1.4.0(zod@4.6.7))
       '@cloudflare/sandbox':
         specifier: 1.0.1
         version: 1.0.1
+      '@modelcontextprotocol/server':
+        specifier: 'catalog:'
+        version: 2.3.1
       '@orpc/openapi':
         specifier: 'catalog:'
         version: 1.15.6(crossws@0.3.5)(ws@8.22.0)
@@ -299,6 +314,9 @@ importers:
       '@cloudflare/vite-plugin':
         specifier: 'catalog:'
         version: 2.0.0-beta.sha-52b0dc0e9(@types/node@26.6.5)(@voidzero-dev/vite-plus-core@1.1.0(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(typescript@7.0.2)(yaml@2.9.1))(workerd@1.20261006.1)
+      '@modelcontextprotocol/client':
+        specifier: 'catalog:'
+        version: 2.3.1
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -344,6 +362,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@better-auth/oauth-provider':
+        specifier: 'catalog:'
+        version: 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.7(drizzle-kit@1.0.0-rc.4)(drizzle-orm@1.0.0-rc.4(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.1(effect@4.0.0))(@effect/sql-sqlite-do@4.0.1(effect@4.0.0))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(effect@4.0.0)(postgres@3.4.9)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.7))(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.3))(better-call@1.4.0(zod@4.6.7))
       '@floating-ui/dom':
         specifier: ^1.8.0
         version: 1.8.0
@@ -828,6 +849,13 @@ packages:
       kysely:
         optional: true
 
+  '@better-auth/mcp@1.7.7':
+    resolution: {integrity: sha512-BZm8gHfPef7qXuEY61rBpVkBIuUOJ+dx2ese/JpHUnbw2/SteZ/UvHTIot5twE+C+dtEhqQYL2CEVkuPCBJeQg==}
+    peerDependencies:
+      '@better-auth/core': ^1.7.7
+      better-auth: ^1.7.7
+      better-call: 1.4.0
+
   '@better-auth/memory-adapter@1.7.7':
     resolution: {integrity: sha512-FqKFEe+b5tXXV0gRbyirca+qXgMpLOeJ8Wk19yykb/scQKy0WJ4k22WzEV3TTPctQV9DZhwCXPlDtQhnlOv5Gg==}
     peerDependencies:
@@ -843,6 +871,15 @@ packages:
     peerDependenciesMeta:
       mongodb:
         optional: true
+
+  '@better-auth/oauth-provider@1.7.7':
+    resolution: {integrity: sha512-dc4C/ZF+8qc88ebcU8kaFp8yladCtfTkuUt2zBSmYw25YCNC5BoUP9rpAkIx4nemlZ11gLtSnkEPc0sA7MwVmw==}
+    peerDependencies:
+      '@better-auth/core': ^1.7.7
+      '@better-auth/utils': 0.4.2
+      '@better-fetch/fetch': 1.3.2
+      better-auth: ^1.7.7
+      better-call: 1.4.0
 
   '@better-auth/prisma-adapter@1.7.7':
     resolution: {integrity: sha512-4YcnrcVdvWiAZw0sZl63tWUClPXg5r3QsLn7C2sG7kKEBY06zOng0ibecyxRBixKq1zE1ceHuEUqez5Rhi+nQA==}
@@ -5935,6 +5972,17 @@ snapshots:
     optionalDependencies:
       kysely: 0.29.6
 
+  '@better-auth/mcp@1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.7(drizzle-kit@1.0.0-rc.4)(drizzle-orm@1.0.0-rc.4(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.1(effect@4.0.0))(@effect/sql-sqlite-do@4.0.1(effect@4.0.0))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(effect@4.0.0)(postgres@3.4.9)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.7))(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.3))(better-call@1.4.0(zod@4.6.7))':
+    dependencies:
+      '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5)
+      '@better-auth/oauth-provider': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.7(drizzle-kit@1.0.0-rc.4)(drizzle-orm@1.0.0-rc.4(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.1(effect@4.0.0))(@effect/sql-sqlite-do@4.0.1(effect@4.0.0))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(effect@4.0.0)(postgres@3.4.9)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.7))(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.3))(better-call@1.4.0(zod@4.6.7))
+      better-auth: 1.7.7(drizzle-kit@1.0.0-rc.4)(drizzle-orm@1.0.0-rc.4(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.1(effect@4.0.0))(@effect/sql-sqlite-do@4.0.1(effect@4.0.0))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(effect@4.0.0)(postgres@3.4.9)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.7))(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.3)
+      better-call: 1.4.0(zod@4.6.7)
+      jose: 6.2.12
+    transitivePeerDependencies:
+      - '@better-auth/utils'
+      - '@better-fetch/fetch'
+
   '@better-auth/memory-adapter@1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)':
     dependencies:
       '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5)
@@ -5944,6 +5992,16 @@ snapshots:
     dependencies:
       '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5)
       '@better-auth/utils': 0.4.2
+
+  '@better-auth/oauth-provider@1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.7(drizzle-kit@1.0.0-rc.4)(drizzle-orm@1.0.0-rc.4(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.1(effect@4.0.0))(@effect/sql-sqlite-do@4.0.1(effect@4.0.0))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(effect@4.0.0)(postgres@3.4.9)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.7))(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.3))(better-call@1.4.0(zod@4.6.7))':
+    dependencies:
+      '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5)
+      '@better-auth/utils': 0.4.2
+      '@better-fetch/fetch': 1.3.2
+      better-auth: 1.7.7(drizzle-kit@1.0.0-rc.4)(drizzle-orm@1.0.0-rc.4(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.1(effect@4.0.0))(@effect/sql-sqlite-do@4.0.1(effect@4.0.0))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(effect@4.0.0)(postgres@3.4.9)(valibot@1.2.0(typescript@7.0.2))(zod@4.6.7))(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.3)
+      better-call: 1.4.0(zod@4.6.7)
+      jose: 6.2.12
+      zod: 4.6.7
 
   '@better-auth/prisma-adapter@1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.7))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)':
     dependencies:

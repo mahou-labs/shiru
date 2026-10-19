@@ -33,3 +33,4 @@ Each feature file starts with an H1 and one paragraph on what the user sees, the
 - [Accounts and email verification](./accounts.md) covers sign-up, the verification email and link, sign-in, protected pages, sign-out, password reset and account settings.
 - [Organizations and trials](./organizations-and-trials.md) covers onboarding, switching, organization settings, members, invitations, leaving and deleting, and the one-trial-per-user rule.
 - [Billing and paid access](./billing.md) covers the billing page, checkout and the paid procedure level.
+- [MCP agents](./mcp-agents.md) covers connecting a coding agent through OAuth: sign-in, consent, the redirect back to the agent and its first tool call.

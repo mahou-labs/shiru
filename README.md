@@ -55,6 +55,12 @@ There are no migrations yet while the schema is still changing. `vp run db:push`
 
 Better Auth serves its routes under `/auth` on the API, with email and password sign-in, email verification, and organizations. The Polar plugin creates a Polar customer on sign-up, links an existing customer with the same email, and deletes it when the user is deleted. Checkout products are listed in `apps/api/src/utils/auth.ts`.
 
+### MCP server
+
+The API serves an MCP server at `/mcp` (`https://api.shiru.sh/mcp` in production) so coding agents can list a user's docs sites, read and edit draft files, publish, and read publish status. Connect Claude Code with `claude mcp add --transport http shiru https://api.shiru.sh/mcp`. The dashboard's account settings show the same command for the current environment.
+
+Better Auth's `jwt` and `mcp` plugins make the API an OAuth authorization server. An agent's first request gets a 401 that points to the resource metadata at `/.well-known/oauth-protected-resource/mcp`. The agent registers itself without a session, sends the user to sign in on the dashboard, and the user approves it on `/oauth/consent`. Tokens are per user and reach every organization the user belongs to. `docs:read` covers listing and reading, and `docs:write` covers editing and publishing, which also need paid access for the site's organization. A tool that lacks its scope answers 403 with an `insufficient_scope` challenge. The tools are one table in `apps/api/src/mcp/tools.ts`, and they share their doc operations with the oRPC router through `apps/api/src/docs/service.ts`. The OAuth tables live in `apps/api/src/schema/auth.ts`, so run `vp run db:push` after pulling.
+
 Emails are React Email components in `apps/api/src/emails`, sent through the Cloudflare `EMAIL` binding. In local development, `cf dev` simulates sending.
 
 ## API procedures and billing
