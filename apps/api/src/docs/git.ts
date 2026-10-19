@@ -18,7 +18,12 @@ export type Person = { name: string; email: string };
 export const ZERO_SHA = "0".repeat(40);
 export const FILE_MODE = "100644";
 const TREE_MODE = "40000";
-const BRANCH = "refs/heads/main";
+
+/** The branch publishing commits to, which HEAD follows. */
+export const MAIN = "refs/heads/main";
+/** The branch the Preview button force-moves to a snapshot of the drafts. */
+export const PREVIEW = "refs/heads/preview";
+export type Ref = typeof MAIN | typeof PREVIEW;
 
 const encoder = new TextEncoder();
 
@@ -151,11 +156,16 @@ function objectHeader(type: number, size: number) {
 }
 
 /**
- * The receive-pack request that moves main from `oldSha` to `newSha`. The server applies it only
- * while main is still at `oldSha`, which makes it a compare-and-swap. `null` creates the branch.
+ * The receive-pack request that moves `ref` from `oldSha` to `newSha`. The server applies it only
+ * while `ref` is still at `oldSha`, which makes it a compare-and-swap. `null` creates the branch.
  */
-export function receivePackRequest(oldSha: string | null, newSha: string, pack: Uint8Array) {
-  const command = `${oldSha ?? ZERO_SHA} ${newSha} ${BRANCH}\0report-status\n`;
+export function receivePackRequest(
+  ref: Ref,
+  oldSha: string | null,
+  newSha: string,
+  pack: Uint8Array,
+) {
+  const command = `${oldSha ?? ZERO_SHA} ${newSha} ${ref}\0report-status\n`;
   return concat([pktLine(command), encoder.encode("0000"), pack]);
 }
 
@@ -167,7 +177,7 @@ function pktLine(line: string) {
 export type PushResult = { kind: "ok" } | { kind: "stale" } | { kind: "failed"; message: string };
 
 /** Reads the report-status response of a receive-pack request. */
-export function parseReportStatus(response: string): PushResult {
+export function parseReportStatus(ref: Ref, response: string): PushResult {
   const lines: string[] = [];
   let at = 0;
   while (at + 4 <= response.length) {
@@ -176,8 +186,8 @@ export function parseReportStatus(response: string): PushResult {
     if (length > 4) lines.push(response.slice(at + 4, at + length).replace(/\n$/, ""));
     at += Math.max(length, 4);
   }
-  if (lines.includes("unpack ok") && lines.includes(`ok ${BRANCH}`)) return { kind: "ok" };
-  const rejected = lines.find((line) => line.startsWith(`ng ${BRANCH} `));
+  if (lines.includes("unpack ok") && lines.includes(`ok ${ref}`)) return { kind: "ok" };
+  const rejected = lines.find((line) => line.startsWith(`ng ${ref} `));
   if (rejected?.endsWith(" stale ref")) return { kind: "stale" };
   return { kind: "failed", message: rejected ?? (lines.join("; ") || "empty push response") };
 }

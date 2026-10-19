@@ -163,16 +163,11 @@ export async function deployBuild({
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   if (env.ENVIRONMENT === "development") return { ok: true };
   // Skipping here would report a build as Live that nobody can reach.
-  for (const name of ["DISPATCH_ACCOUNT_ID", "DISPATCH_API_TOKEN"] as const) {
-    if (!env[name]) return { ok: false, error: `Deploying is not configured: ${name} is not set` };
-  }
+  const account = dispatchAccount(env, "Deploying");
+  if (!account.ok) return account;
 
   const result = await deployDoc({
-    account: {
-      id: env.DISPATCH_ACCOUNT_ID,
-      apiToken: env.DISPATCH_API_TOKEN,
-      namespace: env.DISPATCH_NAMESPACE,
-    },
+    account: account.account,
     scriptName,
     manifest,
     readAsset,
@@ -182,6 +177,44 @@ export async function deployBuild({
   const error = `Deploying failed at ${result.step} (HTTP ${result.status}): ${result.message}`;
   if (result.status >= 500 || result.status === 429) throw new Error(error);
   return { ok: false, error };
+}
+
+/**
+ * Deletes the Worker at `scriptName` from the dispatch namespace. Development deletes nothing,
+ * because builds there were never deployed.
+ */
+export async function deleteBuild({
+  env,
+  scriptName,
+  fetch = globalThis.fetch,
+}: {
+  env: DeployEnv;
+  scriptName: string;
+  fetch?: typeof globalThis.fetch;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (env.ENVIRONMENT === "development") return { ok: true };
+  const account = dispatchAccount(env, "Deleting");
+  if (!account.ok) return account;
+  const result = await deleteDoc({ account: account.account, scriptName, fetch });
+  if (result.ok) return { ok: true };
+  return { ok: false, error: `Deleting failed (HTTP ${result.status}): ${result.message}` };
+}
+
+function dispatchAccount(
+  env: DeployEnv,
+  action: string,
+): { ok: true; account: DispatchAccount } | { ok: false; error: string } {
+  for (const name of ["DISPATCH_ACCOUNT_ID", "DISPATCH_API_TOKEN"] as const) {
+    if (!env[name]) return { ok: false, error: `${action} is not configured: ${name} is not set` };
+  }
+  return {
+    ok: true,
+    account: {
+      id: env.DISPATCH_ACCOUNT_ID,
+      apiToken: env.DISPATCH_API_TOKEN,
+      namespace: env.DISPATCH_NAMESPACE,
+    },
+  };
 }
 
 /** Deletes a doc Worker. A Worker that is already gone counts as deleted. */

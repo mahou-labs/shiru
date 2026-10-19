@@ -2,7 +2,14 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  plugins: process.env.VITEST ? [] : [cloudflare()],
+  plugins: process.env.VITEST
+    ? []
+    : [
+        cloudflare(
+          // API_STATE_DIR lets a verify script keep its local state apart from the usual server's.
+          process.env.API_STATE_DIR ? { persistState: { path: process.env.API_STATE_DIR } } : {},
+        ),
+      ],
   server: {
     // API_PORT lets a verify script run its own server beside the usual one on 3000.
     port: Number(process.env.API_PORT) || 3000,

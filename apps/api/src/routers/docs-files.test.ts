@@ -1,9 +1,12 @@
+import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import type { Doc } from "../docs/doc";
+import { retirePreviews } from "../index";
 import { buildCommit } from "../docs/git";
-import { LIVE } from "../docs/names";
-import { artifacts, docObjects, publishWorkflow } from "../test/bindings";
+import { DRAFT, LIVE } from "../docs/names";
+import { previews } from "../schema/docs";
+import { artifacts, db, docObjects, publishWorkflow } from "../test/bindings";
 import { createClient } from "../test/client";
 
 const JAN_1 = new Date("2026-01-01T00:00:00.000Z");
@@ -68,9 +71,10 @@ describe("doc files", () => {
       stranger.rpc("docs/files/delete", { docId, path }),
       stranger.rpc("docs/files/discard", { docId, path }),
       stranger.rpc("docs/publish", { docId }),
+      stranger.rpc("docs/preview", { docId }),
       stranger.rpc("docs/status", { docId }),
     ]);
-    expect(calls).toEqual(Array.from({ length: 7 }, () => docNotFound));
+    expect(calls).toEqual(Array.from({ length: 8 }, () => docNotFound));
   });
 
   it("starts a new doc with a config and a home page to publish", async () => {
@@ -288,5 +292,157 @@ describe("doc files", () => {
         },
       },
     });
+  });
+});
+
+describe("docs.preview", () => {
+  const workflowsOf = (docId: string) =>
+    [...publishWorkflow.created.entries()].filter(([id]) => id.startsWith(docId));
+  const previewRows = (docId: string) =>
+    db.select().from(previews).where(eq(previews.docId, docId));
+
+  it("builds head on the draft target when there are no drafts, once per change", async () => {
+    const { client, docId } = await docOwner("preview-head@mailinator.com", "preview-head");
+    const head = await pushFirstCommit(docId, { "docs/content/index.mdx": text("# Home\n") });
+
+    const previewing = {
+      status: 200,
+      body: {
+        json: {
+          kind: "previewing",
+          sha: head,
+          url: "http://draft--preview-head.preview.docs.localhost:3003",
+        },
+      },
+    };
+    expect(await client.rpc("docs/preview", { docId })).toEqual(previewing);
+    vi.setSystemTime(NOW + 60_000);
+    expect(await client.rpc("docs/preview", { docId })).toEqual(previewing);
+
+    const started = workflowsOf(docId);
+    expect(started.map(([id, params]) => [id.replace(/--[0-9a-f]{8}--/, "--"), params])).toEqual([
+      [
+        `${docId}--draft--1`,
+        {
+          docId,
+          slug: "preview-head",
+          repo: docId,
+          target: "draft",
+          sha: head,
+          docUrl: "http://draft--preview-head.preview.docs.localhost:3003",
+          docsRoot: "docs/",
+        },
+      ],
+    ]);
+    const { body } = await client.rpc("docs/status", { docId });
+    expect((body.json as { targets: unknown }).targets).toEqual({
+      draft: {
+        kind: "building",
+        build: { sha: head, workflowId: started[0]![0] },
+        pendingSha: null,
+        deployed: null,
+      },
+    });
+    // The second click moved the cron's clock forward.
+    expect(await previewRows(docId)).toEqual([
+      { docId, label: "draft", requestedAt: new Date(NOW + 60_000) },
+    ]);
+  });
+
+  it("has nothing to build without a commit or a draft", async () => {
+    const { client, docId } = await docOwner("preview-empty@mailinator.com", "preview-empty");
+    await client.rpc("docs/files/discard", { docId, path: "content/index.mdx" });
+    await client.rpc("docs/files/discard", { docId, path: "docs.config.json" });
+
+    expect(await client.rpc("docs/preview", { docId })).toEqual({
+      status: 200,
+      body: { json: { kind: "empty" } },
+    });
+    expect(workflowsOf(docId)).toEqual([]);
+    expect(await previewRows(docId)).toEqual([]);
+  });
+});
+
+describe("retiring stale previews", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  async function previewed(email: string, slug: string) {
+    const { client, docId } = await docOwner(email, slug);
+    await pushFirstCommit(docId, { "docs/content/index.mdx": text("# Home\n") });
+    await client.rpc("docs/preview", { docId });
+    return { client, docId };
+  }
+
+  async function finishDraftBuild(client: ReturnType<typeof createClient>, docId: string) {
+    const { body } = await client.rpc("docs/status", { docId });
+    const { workflowId } = (body.json as { targets: { draft: { build: { workflowId: string } } } })
+      .targets.draft.build;
+    const doc = docObjects.getByName(docId) as unknown as Pick<Doc, "buildFinished">;
+    await doc.buildFinished(DRAFT, workflowId, { ok: true, templateVersion: "v1" });
+  }
+
+  // Read from the Doc: the members' sessions have expired by the time the cron runs.
+  const targetsOf = async ({ docId }: { docId: string }) => {
+    const doc = docObjects.getByName(docId) as unknown as DurableObjectStub<Doc>;
+    const { targets, runs } = await doc.status();
+    return { targets: Object.keys(targets), runs: Object.keys(runs) };
+  };
+
+  it("retires previews idle for 30 days, keeping fresh, building and failing ones", async () => {
+    const stale = await previewed("retire-stale@mailinator.com", "retire-stale");
+    await finishDraftBuild(stale.client, stale.docId);
+    const building = await previewed("retire-busy@mailinator.com", "retire-busy");
+    // Never opened in the editor, so its Doc cannot retire anything and throws.
+    const broken = await docOwner("retire-broken@mailinator.com", "retire-broken");
+    await db.insert(previews).values({ docId: broken.docId, label: DRAFT, requestedAt: JAN_1 });
+    vi.setSystemTime(NOW + 20 * DAY);
+    const fresh = await previewed("retire-fresh@mailinator.com", "retire-fresh");
+    await finishDraftBuild(fresh.client, fresh.docId);
+
+    const rows = async () =>
+      (await db.select().from(previews))
+        .filter(({ docId }) => [stale, building, broken, fresh].some((doc) => doc.docId === docId))
+        .map(({ docId, requestedAt }) => [docId, requestedAt.getTime()]);
+
+    await retirePreviews(NOW + 31 * DAY);
+    const kept = [
+      [building.docId, NOW],
+      [broken.docId, NOW],
+      [fresh.docId, NOW + 20 * DAY],
+    ];
+    expect(await rows()).toEqual(kept);
+    expect(await targetsOf(stale)).toEqual({ targets: [], runs: [] });
+    expect(await targetsOf(building)).toEqual({
+      targets: ["draft"],
+      runs: ["draft"],
+    });
+    expect(await targetsOf(fresh)).toEqual({
+      targets: ["draft"],
+      runs: ["draft"],
+    });
+
+    await retirePreviews(NOW + 31 * DAY);
+    expect(await rows()).toEqual(kept);
+  });
+
+  it("keeps a preview requested again after the cron chose it", async () => {
+    const { client, docId } = await previewed("retire-again@mailinator.com", "retire-again");
+    await finishDraftBuild(client, docId);
+    const cutoff = NOW + DAY;
+    // The cron chose this preview, then a member previewed the unchanged drafts before the Doc
+    // retired it: nothing rebuilds, only the request time moves.
+    vi.setSystemTime(NOW + 2 * DAY);
+    expect((await client.rpc("docs/preview", { docId })).status).toBe(200);
+
+    const doc = docObjects.getByName(docId) as unknown as DurableObjectStub<Doc>;
+    expect(await doc.retire(DRAFT, cutoff)).toEqual({ kind: "fresh" });
+    expect((await doc.status()).targets).toEqual({
+      draft: { kind: "idle", deployed: { sha: expect.any(String), templateVersion: "v1" } },
+    });
+    expect(
+      (await db.select().from(previews))
+        .filter((row) => row.docId === docId)
+        .map((row) => row.requestedAt.getTime()),
+    ).toEqual([NOW + 2 * DAY]);
   });
 });

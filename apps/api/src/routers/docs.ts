@@ -6,7 +6,8 @@ import { z } from "zod";
 import { docs, hostnames } from "../schema/docs";
 import { DocPath } from "../docs/drafts";
 import type { Doc } from "../docs/doc";
-import { CustomHostname, DocSlug, parseHostname } from "../docs/names";
+import { CustomHostname, DocSlug, DRAFT, parseHostname } from "../docs/names";
+import { docsDomains, previewUrl } from "../docs/urls";
 import {
   activeHostname,
   addDomain,
@@ -22,7 +23,11 @@ import { db } from "../utils/db";
 import { organizationProcedure, paidProcedure } from "../utils/orpc";
 
 function withUrl(doc: DocRow, domain: DomainRow | null) {
-  return { ...doc, url: docUrl(doc.slug, activeHostname(domain), env) };
+  return {
+    ...doc,
+    url: docUrl(doc.slug, activeHostname(domain), env),
+    previewUrl: previewUrl(doc.slug, DRAFT),
+  };
 }
 
 /** Docs with their custom domains, oldest first. */
@@ -44,6 +49,9 @@ async function findDoc(organizationId: string, docId: string) {
 }
 
 const DOC_ERRORS = { NOT_FOUND: { status: 404, message: "Site not found" } } as const;
+const CONFLICT_ERRORS = {
+  CONFLICT: { status: 409, message: "The site kept changing while publishing. Try again." },
+} as const;
 const FILE_ERRORS = { FILE_NOT_FOUND: { status: 404, message: "File not found" } } as const;
 
 const docInput = z.object({ docId: z.string() });
@@ -165,8 +173,7 @@ const domainRouter = {
     .errors({ ...DOC_ERRORS, ...DOMAIN_ERRORS })
     .input(docInput.extend({ hostname: CustomHostname }))
     .handler(async ({ context, input, errors }) => {
-      const domains = { docs: env.DOCS_DOMAIN, preview: `preview.${env.DOCS_DOMAIN}` };
-      if (parseHostname(input.hostname, domains).kind !== "custom") {
+      if (parseHostname(input.hostname, docsDomains()).kind !== "custom") {
         throw errors.HOSTNAME_NOT_ALLOWED();
       }
       const found = await findDoc(context.organizationId, input.docId);
@@ -257,15 +264,26 @@ export const docsRouter = {
    * drafts stay and come back in `skipped`. `unchanged` means there was nothing to commit.
    */
   publish: paidProcedure
-    .errors({
-      ...DOC_ERRORS,
-      CONFLICT: { status: 409, message: "The site kept changing while publishing. Try again." },
-    })
+    .errors({ ...DOC_ERRORS, ...CONFLICT_ERRORS })
     .input(docInput)
     .handler(async ({ context, input, errors }) => {
       const doc = await openDoc(context.organizationId, input.docId);
       if (!doc) throw errors.NOT_FOUND();
       const result = await doc.publish(author(context.user));
+      if (result.kind === "conflict") throw errors.CONFLICT();
+      return result;
+    }),
+  /**
+   * Builds head with every draft applied on the draft target, served to the organization's members
+   * at `previewUrl`. The drafts stay drafts. `empty` means there is nothing to build yet.
+   */
+  preview: paidProcedure
+    .errors({ ...DOC_ERRORS, ...CONFLICT_ERRORS })
+    .input(docInput)
+    .handler(async ({ context, input, errors }) => {
+      const doc = await openDoc(context.organizationId, input.docId);
+      if (!doc) throw errors.NOT_FOUND();
+      const result = await doc.preview();
       if (result.kind === "conflict") throw errors.CONFLICT();
       return result;
     }),

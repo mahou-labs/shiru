@@ -56,7 +56,7 @@ describe("CORS", () => {
 });
 
 describe("scheduled", () => {
-  it("syncs custom domains with Cloudflare in the background", async () => {
+  it("syncs custom domains and retires stale previews in the background", async () => {
     const work: Promise<unknown>[] = [];
     const logged: unknown[][] = [];
     const errors = vi.spyOn(console, "error").mockImplementation((...args) => logged.push(args));
@@ -64,7 +64,7 @@ describe("scheduled", () => {
     env.CUSTOM_HOSTNAMES_API_TOKEN = "";
     try {
       worker.scheduled(
-        {} as ScheduledController,
+        { scheduledTime: Date.now() } as ScheduledController,
         env as never,
         { waitUntil: (promise: Promise<unknown>) => work.push(promise) } as never,
       );
@@ -75,7 +75,7 @@ describe("scheduled", () => {
       errors.mockRestore();
     }
 
-    expect(work).toHaveLength(1);
+    expect(work).toHaveLength(2);
     expect(logged).toEqual([
       [
         "custom domains not refreshed: Custom domains are not configured: CUSTOM_HOSTNAMES_API_TOKEN is not set",

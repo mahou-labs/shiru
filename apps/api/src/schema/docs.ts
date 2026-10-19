@@ -1,7 +1,14 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
-import type { DocSlug } from "../docs/names";
+import type { DocSlug, TargetLabel } from "../docs/names";
 import type { DocSource } from "../docs/source";
 import { organizations } from "./auth";
 
@@ -44,4 +51,20 @@ export const hostnames = sqliteTable(
   },
   // One custom domain per doc.
   (table) => [uniqueIndex("hostnames_docId_unique").on(table.docId)],
+);
+
+/** When each preview target was last requested, so a daily cron can retire forgotten ones. */
+export const previews = sqliteTable(
+  "previews",
+  {
+    docId: text("doc_id")
+      .notNull()
+      .references(() => docs.id, { onDelete: "cascade" }),
+    label: text("label").$type<TargetLabel>().notNull(),
+    requestedAt: integer("requested_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.docId, table.label] }),
+    index("previews_requestedAt_idx").on(table.requestedAt),
+  ],
 );

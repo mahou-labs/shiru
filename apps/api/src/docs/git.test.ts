@@ -5,9 +5,11 @@ import {
   blobSha,
   buildCommit,
   hashObject,
+  MAIN,
   packfile,
   parseReportStatus,
   readCommitFiles,
+  PREVIEW,
   readCommitTree,
   receivePackRequest,
 } from "./git";
@@ -105,31 +107,52 @@ describe("packfile", () => {
 
 describe("receivePackRequest", () => {
   it("sends the compare-and-swap command, a flush and the pack", () => {
-    const body = receivePackRequest(null, FIRST, text("PACK"));
+    const body = receivePackRequest(MAIN, null, FIRST, text("PACK"));
     expect(new TextDecoder().decode(body)).toBe(
       `0074${"0".repeat(40)} ${FIRST} refs/heads/main\0report-status\n0000PACK`,
+    );
+  });
+
+  it("moves the branch it is given", () => {
+    const body = receivePackRequest(PREVIEW, SECOND, FIRST, text("PACK"));
+    expect(new TextDecoder().decode(body)).toBe(
+      `0077${SECOND} ${FIRST} refs/heads/preview\0report-status\n0000PACK`,
     );
   });
 });
 
 describe("parseReportStatus", () => {
   it("reads a committed push", () => {
-    expect(parseReportStatus("000eunpack ok\n0017ok refs/heads/main\n0000")).toEqual({
+    expect(parseReportStatus(MAIN, "000eunpack ok\n0017ok refs/heads/main\n0000")).toEqual({
       kind: "ok",
     });
   });
 
+  it("reads only the status of the branch it pushed", () => {
+    const previewOk = "000eunpack ok\n001aok refs/heads/preview\n0000";
+    expect(parseReportStatus(PREVIEW, previewOk)).toEqual({ kind: "ok" });
+    expect(parseReportStatus(MAIN, previewOk)).toEqual({
+      kind: "failed",
+      message: "unpack ok; ok refs/heads/preview",
+    });
+    expect(
+      parseReportStatus(PREVIEW, "000eunpack ok\n0024ng refs/heads/preview stale ref\n0000"),
+    ).toEqual({ kind: "stale" });
+  });
+
   it("reads a branch that moved", () => {
-    expect(parseReportStatus("000eunpack ok\n0021ng refs/heads/main stale ref\n0000")).toEqual({
+    expect(
+      parseReportStatus(MAIN, "000eunpack ok\n0021ng refs/heads/main stale ref\n0000"),
+    ).toEqual({
       kind: "stale",
     });
   });
 
   it("reports any other rejection with the server's line", () => {
     expect(
-      parseReportStatus("0014unpack bad pack\n0026ng refs/heads/main unpacker error\n0000"),
+      parseReportStatus(MAIN, "0014unpack bad pack\n0026ng refs/heads/main unpacker error\n0000"),
     ).toEqual({ kind: "failed", message: "ng refs/heads/main unpacker error" });
-    expect(parseReportStatus("")).toEqual({ kind: "failed", message: "empty push response" });
+    expect(parseReportStatus(MAIN, "")).toEqual({ kind: "failed", message: "empty push response" });
   });
 });
 
