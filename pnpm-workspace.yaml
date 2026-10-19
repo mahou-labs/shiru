@@ -29,7 +29,7 @@ catalog:
   "@types/react-dom": ^19.2.7
   tailwindcss: ^4.3.3
   drizzle-orm: 1.0.0-rc.4
-  vite: npm:@voidzero-dev/vite-plus-core@1.1.0
+  vite: npm:@voidzero-dev/vite-plus-core@1.2.0
   vite-plus: 1.2.0
 minimumReleaseAgeExclude:
   - astro@7.3.8
