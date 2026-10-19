@@ -1,5 +1,7 @@
 # shiru
 
+[CONTRIBUTING.md](CONTRIBUTING.md) explains the stack, environment, database, auth, billing, docs traffic and deployment. Read it before changing any of them, and keep it current when you do.
+
 ## Tests are part of every API change
 
 Every new feature or bug fix in `apps/api` ships with tests in the same change. `vp run test` runs them with coverage, and CI fails when coverage drops below the thresholds in `apps/api/vite.config.ts`. Do not lower the thresholds to make a change pass. Add the missing tests.

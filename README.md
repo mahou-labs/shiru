@@ -1,142 +1,94 @@
-# shiru
+<div align="center">
+  <a href="https://shiru.sh">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/logo-dark.svg">
+      <img src=".github/assets/logo-light.svg" alt="Shiru logo" width="72" height="72">
+    </picture>
+  </a>
+  <h1>Shiru</h1>
+  <p><strong>Open-source docs for people and the agents that read them.</strong></p>
+  <p>
+    <a href="https://shiru.sh">Website</a>
+    ·
+    <a href="#run-shiru-locally">Run locally</a>
+    ·
+    <a href="CONTRIBUTING.md">Contributing</a>
+    ·
+    <a href="https://x.com/nchartiot">X</a>
+  </p>
+  <p>
+    <a href="https://github.com/mahou-labs/shiru/actions/workflows/ci.yml"><img src="https://github.com/mahou-labs/shiru/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  </p>
+</div>
 
-A TypeScript monorepo created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack): React, TanStack Router, Hono, oRPC, Drizzle, Better Auth with Polar, and shadcn/ui. Both apps run on Cloudflare Workers. [Vite+](https://viteplus.dev) handles installing, running tasks, linting, formatting, and type checking.
+Shiru is an open-source documentation platform, and an alternative to Mintlify. You write MDX and publish it as a docs site that works for two kinds of readers: people in a browser and coding agents that need clean source.
 
-## Getting started
+> [!NOTE]
+> Shiru is pre-launch. The hosted service at [shiru.sh](https://shiru.sh) isn't open yet. Join the waitlist there to hear when it is.
 
-```bash
-vp install
-```
+## Why Shiru
 
-Create `apps/api/.env` with local values:
+- **Agents read the source.** Every page has a Markdown version next to its HTML, and `llms.txt` indexes the whole site. An agent fetches the Markdown instead of scraping HTML.
+- **Your docs stay yours.** Every site is a Git repository of MDX files, and each published version is a commit. You can also run Shiru yourself.
+- **Priced per organization, not per seat.** The whole team can fix a typo without anyone counting seats.
 
-```dotenv
-DASHBOARD_URL=http://localhost:3001
-SITE_URL=http://localhost:3002
-BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_SECRET=<at least 32 characters>
-POLAR_ACCESS_TOKEN=<Polar sandbox token>
-POLAR_WEBHOOK_SECRET=<Polar sandbox webhook secret>
-```
+Sites build on [Nimbus](https://nimbus-docs.com/), so any MDX that Nimbus accepts builds on Shiru.
 
-Create `apps/dashboard/.env`:
+## Run Shiru locally
 
-```dotenv
-VITE_API_URL=http://localhost:3000
-```
+You need the following:
 
-Start both apps, then create the local database's tables:
+- [Vite+](https://viteplus.dev), the `vp` command. It installs the right Node.js and pnpm versions for you.
+- To create and publish docs sites, [Docker](https://docs.docker.com/get-docker/) and the `cf` CLI signed in to a Cloudflare account. Sign-up, organizations and billing work without them. [Docs traffic](CONTRIBUTING.md#docs-traffic) explains why.
+- A [Polar sandbox](https://sandbox.polar.sh) access token and webhook secret. Sign-up creates a Polar customer, so you can't create an account without them.
+- A [Nucleo](https://nucleoapp.com) license key in `NUCLEO_LICENSE_KEY`. The icon package checks it during install.
 
-```bash
-vp run dev
-vp run db:push
-```
+1. Install Vite+:
 
-The dashboard runs at http://localhost:3001, the site at http://localhost:3002, and the API at http://localhost:3000.
+   ```bash
+   curl -fsSL https://vite.plus | bash
+   ```
 
-## Environment
+   On Windows, run `irm https://vite.plus/ps1 | iex` in PowerShell.
 
-`.env` files hold local values only. In production, Cloudflare supplies them.
+2. Clone the repository and install the dependencies:
 
-- `apps/api/.env.schema` lists the variables the API needs and their types. `vp run dev` runs `varlock load` first, so a missing or malformed value stops dev with a clear error instead of a 500 at runtime. When you add a secret, add it to both the schema and `cloudflare.config.ts`.
-- The API declares its bindings in `apps/api/cloudflare.config.ts` and reads them from `cloudflare:workers`. Everything that comes from the environment is a Worker secret. Locally, `cf dev` reads secrets from `apps/api/.env`. In production, set them in the Cloudflare dashboard or with `cf deploy --secrets-file <file>`. Deploys keep them.
-- CORS allows two origins. `DASHBOARD_URL` gets credentialed requests for auth and the dashboard. `SITE_URL` is the marketing site, which calls `waitlist.join` without credentials.
-- `ENVIRONMENT` follows the build mode. In development, Polar uses its sandbox and auth cookies stay on localhost. In production, Polar uses the live API and cookies are shared across `.shiru.sh`.
-- PostHog is off in development. In production, the API reports errors when the `POSTHOG_KEY` secret is set.
-- The dashboard reads `VITE_API_URL`, `VITE_POSTHOG_KEY` and `VITE_POSTHOG_HOST` at build time, from `apps/dashboard/.env` locally and from the build environment in production. They are baked into the bundle, so rebuild when they change.
+   ```bash
+   git clone https://github.com/mahou-labs/shiru.git
+   cd shiru
+   vp install
+   ```
 
-## Database
+3. Create `apps/api/.env` with your secrets:
 
-The API uses Cloudflare D1 (`shiru-api`). Drizzle owns the schema in `apps/api/src/schema`.
+   ```dotenv
+   BETTER_AUTH_SECRET=<at least 32 random characters>
+   POLAR_ACCESS_TOKEN=<Polar sandbox access token>
+   POLAR_WEBHOOK_SECRET=<Polar sandbox webhook secret>
+   ```
 
-There are no migrations yet while the schema is still changing. `vp run db:push` syncs the schema straight to the local database used by `cf dev`. Before the first deploy, `vp run db:generate` writes a single migration to `apps/api/drizzle` and `vp run db:migrate` applies it to the production database.
+4. Create `apps/dashboard/.env`:
 
-## Auth and email
+   ```dotenv
+   VITE_API_URL=http://localhost:3000
+   ```
 
-Better Auth serves its routes under `/auth` on the API, with email and password sign-in, email verification, and organizations. The Polar plugin creates a Polar customer on sign-up, links an existing customer with the same email, and deletes it when the user is deleted. Checkout products are listed in `apps/api/src/utils/auth.ts`.
+5. Start the apps:
 
-Emails are React Email components in `apps/api/src/emails`, sent through the Cloudflare `EMAIL` binding. In local development, `cf dev` simulates sending.
+   ```bash
+   vp run dev
+   ```
 
-## API procedures and billing
+6. The first time, leave the apps running and create the database tables from a second terminal:
 
-`apps/api/src/utils/orpc.ts` defines four procedure levels. Each one adds typed context and typed errors on top of the one below it:
+   ```bash
+   vp run db:push
+   ```
 
-- `publicProcedure` runs for anyone. Context has `headers` and `auth` (the session or `null`).
-- `authedProcedure` requires a signed-in user and adds `user` and `session`. It fails with `UNAUTHORIZED` (401).
-- `organizationProcedure` also requires an organization and adds `organizationId`. If the session has no active organization, it activates the user's first one. It fails with `NO_ORGANIZATION` (403).
-- `paidProcedure` also requires paid access and adds `access`, which is either an active Polar subscription or the organization's trial. It fails with `PAYMENT_REQUIRED` (402), with a `reason` of `no_active_subscription` or `trial_expired`.
+Open the dashboard at http://localhost:3001 and sign up. Shiru doesn't send real email in development. To find the verification link, open the local Cloudflare explorer at http://localhost:3000/cdn-cgi/local/explorer.
 
-Each user gets one 30-day trial, no card needed. It goes to the first organization they create. Later organizations start without one, even if the first is deleted. The trial end is stored in `organizations.trial_ends_at`, so you can extend a trial by updating that row. Users must verify their email before they can sign in.
+The API runs at http://localhost:3000 and the marketing site at http://localhost:3002. A published docs site with the slug `acme` is served at http://acme.docs.localhost:3003.
 
-Access rules live in `apps/api/src/utils/billing.ts`. Polar's `subscription.created` and `subscription.updated` webhooks keep the `subscriptions` table in sync. A checkout has to pass the organization ID as `referenceId` so the subscription can be linked to it, as the dashboard's upgrade button does.
+## Contributing
 
-## Deployment
-
-Pushes to `main` deploy through the `deploy` job in `.github/workflows/ci.yml`, after checks, build and tests pass. It applies pending D1 migrations, then deploys the three Workers:
-
-- `shiru-api` serves `api.shiru.sh`.
-- `shiru-dashboard` serves `app.shiru.sh`.
-- `shiru-site` serves `shiru.sh`.
-
-The job needs three repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `NUCLEO_LICENSE_KEY`. Production URLs live in each app's Cloudflare config and in `apps/dashboard/.env.production`. The API's `BETTER_AUTH_SECRET`, `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `PREVIEW_SECRET`, `DISPATCH_ACCOUNT_ID` and `DISPATCH_API_TOKEN` are Worker secrets, set with `cf workers secrets update`. The last two let publishing deploy builds to the `shiru-docs` dispatch namespace. The token needs Workers Scripts Edit on that account. Development never deploys, so local `.env` files leave them out. `PREVIEW_SECRET` signs the grants that let organization members into previews, and `shiru-dispatch` needs the same value as its own `PREVIEW_SECRET` secret. Development uses a fixed value in both, so it needs no setup.
-
-To deploy by hand, export `CLOUDFLARE_API_TOKEN`, then run `vp run build` and `vp run deploy`. Schema changes need a migration: run `vp run db:generate` in `apps/api` and commit the new folder in `apps/api/drizzle`.
-
-### Docs traffic
-
-`apps/dispatch` is the Dispatch Worker, `shiru-dispatch`. It is the single entry point for docs sites. It maps `<slug>.<docs domain>` to the user Worker named `<slug>` in the `production` dispatch namespace and passes the response through. It serves a custom hostname from its doc's Worker and redirects a doc with an active custom domain there, both read from the `DOMAINS` KV namespace that `apps/api` writes. It answers 404 for unknown hostnames, invalid names and slugs with no deployed Worker. Hostname rules come from `apps/api/src/docs/names.ts`.
-
-Previews live at `<label>--<slug>.preview.<docs domain>` and are served from the Worker `<slug>--<label>`, only to members of the doc's organization. A visitor without a preview cookie goes to the API's `/preview/authorize`, which checks the dashboard session and membership and sends a member back with a one-minute signed grant. The Dispatch Worker trades that grant for an hour-long cookie on the preview host. Both Workers sign and check grants with `apps/api/src/docs/preview-access.ts`. The API's cron, every 10 minutes, deletes draft previews nobody requested for 30 days.
-
-In development there is no dispatch namespace. `vp run dev` starts the Dispatch Worker on port 3003, and browsers resolve `*.localhost` to your machine, so `http://acme.docs.localhost:3003/` serves site `acme` and `http://draft--acme.preview.docs.localhost:3003/` its draft preview. It forwards the request to the API's dev-only route `/dev/docs/<worker name>/<path>` on `http://localhost:3000`, which serves the target's build from its build container.
-
-It is built and tested in CI but not deployed. It has no `deploy` script, routes or domains yet, for two reasons:
-
-- Workers for Platforms is not purchased, so the `production` namespace does not exist.
-- The docs domain is not bought. Production uses the placeholder `shiru-docs.invalid`, the same as `apps/api`.
-
-Once both exist, set `DOCS_DOMAIN` in `apps/dispatch/cloudflare.config.ts`, add the routes `*.<docs domain>/*` and `*.preview.<docs domain>/*`, and add `deploy` and `deploy:dry-run` scripts like `apps/api` has.
-
-## UI
-
-Shared shadcn/ui primitives live in `packages/ui`. Design tokens are in `packages/ui/src/styles/globals.css`.
-
-```bash
-npx shadcn@latest add dialog popover -c packages/ui
-```
-
-```tsx
-import { Button } from "@shiru/ui/components/button";
-```
-
-Run the shadcn CLI from `apps/dashboard` for app-specific blocks.
-
-## Scripts
-
-- `vp run dev`, `vp run dev:dashboard`, and `vp run dev:api` start the dev servers.
-- `vp run build` builds both apps.
-- `vp check` formats, lints, and type checks. `vp check --fix` applies fixes. Route and binding types are generated by dev or build, so run one of them first on a fresh clone.
-- `vp run check-types` type checks only.
-- `vp run test` runs the API tests with coverage, and the Dispatch Worker tests. CI fails if coverage drops below the thresholds in `apps/api/vite.config.ts`. See `AGENTS.md` for how to write tests.
-- `vp run deploy:dry-run` validates the API build output without uploading.
-- `vp run update` interactively updates every dependency in the repo to its latest version.
-- `vp run hooks:setup` installs the Vite+ Git hooks. The `staged` block in `vite.config.ts` sets what runs on commit.
-
-CI (`.github/workflows/ci.yml`) installs, builds, runs `vp check` and the tests, and does deploy dry runs. It uses example URLs and needs no secrets.
-
-## Structure
-
-```
-apps/
-  dashboard/          React + TanStack Router frontend
-  api/                Hono + oRPC API on Workers
-    drizzle/          generated migrations
-    src/routers/      oRPC routers
-    src/schema/       Drizzle tables
-    src/utils/        db, auth, context, and oRPC procedures
-  dispatch/           Dispatch Worker that routes docs hostnames to site Workers
-packages/
-  ui/                 shadcn/ui components and styles
-```
-
-The dashboard imports the router type straight from `apps/api/src/routers`, so API changes type check end to end.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for how the code is organized, how to run checks and tests, and how Shiru is deployed. [docs-platform-architecture.md](docs-platform-architecture.md) explains the publishing design in depth.
