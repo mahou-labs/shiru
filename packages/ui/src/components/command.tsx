@@ -107,7 +107,6 @@ export function Command({
 
 export function CommandInput({
   className,
-  placeholder = undefined,
   ...props
 }: React.ComponentProps<typeof AutocompleteInput>): React.ReactElement {
   return (
@@ -118,7 +117,6 @@ export function CommandInput({
           "border-transparent! bg-transparent! shadow-none before:hidden has-focus-visible:ring-0",
           className,
         )}
-        placeholder={placeholder}
         size="lg"
         startAddon={<IconMagnifierOutlineDuo18 />}
         {...props}
