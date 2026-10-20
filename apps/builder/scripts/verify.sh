@@ -87,6 +87,13 @@ check "good: logo in the header" file_contains /out/good/index.html '<img src="/
 check "good: navigation label in the sidebar" file_contains /out/good/index.html '>Introduction<'
 check "good: name from docs.config.json in the title" file_contains /out/good/guides/setup/index.html '<title>Setup | Acme Docs</title>'
 check "good: github link in the header" file_contains /out/good/index.html 'href="https://github.com/acme/acme"'
+check "good: _headers lets the edge cache keep pages until the next deploy" \
+  file_contains /out/good/_headers 'Cache-Control: public, max-age=0, must-revalidate, s-maxage=31536000'
+check "good: _headers marks hashed /_astro/ files immutable" \
+  equals "$(docker exec "$container" grep -A2 -xF '/_astro/*' /out/good/_headers)" \
+  $'/_astro/*\n  ! Cache-Control\n  Cache-Control: public, max-age=31536000, immutable'
+check "good: _headers keeps the Nimbus agent discovery rules" \
+  file_contains /out/good/_headers '# Nimbus agent discovery (generated)'
 
 docker exec "$container" rm -f /work/good/content/guides/faq.mdx
 start=$(date +%s%N)

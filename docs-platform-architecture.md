@@ -383,8 +383,14 @@ Every site Worker is the same assets-only Worker:
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
   },
+  "cache_options": { "enabled": true },
 }
 ```
+
+Workers Cache sits in front of each site Worker, and each Worker gets its own cache. The Worker
+version is part of the cache key, so every deploy starts with an empty cache and no purge is
+needed. The template's `public/_headers` lets the edge cache keep every response for a year while
+browsers revalidate pages on each visit and keep hashed `/_astro/` files forever.
 
 ---
 
