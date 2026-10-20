@@ -4,11 +4,11 @@ COPY --from=docker.io/cloudflare/sandbox:1.0.0 /usr/local/bin/sandbox-shim /usr/
 
 # Builds run with no network, so every dependency is installed here.
 WORKDIR /builder/template
-COPY template/package.json template/package-lock.json ./
+COPY packages/site-template/package.json packages/site-template/package-lock.json ./
 RUN npm ci --no-audit --no-fund && npm cache clean --force
 
-COPY template/ ./
-COPY src/ /builder/src/
+COPY packages/site-template/ ./
+COPY apps/builder/src/ /builder/src/
 
 # build-site imports zod, which resolves from the template's node_modules.
 RUN ln -s /builder/template/node_modules /builder/node_modules \

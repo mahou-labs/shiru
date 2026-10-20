@@ -14,7 +14,7 @@ function tokens(css: string, selector: string): Record<string, string> {
 }
 
 const site = readFileSync(
-  new URL("../../../../builder/template/src/styles/globals.css", import.meta.url),
+  new URL("../../../../../packages/site-template/src/styles/globals.css", import.meta.url),
   "utf8",
 );
 const editor = readFileSync(new URL("./editor.css", import.meta.url), "utf8");

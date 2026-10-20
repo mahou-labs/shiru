@@ -8,7 +8,10 @@ const base = process.argv[2] ?? "http://localhost:3000";
 const fixtures = path.resolve(import.meta.dirname, "../../builder/fixtures");
 const docUrl = "https://acme.shiru.sh";
 const { version } = JSON.parse(
-  await readFile(path.resolve(import.meta.dirname, "../../builder/template/package.json"), "utf8"),
+  await readFile(
+    path.resolve(import.meta.dirname, "../../../packages/site-template/package.json"),
+    "utf8",
+  ),
 );
 const name = `verify-${Date.now()}`;
 let passed = 0;

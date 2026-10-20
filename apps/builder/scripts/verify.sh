@@ -53,7 +53,8 @@ seconds_since() { awk -v s="$1" -v e="$(date +%s%N)" 'BEGIN { printf "%.1f", (e 
 node scripts/generate-schema.ts
 check "docs.config.schema.json matches src/config.ts" git diff --quiet -- docs.config.schema.json
 
-docker build --platform linux/amd64 -t "$image" . >"$tmp/docker-build.log" 2>&1 ||
+# The way cf builds it: the Dockerfile on stdin and the repository root as the context.
+docker build --platform linux/amd64 --progress=plain -t "$image" -f - ../.. <Dockerfile >"$tmp/docker-build.log" 2>&1 ||
   {
     cat "$tmp/docker-build.log"
     exit 1
@@ -61,7 +62,7 @@ docker build --platform linux/amd64 -t "$image" . >"$tmp/docker-build.log" 2>&1 
 docker run -d --rm --network none --name "$container" "$image" sleep infinity >/dev/null
 docker exec "$container" mkdir -p /work
 for fixture in fixtures/*/; do docker cp "$fixture" "$container:/work/" >/dev/null; done
-template_version=$(node -p 'require("./template/package.json").version')
+template_version=$(node -p 'require("../../packages/site-template/package.json").version')
 
 start=$(date +%s%N)
 build /work/good /out/good

@@ -3,7 +3,7 @@ import { bindings, defineConfig, defineContainer, exports, triggers } from "cf/c
 const builder = defineContainer({
   name: "shiru-api-builder",
   schedulingPolicy: "durable-object",
-  images: { builder: { dockerfile: "../builder/Dockerfile", buildContext: "../builder" } },
+  images: { builder: { dockerfile: "../builder/Dockerfile", buildContext: "../.." } },
 });
 
 export default defineConfig(({ mode }) => {
