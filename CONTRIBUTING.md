@@ -105,6 +105,8 @@ Maintainers release with the **Release** workflow (`.github/workflows/release.ym
 - `shiru-site` serves `shiru.sh`.
 - `shiru-dispatch` serves every hostname on the `shiru.page` zone, including custom domains.
 
+Custom domains also need the `shiru.page` zone's fallback origin, `cname.shiru.page`, which is the target customers' CNAMEs point at. Cloudflare activates a fallback origin only when it has its own proxied record, and the `*.shiru.page` wildcard does not count, so the zone keeps a proxied `AAAA` record for `cname.shiru.page` pointing at `100::`. Until the fallback origin is active, every custom hostname stays pending with "fallback origin is not active yet". Check it with `cf custom-hostnames fallback-origin get -z shiru.page`. After fixing it, update the fallback origin again so Cloudflare retries.
+
 The workflow needs three repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `NUCLEO_LICENSE_KEY`.
 
 The API's `BETTER_AUTH_SECRET`, `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `PREVIEW_SECRET`, `DISPATCH_ACCOUNT_ID`, `DISPATCH_API_TOKEN` and `CUSTOM_HOSTNAMES_API_TOKEN` are Worker secrets. Set them with `cf workers secrets update`. Deploys keep them.
