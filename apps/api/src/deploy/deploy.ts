@@ -270,7 +270,13 @@ type AssetsConfig = {
 /** The multipart body of the script PUT. */
 export function scriptForm(jwt: string, config: AssetsConfig, shape: DocWorkerShape): FormData {
   const form = new FormData();
-  const metadata = { assets: { jwt, config }, compatibility_date: COMPATIBILITY_DATE };
+  const metadata = {
+    assets: { jwt, config },
+    compatibility_date: COMPATIBILITY_DATE,
+    // The Worker version is part of the cache key, so each deploy starts from an
+    // empty cache. That is what invalidates the cache on publish.
+    cache_options: { enabled: true },
+  };
   if (shape === "assets-only") {
     form.set("metadata", JSON.stringify(metadata));
     return form;

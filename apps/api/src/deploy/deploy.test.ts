@@ -220,6 +220,7 @@ const assetsOnlyMetadata = (jwt: string) => ({
       },
     },
     compatibility_date: "2026-10-01",
+    cache_options: { enabled: true },
   }),
 });
 
@@ -370,6 +371,7 @@ describe("deployDoc", () => {
         config: { html_handling: "auto-trailing-slash", not_found_handling: "404-page" },
       },
       compatibility_date: "2026-10-01",
+      cache_options: { enabled: true },
     });
   });
 
@@ -394,6 +396,7 @@ describe("deployDoc", () => {
             config: { html_handling: "auto-trailing-slash", not_found_handling: "404-page" },
           },
           compatibility_date: "2026-10-01",
+          cache_options: { enabled: true },
           main_module: "worker.js",
           bindings: [{ type: "assets", name: "ASSETS" }],
         }),
