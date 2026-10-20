@@ -4,11 +4,6 @@ dist/
 .wrangler/
 .nimbus/
 
-# Written by build-site on every build.
-site.json
-src/content/docs/
-public/assets/
-
 .env
 .env.local
 .env.*.local

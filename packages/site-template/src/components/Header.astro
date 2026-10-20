@@ -6,7 +6,7 @@ import { LinkButton } from "./ui/link-button";
 import { ThemeToggle } from "./ui/theme-toggle";
 import SearchTrigger from "./ui/search/SearchTrigger.astro";
 import { config } from "virtual:nimbus/config";
-import site from "../../site.json";
+import docs from "../../docs.config.json";
 import { getSidebarSections, stripBase, withBase } from "@cloudflare/nimbus-docs/runtime";
 
 interface Props {
@@ -28,6 +28,9 @@ interface Props {
 // destructure to avoid an unused-var warning.
 const { collection, showSidebar = true, sections: sectionsProp } = Astro.props;
 
+// docs.config.json names the logo by its path in the repo; public/ is served from the site root.
+const logo = (docs as { logo?: string }).logo?.replace(/^public\//, "/");
+
 // Normalize trailing slash so isActive matches sidebar hrefs.
 const currentSlug = stripBase(Astro.url.pathname, import.meta.env.BASE_URL).replace(/\/$/, "") || "/";
 const sections =
@@ -43,7 +46,7 @@ const resolveSectionHref = (href: string): string =>
     <div class="flex items-center gap-3 min-w-0">
       <slot name="brand">
         <a href={homeHref} class="group shrink-0 flex items-center gap-2">
-          {site.logo && <img src={withBase(site.logo, import.meta.env.BASE_URL)} alt="" class="h-6 w-auto" />}
+          {logo && <img src={withBase(logo, import.meta.env.BASE_URL)} alt="" class="h-6 w-auto" />}
           <span class="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
             {config.title}
           </span>

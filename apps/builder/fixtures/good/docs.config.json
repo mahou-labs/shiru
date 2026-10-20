@@ -3,7 +3,7 @@
   "version": 1,
   "name": "Acme Docs",
   "description": "How to install and run Acme.",
-  "logo": "assets/logo.svg",
+  "logo": "public/assets/logo.svg",
   "github": "https://github.com/acme/acme",
   "navigation": [
     { "label": "Introduction", "href": "/" },

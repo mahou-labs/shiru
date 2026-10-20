@@ -4,12 +4,33 @@ import tailwindcss from "@tailwindcss/vite";
 import nimbus, { defineConfig as defineNimbusConfig } from "@cloudflare/nimbus-docs";
 import { tableScroll } from "@cloudflare/nimbus-docs/markdown";
 import { markdownFeatures } from "./markdown.ts";
-// Written by build-site from the site's docs.config.json and SITE_URL.
-import site from "./site.json" with { type: "json" };
+import docs from "./docs.config.json" with { type: "json" };
+
+type NavItem = { label: string; href: string } | { label: string; items: NavItem[] };
+type SidebarItem = { label: string; link: string } | { label: string; items: SidebarItem[] };
+
+const toSidebarItem = (item: NavItem): SidebarItem =>
+  "items" in item
+    ? { label: item.label, items: item.items.map(toSidebarItem) }
+    : { label: item.label, link: item.href };
+
+// shiru checks docs.config.json against its schema before every build, so the cast holds.
+const { name, description, github, navigation } = docs as {
+  name: string;
+  description?: string;
+  github?: string;
+  navigation?: NavItem[];
+};
 
 const nimbusConfig = defineNimbusConfig({
   locale: "en",
-  ...site.nimbus,
+  // shiru's builder sets SITE_URL to the address the site is published at.
+  site: (process.env.SITE_URL ?? "http://localhost:4321").replace(/\/$/, ""),
+  title: name,
+  description,
+  github: github ?? null,
+  socialImageAlt: `${name} documentation`,
+  sidebar: navigation && { items: navigation.map(toSidebarItem) },
 });
 
 export default defineConfig({
@@ -18,6 +39,9 @@ export default defineConfig({
   // Astro 7's Vite 8 bundler).
   vite: {
     plugins: [tailwindcss()],
+    // shiru's builder links node_modules in from its image. Astro takes a path outside the project
+    // for a project-relative one, so dependencies must keep their linked path.
+    resolve: { preserveSymlinks: true },
   },
   prefetch: {
     prefetchAll: true,

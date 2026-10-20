@@ -138,11 +138,11 @@ function fixtureBody(path: string): string {
 
 describe("round trip", () => {
   test.each([
-    "good/content/index.mdx",
-    "good/content/guides/faq.mdx",
-    "good/content/guides/setup.mdx",
-    "mdx-features/content/index.mdx",
-    "mdx-features/content/_note.mdx",
+    "good/src/content/docs/index.mdx",
+    "good/src/content/docs/guides/faq.mdx",
+    "good/src/content/docs/guides/setup.mdx",
+    "mdx-features/src/content/docs/index.mdx",
+    "mdx-features/src/content/docs/_note.mdx",
   ])("keeps the builder fixture %s byte for byte", (path) => {
     const body = fixtureBody(path);
     expect(body.startsWith("\n")).toBe(true);

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "Acme Docs",
-  "logo": "assets/missing.svg",
+  "logo": "public/missing.svg",
   "navigation": [
     { "label": "Introduction", "href": "/" },
     { "label": "Guides", "items": [{ "label": "Setup", "href": "/guides/setup" }] }

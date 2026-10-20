@@ -19,9 +19,9 @@
       "type": "string"
     },
     "logo": {
-      "description": "Logo file shown in the header, such as `assets/logo.svg`.",
+      "description": "Logo file shown in the header, such as `public/logo.svg`. public/ is served from the site root.",
       "type": "string",
-      "pattern": "^assets\\/(?!.*\\.\\.)[^\\\\]+\\.(svg|png|jpe?g|webp)$"
+      "pattern": "^public\\/(?!.*\\.\\.)[^\\\\]+\\.(svg|png|jpe?g|webp)$"
     },
     "github": {
       "description": "Repository URL linked from the header.",
@@ -29,7 +29,7 @@
       "format": "uri"
     },
     "navigation": {
-      "description": "Sidebar order. Leave it out to build the sidebar from the content/ folder tree.",
+      "description": "Sidebar order. Leave it out to build the sidebar from the src/content/docs/ folder tree.",
       "minItems": 1,
       "type": "array",
       "items": {

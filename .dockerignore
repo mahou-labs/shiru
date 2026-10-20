@@ -2,11 +2,5 @@
 # Dockerfile on stdin, so Docker only reads an ignore file at the root of the context.
 *
 !apps/builder/src/
-!packages/site-template/
-packages/site-template/node_modules/
-packages/site-template/dist/
-packages/site-template/.astro/
-packages/site-template/.nimbus/
-packages/site-template/site.json
-packages/site-template/src/content/docs/
-packages/site-template/public/assets/
+!packages/site-template/package.json
+!packages/site-template/package-lock.json
