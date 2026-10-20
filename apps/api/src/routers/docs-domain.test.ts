@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { hostnames } from "../schema/docs";
+import { createCustomHostname } from "../domains/cloudflare";
 import { db, domainsKv, env } from "../test/bindings";
 import { createClient } from "../test/client";
+import { FakeCloudflareZone, HOSTNAMES, ZONE_ID, ZONE_TOKEN } from "../test/cloudflare-zone";
 
 const JAN_1 = new Date("2026-01-01T00:00:00.000Z");
 const DAY = 24 * 60 * 60 * 1000;
@@ -13,7 +15,9 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
   env.ENVIRONMENT = "development";
+  env.CUSTOM_HOSTNAMES_ZONE_ID = "test-zone";
   env.CUSTOM_HOSTNAMES_API_TOKEN = "test-hostnames-token";
 });
 
@@ -122,6 +126,57 @@ describe("docs.domain", () => {
     expect([...listed, ...inProduction].map(({ url }) => url)).toEqual([
       "http://stored.docs.localhost:3003",
       "https://stored.docs.localhost",
+    ]);
+  });
+
+  it("has Cloudflare check a pending domain again in production and returns its new status", async () => {
+    const { client, docId } = await docOwner("checked");
+    const cloudflare = new FakeCloudflareZone();
+    const realFetch = globalThis.fetch;
+    // The route calls Cloudflare with the global fetch, so only Cloudflare's API goes to the fake.
+    vi.spyOn(globalThis, "fetch").mockImplementation((input, init) =>
+      new Request(input, init).url.startsWith(HOSTNAMES)
+        ? cloudflare.fetch(input, init)
+        : realFetch(input, init),
+    );
+    const zone = { id: ZONE_ID, apiToken: ZONE_TOKEN };
+    await createCustomHostname({ zone, hostname: "docs.checked.com", fetch: cloudflare.fetch });
+    await db.insert(hostnames).values({
+      hostname: "docs.checked.com",
+      docId,
+      cloudflareId: "ch-1",
+      status: "pending",
+      createdAt: JAN_1,
+    });
+    Object.assign(env, {
+      ENVIRONMENT: "production",
+      CUSTOM_HOSTNAMES_ZONE_ID: ZONE_ID,
+      CUSTOM_HOSTNAMES_API_TOKEN: ZONE_TOKEN,
+    });
+    cloudflare.activate("ch-1");
+
+    expect(await client.rpc("docs/domain/check", { docId })).toEqual({
+      status: 200,
+      body: {
+        json: {
+          hostname: "docs.checked.com",
+          status: "active",
+          record: { type: "CNAME", name: "docs.checked.com", target: "cname.docs.localhost" },
+          errors: [],
+        },
+      },
+    });
+    expect(cloudflare.requests.slice(1)).toEqual([
+      {
+        method: "PATCH",
+        url: `${HOSTNAMES}/ch-1`,
+        authorization: `Bearer ${ZONE_TOKEN}`,
+        json: { ssl: { method: "http", type: "dv" } },
+      },
+    ]);
+    expect(kv("host:docs.checked.com", "redirect:checked")).toEqual([
+      "checked",
+      "docs.checked.com",
     ]);
   });
 
