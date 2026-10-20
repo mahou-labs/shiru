@@ -87,7 +87,7 @@ Each doc's files live in a Git repository in Cloudflare Artifacts, which `cf dev
 
 ## Docs sites
 
-Each doc's repo holds a complete [Nimbus](https://nimbus-docs.com/) project under `docs/`, so a developer can clone it and run `npm install && npx astro dev`. A new doc starts as a copy of `packages/site-template`, with its name written into two files:
+Each doc's repo holds a complete [Nimbus](https://nimbus-docs.com/) project under `docs/`, so a developer can clone it and run `npm install && npx astro dev`. A new doc starts as a copy of `packages/site-template`, with its name written into `docs.config.json`:
 
 ```
 docs/

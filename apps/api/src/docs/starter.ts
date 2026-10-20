@@ -47,17 +47,12 @@ const templateFiles = new Map<string, Uint8Array>(
   ].map(([path, content]) => [path.slice(TEMPLATE_DIR.length), content]),
 );
 
-/** The files a doc starts with: the whole site template, named after the doc, so its first publish builds. */
+/** The files a doc starts with: the whole site template, with the doc's name in docs.config.json. */
 export function starterDrafts(docName: string, user: string, now: number): Draft[] {
   const files = new Map(templateFiles);
   files.set(
     "docs.config.json",
     encoder.encode(`${JSON.stringify({ version: 1, name: docName }, null, 2)}\n`),
-  );
-  // The name stays in front matter, as a JSON string, because MDX would read `{` or `<` as code.
-  files.set(
-    "src/content/docs/index.mdx",
-    encoder.encode(`---\ntitle: ${JSON.stringify(docName)}\n---\n\nStart writing here.\n`),
   );
   return [...files].map(([path, content]) => ({
     path: `${DOCS_ROOT}${path}`,

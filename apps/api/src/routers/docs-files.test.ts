@@ -94,7 +94,7 @@ describe("doc files", () => {
           return [path, meta.split(" ")[1]!];
         }),
     );
-    const named = ["docs.config.json", "src/content/docs/index.mdx"];
+    const named = "docs.config.json";
 
     const tree = await client.rpc("docs/files/tree", { docId });
     const files = (tree.body.json as { files: { path: string; status: string }[] }).files;
@@ -105,11 +105,11 @@ describe("doc files", () => {
     const doc = docObjects.getByName(docId) as unknown as DurableObjectStub<Doc>;
     const seeded = new Map<string, string>();
     for (const { path } of files) {
-      if (named.includes(path)) continue;
+      if (path === named) continue;
       const file = await doc.getFile(path);
       seeded.set(path, file.kind === "file" ? await blobSha(file.content) : "missing");
     }
-    expect(seeded).toEqual(new Map([...tracked].filter(([path]) => !named.includes(path))));
+    expect(seeded).toEqual(new Map([...tracked].filter(([path]) => path !== named)));
 
     expect(await client.rpc("docs/files/get", { docId, path: "docs.config.json" })).toEqual({
       status: 200,
@@ -117,17 +117,6 @@ describe("doc files", () => {
         json: {
           path: "docs.config.json",
           content: '{\n  "version": 1,\n  "name": "Acme Docs"\n}\n',
-        },
-      },
-    });
-    expect(
-      await client.rpc("docs/files/get", { docId, path: "src/content/docs/index.mdx" }),
-    ).toEqual({
-      status: 200,
-      body: {
-        json: {
-          path: "src/content/docs/index.mdx",
-          content: '---\ntitle: "Acme Docs"\n---\n\nStart writing here.\n',
         },
       },
     });
