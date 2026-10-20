@@ -275,6 +275,53 @@ describe("refreshDomain", () => {
   });
 });
 
+describe("refreshDomain with revalidate", () => {
+  it("has Cloudflare check the domain again instead of only reading it", async () => {
+    const { docId } = await createDoc("recheck");
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    await addDomain({ ...deps, doc: (await site(docId)).doc, hostname: "docs.recheck.com" });
+    cloudflare.activate("ch-1");
+
+    expect(
+      await refreshDomain({ ...deps, ...(await withDomain(docId)), revalidate: true }),
+    ).toEqual({
+      ok: true,
+      domain: {
+        hostname: "docs.recheck.com",
+        status: "active",
+        record: { type: "CNAME", name: "docs.recheck.com", target: "cname.shiru.page" },
+        errors: [],
+      },
+    });
+    expect(cloudflare.requests.slice(1).map(({ method, url }) => [method, url])).toEqual([
+      ["PATCH", `${HOSTNAMES}/ch-1`],
+    ]);
+    expect((await site(docId)).row?.status).toBe("active");
+    expect(kv("host:docs.recheck.com", "redirect:recheck")).toEqual([
+      "recheck",
+      "docs.recheck.com",
+    ]);
+  });
+
+  it("does not call Cloudflare for a domain being removed", async () => {
+    const { docId } = await createDoc("recheck-removing");
+    const cloudflare = new FakeCloudflareZone();
+    const deps = { env: production, fetch: cloudflare.fetch };
+    await addDomain({
+      ...deps,
+      doc: (await site(docId)).doc,
+      hostname: "docs.recheck-removing.com",
+    });
+    await db.update(hostnames).set({ status: "removing" }).where(eq(hostnames.docId, docId));
+
+    expect(
+      await refreshDomain({ ...deps, ...(await withDomain(docId)), revalidate: true }),
+    ).toMatchObject({ ok: true, domain: { status: "removing" } });
+    expect(cloudflare.requests.map(({ method }) => method)).toEqual(["POST"]);
+  });
+});
+
 describe("removeDomain", () => {
   it("deletes the Cloudflare hostname, its routing and the row, and serves the doc at its address", async () => {
     const { client, docId } = await createDoc("leaving");

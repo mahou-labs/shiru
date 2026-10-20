@@ -5,7 +5,7 @@ import { CLOUDFLARE_API, type CloudflareFailure, parseResponse } from "../deploy
 /** A Cloudflare for SaaS zone and a token that can edit its custom hostnames. */
 export type Zone = { id: string; apiToken: string };
 
-export type HostnameStep = "create" | "get" | "delete";
+export type HostnameStep = "create" | "get" | "revalidate" | "delete";
 
 export type HostnameFailure = CloudflareFailure<HostnameStep>;
 
@@ -23,6 +23,8 @@ const customHostname = z.object({
 /** The fields of a Cloudflare custom hostname this code reads. */
 export type CustomHostnameRecord = z.infer<typeof customHostname>;
 
+const SSL = { method: "http", type: "dv" } as const;
+
 /**
  * Registers `hostname` on the zone. Cloudflare validates the certificate over HTTP once the
  * customer's CNAME points at the zone, so the CNAME is the only record they add.
@@ -39,7 +41,7 @@ export async function createCustomHostname({
   const response = await fetch(hostnamesUrl(zone), {
     method: "POST",
     headers: { Authorization: `Bearer ${zone.apiToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ hostname, ssl: { method: "http", type: "dv" } }),
+    body: JSON.stringify({ hostname, ssl: SSL }),
   });
   const parsed = await parseResponse("create", response, customHostname);
   return parsed.ok ? { ok: true, record: parsed.result } : parsed;
@@ -60,6 +62,30 @@ export async function getCustomHostname({
   });
   if (response.status === 404) return { ok: true, record: null };
   const parsed = await parseResponse("get", response, customHostname);
+  return parsed.ok ? { ok: true, record: parsed.result } : parsed;
+}
+
+/**
+ * Asks Cloudflare to check the hostname again now. Cloudflare retries validation on a backoff that
+ * grows to four hours, and a PATCH that changes nothing restarts it. Null when Cloudflare no longer
+ * has the hostname, which it deletes after seven days without validating.
+ */
+export async function revalidateCustomHostname({
+  zone,
+  id,
+  fetch = globalThis.fetch,
+}: {
+  zone: Zone;
+  id: string;
+  fetch?: typeof globalThis.fetch;
+}): Promise<{ ok: true; record: CustomHostnameRecord | null } | HostnameFailure> {
+  const response = await fetch(`${hostnamesUrl(zone)}/${id}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${zone.apiToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ ssl: SSL }),
+  });
+  if (response.status === 404) return { ok: true, record: null };
+  const parsed = await parseResponse("revalidate", response, customHostname);
   return parsed.ok ? { ok: true, record: parsed.result } : parsed;
 }
 

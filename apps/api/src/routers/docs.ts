@@ -169,6 +169,20 @@ const domainRouter = {
       if (!result.ok) throw errors.NOT_CONFIGURED({ message: result.error.message });
       return result.domain;
     }),
+  /** Has Cloudflare check a domain that is not active now, instead of at its next retry. */
+  check: organizationProcedure
+    .errors({ ...DOC_ERRORS, NOT_CONFIGURED: DOMAIN_ERRORS.NOT_CONFIGURED })
+    .input(docInput)
+    .handler(async ({ context, input, errors }) => {
+      const found = await findDoc(context.organizationId, input.docId);
+      if (!found) throw errors.NOT_FOUND();
+      const { doc, domain } = found;
+      if (!domain) return null;
+      if (domain.status === "active") return toDomain(domain, [], env);
+      const result = await refreshDomain({ env, doc, row: domain, revalidate: true });
+      if (!result.ok) throw errors.NOT_CONFIGURED({ message: result.error.message });
+      return result.domain;
+    }),
   add: paidProcedure
     .errors({ ...DOC_ERRORS, ...DOMAIN_ERRORS })
     .input(docInput.extend({ hostname: CustomHostname }))
