@@ -80,7 +80,16 @@ template_version=$(node -p "require('$template/package.json').version")
 
 build /work/template /out/template
 check "template: the bare site template builds" equals "$stdout" "{\"ok\":true,\"templateVersion\":\"$template_version\"}"
-check "template: starter home page" file_contains /out/template/index.html '<title>Docs</title>'
+check "template: starter home page" file_contains /out/template/index.html '<title>Welcome | Docs</title>'
+for page in guides/writing-pages guides/customizing components; do
+  check "template: starter page /$page/" file_exists "/out/template/$page/index.html"
+done
+showcase_missing=$(node -e '
+  const slugs = require(process.argv[1]).components.map((c) => c.slug);
+  const html = require("fs").readFileSync(0, "utf8");
+  console.log(slugs.filter((s) => !new RegExp(`<h[23][^>]* id="${s}"`).test(html)).join(" "));
+' "$(realpath "$template/nimbus.json")" < <(docker exec "$container" cat /out/template/components/index.html))
+check "template: the components page has a heading for each component in nimbus.json" equals "$showcase_missing" ""
 
 start=$(date +%s%N)
 build /work/good /out/good
