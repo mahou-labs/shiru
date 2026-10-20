@@ -6,6 +6,7 @@ import {
   deleteCustomHostname,
   domainStatus,
   getCustomHostname,
+  revalidateCustomHostname,
 } from "./cloudflare";
 import { FakeCloudflareZone, HOSTNAMES } from "../test/cloudflare-zone";
 
@@ -96,6 +97,50 @@ describe("getCustomHostname", () => {
       step: "get",
       status: 502,
       message: "HTTP 502: Bad gateway",
+      errors: [],
+    });
+  });
+});
+
+describe("revalidateCustomHostname", () => {
+  it("sends Cloudflare the same SSL settings so it checks again, and returns the record", async () => {
+    const cloudflare = new FakeCloudflareZone();
+    await createCustomHostname({ zone, hostname: "docs.acme.com", fetch: cloudflare.fetch });
+
+    expect(await revalidateCustomHostname({ zone, id: "ch-1", fetch: cloudflare.fetch })).toEqual({
+      ok: true,
+      record: {
+        id: "ch-1",
+        hostname: "docs.acme.com",
+        status: "pending",
+        verification_errors: ["custom hostname does not CNAME to this zone."],
+        ssl: { status: "pending_validation", validation_errors: [] },
+      },
+    });
+    expect(cloudflare.requests.at(-1)).toEqual({
+      method: "PATCH",
+      url: `${HOSTNAMES}/ch-1`,
+      authorization: "Bearer zone-token",
+      json: { ssl: { method: "http", type: "dv" } },
+    });
+  });
+
+  it("returns null for a hostname Cloudflare deleted", async () => {
+    const cloudflare = new FakeCloudflareZone();
+    expect(await revalidateCustomHostname({ zone, id: "gone", fetch: cloudflare.fetch })).toEqual({
+      ok: true,
+      record: null,
+    });
+  });
+
+  it("returns a server error as a failure", async () => {
+    const cloudflare = new FakeCloudflareZone();
+    cloudflare.failNext("PATCH", `${HOSTNAMES}/ch-1`, 503, "Unavailable");
+    expect(await revalidateCustomHostname({ zone, id: "ch-1", fetch: cloudflare.fetch })).toEqual({
+      ok: false,
+      step: "revalidate",
+      status: 503,
+      message: "HTTP 503: Unavailable",
       errors: [],
     });
   });

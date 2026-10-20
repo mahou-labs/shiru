@@ -48,11 +48,19 @@ describe("docs.domain", () => {
       status: 200,
       body: { json: null },
     });
+    expect(await client.rpc("docs/domain/check", { docId })).toEqual({
+      status: 200,
+      body: { json: null },
+    });
     expect(await client.rpc("docs/domain/add", { docId, hostname: " Docs.Happy.com. " })).toEqual({
       status: 200,
       body: { json: domain },
     });
     expect(await client.rpc("docs/domain/get", { docId })).toEqual({
+      status: 200,
+      body: { json: domain },
+    });
+    expect(await client.rpc("docs/domain/check", { docId })).toEqual({
       status: 200,
       body: { json: domain },
     });
@@ -95,7 +103,7 @@ describe("docs.domain", () => {
       createdAt: JAN_1,
     });
 
-    expect(await client.rpc("docs/domain/get", { docId })).toEqual({
+    const stored = {
       status: 200,
       body: {
         json: {
@@ -105,7 +113,9 @@ describe("docs.domain", () => {
           errors: [],
         },
       },
-    });
+    };
+    expect(await client.rpc("docs/domain/get", { docId })).toEqual(stored);
+    expect(await client.rpc("docs/domain/check", { docId })).toEqual(stored);
     const listed = (await client.rpc("docs/list")).body.json as { url: string }[];
     env.ENVIRONMENT = "production";
     const inProduction = (await client.rpc("docs/list")).body.json as { url: string }[];
@@ -184,10 +194,11 @@ describe("docs.domain", () => {
     expect(
       await Promise.all([
         stranger.rpc("docs/domain/get", { docId }),
+        stranger.rpc("docs/domain/check", { docId }),
         stranger.rpc("docs/domain/add", { docId, hostname: "docs.stranger.com" }),
         stranger.rpc("docs/domain/remove", { docId }),
       ]),
-    ).toEqual([notFound, notFound, notFound]);
+    ).toEqual([notFound, notFound, notFound, notFound]);
     expect(kv("host:docs.hidden.com", "host:docs.stranger.com")).toEqual(["hidden", null]);
   });
 
@@ -236,13 +247,14 @@ describe("docs.domain", () => {
     expect(
       await Promise.all([
         client.rpc("docs/domain/get", { docId }),
+        client.rpc("docs/domain/check", { docId }),
         client.rpc("docs/domain/remove", { docId }),
         other.client.rpc("docs/domain/add", {
           docId: other.docId,
           hostname: "docs.unconfigured-other.com",
         }),
       ]),
-    ).toEqual([notConfigured, notConfigured, notConfigured]);
+    ).toEqual([notConfigured, notConfigured, notConfigured, notConfigured]);
     expect(kv("host:docs.unconfigured-other.com")).toEqual([null]);
   });
 });

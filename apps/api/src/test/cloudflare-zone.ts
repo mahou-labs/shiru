@@ -83,6 +83,7 @@ export class FakeCloudflareZone {
     const record = id === null ? undefined : this.hostnames.get(id);
     if (!record) return json(404, errorBody(1436, "The custom hostname was not found."));
     if (method === "GET") return json(200, envelope(record));
+    if (method === "PATCH") return json(200, envelope(record));
     if (method === "DELETE") {
       this.hostnames.delete(record.id);
       return json(200, envelope({ id: record.id }));

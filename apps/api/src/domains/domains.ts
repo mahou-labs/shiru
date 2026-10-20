@@ -11,6 +11,7 @@ import {
   type DomainStatus,
   getCustomHostname,
   type HostnameFailure,
+  revalidateCustomHostname,
   type Zone,
 } from "./cloudflare";
 
@@ -151,15 +152,19 @@ export async function addDomain({
 }
 
 /**
- * Reads the domain's status from Cloudflare, applies what changed and repairs its routing. Null
- * when the domain was removed meanwhile.
+ * Reads the domain's status from Cloudflare, applies what changed and repairs its routing. With
+ * `revalidate`, Cloudflare checks the domain again first instead of waiting for its next retry.
+ * Null when the domain was removed meanwhile.
  */
 export async function refreshDomain({
   env,
   fetch = globalThis.fetch,
   doc,
   row,
-}: Deps & { doc: DocRow; row: DomainRow }): Promise<Result<{ domain: Domain | null }>> {
+  revalidate = false,
+}: Deps & { doc: DocRow; row: DomainRow; revalidate?: boolean }): Promise<
+  Result<{ domain: Domain | null }>
+> {
   const cloudflare = cloudflareZone(env);
   if (!cloudflare.ok) return cloudflare;
   const { zone } = cloudflare;
@@ -167,7 +172,8 @@ export async function refreshDomain({
   let status: DomainStatus | undefined;
   let errors: string[] = [];
   if (zone && row.cloudflareId !== null && row.status !== "removing") {
-    const result = await getCustomHostname({ zone, id: row.cloudflareId, fetch });
+    const read = revalidate ? revalidateCustomHostname : getCustomHostname;
+    const result = await read({ zone, id: row.cloudflareId, fetch });
     if (!result.ok) throw cloudflareError(result);
     ({ status, errors } = domainStatus(result.record));
   }

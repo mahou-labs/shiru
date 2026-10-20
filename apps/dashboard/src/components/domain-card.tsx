@@ -229,7 +229,7 @@ function DomainDetails({ doc, domain }: { doc: Doc; domain: Domain }) {
             <p className="text-muted-foreground">
               {domain.status === "pending"
                 ? "Add this record where you manage the domain. Once it resolves, the domain is usually active within a few minutes."
-                : `Check that ${domain.hostname} has this record and no other record with the same name. If it does, remove the domain and add it again.`}
+                : `Check that ${domain.hostname} has this record and no other record with the same name, then check again. If it still fails, remove the domain and add it again.`}
             </p>
             <DnsRecord record={domain.record} />
             {domain.errors.length > 0 && (
@@ -249,10 +249,46 @@ function DomainDetails({ doc, domain }: { doc: Doc; domain: Domain }) {
           </>
         )}
       </CardPanel>
-      <CardFooter>
+      <CardFooter className="gap-2">
+        {(domain.status === "pending" || domain.status === "failed") && (
+          <CheckAgainButton docId={doc.id} />
+        )}
         <RemoveDomainButton doc={doc} domain={domain} address={address} />
       </CardFooter>
     </>
+  );
+}
+
+/**
+ * Cloudflare retries a domain less and less often, up to every four hours, so a record fixed late
+ * can wait hours to be noticed. This has it check now.
+ */
+function CheckAgainButton({ docId }: { docId: string }) {
+  const queryClient = useQueryClient();
+  const check = useMutation({
+    ...orpc.docs.domain.check.mutationOptions(),
+    onSuccess: (domain) => {
+      queryClient.setQueryData(orpc.docs.domain.get.queryKey({ input: { docId } }), domain);
+      if (domain?.status === "pending") {
+        toastManager.add({
+          type: "info",
+          title: "Cloudflare is checking the domain again",
+          description: "This usually takes a minute. The status here updates on its own.",
+        });
+      } else if (domain?.status === "failed") {
+        toastManager.add({
+          type: "error",
+          title: "The domain still is not working",
+          description: "Remove the domain and add it again.",
+        });
+      }
+    },
+  });
+
+  return (
+    <Button loading={check.isPending} onClick={() => check.mutate({ docId })}>
+      Check again
+    </Button>
   );
 }
 
