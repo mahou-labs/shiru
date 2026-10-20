@@ -14,11 +14,12 @@ apps/
     src/routers/      oRPC routers
     src/schema/       Drizzle tables
     src/utils/        db, auth, context, and oRPC procedures
-  builder/            container image and Nimbus template that build docs sites
+  builder/            container image and build-site script that build docs sites
   dashboard/          React + TanStack Router frontend
   dispatch/           Dispatch Worker that routes docs hostnames to site Workers
   site/               Astro marketing site
 packages/
+  site-template/      Nimbus project that every new doc starts as (npm, not a workspace member)
   ui/                 shadcn/ui components and styles
 ```
 
@@ -83,6 +84,40 @@ Previews live at `<label>--<slug>.preview.shiru.page` and are served from the Wo
 In development there is no dispatch namespace. `vp run dev` starts the Dispatch Worker on port 3003, and browsers resolve `*.localhost` to your machine. `http://acme.docs.localhost:3003/` serves site `acme`, and `http://draft--acme.preview.docs.localhost:3003/` serves its draft preview. The Dispatch Worker forwards the request to the API's dev-only route `/dev/docs/<worker name>/<path>`, which serves the build from its build container.
 
 Each doc's files live in a Git repository in Cloudflare Artifacts, which `cf dev` can't simulate. Development uses the real `shiru-staging` namespace on the account the `cf` CLI is signed in to, and builds run in a local Docker container. `apps/api/scripts/verify-publish.ts` publishes a doc end to end this way, with its own dev servers and database.
+
+## Docs sites
+
+Each doc's repo holds a complete [Nimbus](https://nimbus-docs.com/) project under `docs/`, so a developer can clone it and run `npm install && npx astro dev`. A new doc starts as a copy of `packages/site-template`, with its name written into two files:
+
+```
+docs/
+  package.json  package-lock.json  astro.config.ts  nimbus.json  tsconfig.json
+  docs.config.json          # shiru's site config: name, description, logo, github and navigation
+  public/                   # served from the site root; the logo goes here
+  src/content/docs/         # pages, as .mdx or .md
+  src/components/  src/layouts/  src/pages/  src/styles/  src/lib/
+```
+
+`packages/site-template` is the one source for three things:
+
+- It is a plain npm project that builds on its own: `npm ci && SITE_URL=https://example.com npx astro build`. `astro.config.ts` reads `docs.config.json` and maps it to the Nimbus config.
+- The API embeds every file git tracks there (`apps/api/src/docs/starter.ts`) and seeds a new doc with them as drafts. A test checks that the seeded files match `git ls-files -s` byte for byte.
+- The builder image installs only its `package.json` and `package-lock.json`, because builds run with no network. `build-site` links those `node_modules` into the doc's project and runs `astro build` and `nimbus-docs lint` there. It refuses a project that commits its own `node_modules`. The image builds from the repository root, and `.dockerignore` keeps everything else out of the context.
+
+`apps/builder/fixtures` hold only what differs from the template. `apps/builder/scripts/verify.sh` builds each one as the template's tracked files with the fixture on top.
+
+### Update the site template
+
+Run these in `packages/site-template`:
+
+1. Run `npx nimbus-docs outdated` to see which components and starter files fell behind.
+2. Run `npm run components -- --overwrite` to bring every registry component up to date. Without `--overwrite`, it adds the components the template lacks. It skips Nimbus features, which are agent hand-offs, not components.
+3. Run `npx nimbus-docs migrate` to apply API migrations between Nimbus versions.
+4. Bump the dependencies in `package.json` and run `npm install`.
+5. Add any new component meant for page content to `src/components.ts`.
+6. Run `apps/builder/scripts/verify.sh` and `vp run test`.
+
+Existing docs keep the template they started from. The image's `node_modules` come from the new `package-lock.json`, so a doc whose `package.json` asks for other versions still builds against the image's.
 
 ## UI
 
