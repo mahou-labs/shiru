@@ -1,7 +1,6 @@
 /**
  * MDX globals registry: components available inside MDX without `import`.
- * Site content cannot import anything, so this list is the whole component
- * surface a site can use.
+ * Layout and API reference components stay importable but are not listed.
  */
 
 import {
@@ -22,6 +21,7 @@ import { Frame } from "./components/ui/frame";
 import { LinkButton } from "./components/ui/link-button";
 import { LinkCard } from "./components/ui/link-card";
 import { PackageManagers } from "./components/ui/package-managers";
+import { Popover, PopoverContent, PopoverTrigger } from "./components/ui/popover";
 import { Step, Steps } from "./components/ui/steps";
 import { Tabs, TabItem } from "./components/ui/tabs";
 
@@ -42,6 +42,9 @@ export const components = {
   LinkButton,
   LinkCard,
   PackageManagers,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Step,
   Steps,
   TabItem,
