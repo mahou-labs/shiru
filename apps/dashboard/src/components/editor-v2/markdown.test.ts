@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 
 import { getSchema, type JSONContent } from "@tiptap/core";
 import { MarkdownManager } from "@tiptap/markdown";
@@ -16,6 +16,7 @@ import {
   setProp,
   type JsxProp,
 } from "./markdown";
+import { readFields, splitPage } from "./page";
 import { matchTemplates, TEMPLATES } from "./templates";
 
 function codec(flavor: Flavor) {
@@ -147,6 +148,20 @@ describe("round trip", () => {
     const body = fixtureBody(path);
     expect(body.startsWith("\n")).toBe(true);
     expect(roundTrip("mdx", body).out).toBe(body);
+  });
+
+  const starter = new URL(
+    "../../../../../packages/site-template/src/content/docs/",
+    import.meta.url,
+  );
+  test.each(
+    readdirSync(starter, { recursive: true, encoding: "utf8" }).filter((path) =>
+      /\.mdx?$/.test(path),
+    ),
+  )("keeps the site template's starter page %s byte for byte", (path) => {
+    const page = splitPage(readFileSync(new URL(path, starter), "utf8"));
+    expect(readFields(page.frontmatter)?.title).toMatch(/\S/);
+    expect(roundTrip(path.endsWith(".mdx") ? "mdx" : "md", page.body).out).toBe(page.body);
   });
 
   const canonical: [string, Flavor, string][] = [
