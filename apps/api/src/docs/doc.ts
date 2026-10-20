@@ -29,11 +29,11 @@ import {
   reconcileDrafts,
   repoPath,
   DocPath,
-  starterDrafts,
   previewCommit,
   type Tree,
   toTree,
 } from "./drafts";
+import { starterDrafts } from "./starter";
 import {
   buildCommit,
   type BuiltCommit,

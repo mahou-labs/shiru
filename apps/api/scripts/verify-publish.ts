@@ -28,6 +28,16 @@ const NAMESPACE = "shiru-staging";
 const DASHBOARD = "http://localhost:3001";
 const BUILD_TIMEOUT_MS = 3 * 60 * 1000;
 const run = Date.now().toString(36);
+// The site template as git tracks it, path → blob sha. A new doc starts as a copy of it.
+const template = new Map(
+  execFileSync("git", ["ls-files", "-s", "-z"], {
+    cwd: path.resolve(api, "../../packages/site-template"),
+    encoding: "utf8",
+  })
+    .split("\0")
+    .filter(Boolean)
+    .map((line) => [line.split("\t")[1]!, line.split(" ")[1]!]),
+);
 
 let passed = 0;
 let failed = 0;
@@ -147,8 +157,8 @@ function remoteHead(repo: string, limit = 1) {
   ) as { hash: string; parents: string[] }[];
 }
 
-/** Commits with the git CLI straight to the repo, as a developer holding a repo token would. */
-function pushOutOfBand(repo: string, files: Record<string, string>) {
+/** A clone of the repo and a git CLI in it, as a developer holding a repo token would have. */
+function checkout(repo: string) {
   const { remote } = cf(
     "artifacts",
     "namespaces",
@@ -185,6 +195,12 @@ function pushOutOfBand(repo: string, files: Record<string, string>) {
       { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
     ).trim();
   git("clone", "--quiet", remote, ".");
+  return { dir, git };
+}
+
+/** Commits with the git CLI straight to the repo. */
+function pushOutOfBand(repo: string, files: Record<string, string>) {
+  const { dir, git } = checkout(repo);
   for (const [file, content] of Object.entries(files)) writeFileSync(path.join(dir, file), content);
   git("add", "-A");
   git(
@@ -259,19 +275,20 @@ try {
   const tree = await rpc<{ files: { path: string; status: string }[] }>("docs/files/tree", {
     docId,
   });
-  check("a new doc starts with a config and a home page", tree.files, [
-    { path: "content/index.mdx", status: "added", conflict: false },
-    { path: "docs.config.json", status: "added", conflict: false },
-  ]);
+  check(
+    "a new doc starts with every file of the site template, as drafts",
+    [tree.files.map((file) => file.path), [...new Set(tree.files.map((file) => file.status))]],
+    [[...template.keys()].sort(), ["added"]],
+  );
 
   await rpc("docs/files/save", {
     docId,
-    path: "content/index.mdx",
+    path: "src/content/docs/index.mdx",
     content: "---\ntitle: Verify Docs\n---\n\nThe home page says hello.\n",
   });
   await rpc("docs/files/save", {
     docId,
-    path: "content/guides/setup.mdx",
+    path: "src/content/docs/guides/setup.mdx",
     content: "---\ntitle: Setup\n---\n\nInstall the verify tool first.\n",
   });
 
@@ -282,6 +299,21 @@ try {
   console.log(`publish to live (measured here): ${first.seconds.toFixed(1)}s`);
   check("live is built from the head commit", first.status.headSha, published.sha);
   check("Artifacts head matches the Doc head", remoteHead(docId)[0]?.hash, published.sha);
+  const committed = new Map(
+    checkout(docId)
+      .git("ls-tree", "-r", "HEAD", "docs/")
+      .split("\n")
+      .map((line) => {
+        const [meta, file] = line.split("\t") as [string, string];
+        return [file.slice("docs/".length), meta.split(" ")[2]!];
+      }),
+  );
+  const edited = ["docs.config.json", "src/content/docs/index.mdx"];
+  check(
+    "the first commit holds the template byte for byte",
+    [...template].filter(([file, sha]) => !edited.includes(file) && committed.get(file) !== sha),
+    [],
+  );
   const liveRun = first.status.runs.live;
   const times = [
     liveRun?.steps.queued,
@@ -342,17 +374,18 @@ try {
   );
 
   const outOfBand = pushOutOfBand(docId, {
-    "docs/content/index.mdx": "---\ntitle: Verify Docs\n---\n\nChanged outside the editor.\n",
-    "docs/content/extra.mdx": "---\ntitle: Extra\n---\n\nAdded outside the editor.\n",
+    "docs/src/content/docs/index.mdx":
+      "---\ntitle: Verify Docs\n---\n\nChanged outside the editor.\n",
+    "docs/src/content/docs/extra.mdx": "---\ntitle: Extra\n---\n\nAdded outside the editor.\n",
   });
   await rpc("docs/files/save", {
     docId,
-    path: "content/index.mdx",
+    path: "src/content/docs/index.mdx",
     content: "---\ntitle: Verify Docs\n---\n\nEdited in the editor.\n",
   });
   await rpc("docs/files/save", {
     docId,
-    path: "content/new.mdx",
+    path: "src/content/docs/new.mdx",
     content: "---\ntitle: New\n---\n\nA new page.\n",
   });
   const logBefore = log.length;
@@ -362,7 +395,7 @@ try {
   check(
     "a publish after an outside push commits what does not conflict",
     [afterStale.kind, afterStale.skipped],
-    ["published", ["content/index.mdx"]],
+    ["published", ["src/content/docs/index.mdx"]],
   );
   check(
     "the publish saw the stale ref and retried",
@@ -375,7 +408,7 @@ try {
   const conflicted = await rpc<Status>("docs/status", { docId });
   check("the editor's edit of the changed page is a conflict", conflicted.drafts, [
     {
-      path: "content/index.mdx",
+      path: "src/content/docs/index.mdx",
       op: "put",
       conflict: true,
       updatedAt: conflicted.drafts[0]?.updatedAt,
@@ -390,13 +423,13 @@ try {
   );
   check("the new page is live", (await page("/new/")).text.includes("A new page."), true);
 
-  await rpc("docs/files/discard", { docId, path: "content/index.mdx" });
+  await rpc("docs/files/discard", { docId, path: "src/content/docs/index.mdx" });
   await rpc("docs/files/save", {
     docId,
-    path: "content/index.mdx",
+    path: "src/content/docs/index.mdx",
     content: "---\ntitle: Verify Docs\n---\n\nThe second version.\n",
   });
-  await rpc("docs/files/delete", { docId, path: "content/guides/setup.mdx" });
+  await rpc("docs/files/delete", { docId, path: "src/content/docs/guides/setup.mdx" });
   const secondStart = performance.now();
   const second = await rpc<{ kind: string; sha: string }>("docs/publish", { docId });
   check("head moved", [second.kind, second.sha !== afterStale.sha], ["published", true]);
@@ -417,7 +450,7 @@ try {
 
   await rpc("docs/files/save", {
     docId,
-    path: "content/index.mdx",
+    path: "src/content/docs/index.mdx",
     content: "---\ntitle: Verify Docs\n---\n\nOnly in the preview.\n",
   });
   const previewed = await rpc<{ kind: string; sha: string; url: string }>("docs/preview", {
@@ -467,7 +500,7 @@ try {
       previewStatus.headSha,
       (await page("/")).text.includes("The second version."),
     ],
-    [["content/index.mdx"], second.sha, true],
+    [["src/content/docs/index.mdx"], second.sha, true],
   );
 
   // previewUrl names the usual dispatch port; this script's dispatch Worker runs on its own.
@@ -525,7 +558,7 @@ try {
   const save = (content: string) =>
     rpc("docs/files/save", {
       docId,
-      path: "content/index.mdx",
+      path: "src/content/docs/index.mdx",
       content: `---\ntitle: Verify Docs\n---\n\n${content}\n`,
     });
   // A save can land before the first preview snapshots the drafts, so both build the same commit

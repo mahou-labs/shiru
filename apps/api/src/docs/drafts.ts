@@ -9,7 +9,7 @@ import { blobSha, buildCommit, type Change, type TreeEntry } from "./git";
  */
 export const DOCS_ROOT = "docs/";
 
-/** A path relative to the docs root, such as `content/guides/setup.mdx`. */
+/** A path relative to the docs root, such as `src/content/docs/guides/setup.mdx`. */
 export const DocPath = z
   .string()
   .superRefine((path, context) => {
@@ -171,23 +171,4 @@ export function afterCommit(collected: Draft[], current: Draft[], tree: Tree): D
     else update.save.push({ ...latest, baseBlobSha: tree.get(draft.path)?.sha ?? null });
   }
   return update;
-}
-
-/** The files a doc starts with, so its first publish builds. */
-export function starterDrafts(docName: string, user: string, now: number): Draft[] {
-  const encoder = new TextEncoder();
-  const files = {
-    "docs.config.json": `${JSON.stringify({ version: 1, name: docName }, null, 2)}\n`,
-    // The name stays in front matter, as a JSON string, because MDX would read `{` or `<` as code.
-    "content/index.mdx": `---\ntitle: ${JSON.stringify(docName)}\n---\n\nStart writing here.\n`,
-  };
-  return Object.entries(files).map(([path, content]) => ({
-    path: `${DOCS_ROOT}${path}`,
-    op: "put",
-    content: encoder.encode(content),
-    baseBlobSha: null,
-    conflict: false,
-    updatedAt: now,
-    updatedBy: user,
-  }));
 }

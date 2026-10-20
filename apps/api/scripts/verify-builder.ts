@@ -1,18 +1,15 @@
 // Drives the Builder Durable Object end to end through the dev-only route.
 // Needs `cf dev` running (default http://localhost:3000) with Docker available.
 // Usage: node scripts/verify-builder.ts [baseUrl]
+import { execFileSync } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const base = process.argv[2] ?? "http://localhost:3000";
 const fixtures = path.resolve(import.meta.dirname, "../../builder/fixtures");
 const docUrl = "https://acme.shiru.sh";
-const { version } = JSON.parse(
-  await readFile(
-    path.resolve(import.meta.dirname, "../../../packages/site-template/package.json"),
-    "utf8",
-  ),
-);
+const template = path.resolve(import.meta.dirname, "../../../packages/site-template");
+const { version } = JSON.parse(await readFile(path.join(template, "package.json"), "utf8"));
 const name = `verify-${Date.now()}`;
 let passed = 0;
 let failed = 0;
@@ -36,18 +33,26 @@ function check(label: string, actual: unknown, expected: unknown) {
   }
 }
 
-/** The fixture's files as a repository would hold them, under docs/. */
+/**
+ * A fixture's files as a repository would hold them, under docs/: the site template's tracked
+ * files with the fixture on top, base64-encoded for the dev route.
+ */
 async function fixture(dir: string, skip: string[] = []) {
+  const files = new Map<string, Buffer>();
+  const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: template, encoding: "utf8" });
+  for (const rel of tracked.split("\0").filter(Boolean)) {
+    files.set(rel, await readFile(path.join(template, rel)));
+  }
   const root = path.join(fixtures, dir);
   const entries = await readdir(root, { recursive: true, withFileTypes: true });
-  const files = [];
   for (const entry of entries) {
     if (!entry.isFile()) continue;
     const rel = path.relative(root, path.join(entry.parentPath, entry.name));
-    if (skip.includes(rel)) continue;
-    files.push({ path: `docs/${rel}`, content: await readFile(path.join(root, rel), "utf8") });
+    files.set(rel, await readFile(path.join(root, rel)));
   }
-  return files;
+  return [...files]
+    .filter(([rel]) => !skip.includes(rel))
+    .map(([rel, content]) => ({ path: `docs/${rel}`, base64: content.toString("base64") }));
 }
 
 async function post(route: string, body: unknown) {
@@ -72,7 +77,7 @@ check("build before any reset is refused", early.status, 500);
 
 check(
   "reset refuses a path outside /work/src",
-  (await post("reset", [{ path: "../x", content: "" }])).body,
+  (await post("reset", [{ path: "../x", base64: "" }])).body,
   {
     ok: false,
     errors: ["../x has an empty, . or .. segment"],
@@ -118,7 +123,7 @@ check(
 );
 
 const warmReset = await timed(async () =>
-  post("reset", await fixture("good", ["content/guides/faq.mdx"])),
+  post("reset", await fixture("good", ["src/content/docs/guides/faq.mdx"])),
 );
 const warmBuild = await timed(build);
 check("rebuild: reset without faq.mdx", warmReset.value.body, { ok: true });
@@ -137,7 +142,9 @@ check(
   [
     bad.status,
     (bad.body as { ok?: boolean }).ok,
-    badErrors.some((e) => e.includes("canvas-confetti") && e.includes("content/index.mdx")),
+    badErrors.some(
+      (e) => e.includes("canvas-confetti") && e.includes('from "src/content/docs/index.mdx"'),
+    ),
   ],
   [200, false, true],
 );

@@ -22,6 +22,8 @@ export default defineConfig({
     // Inlined so the cloudflare:workers mock reaches its import.
     server: { deps: { inline: ["@cloudflare/sandbox"] } },
     silent: "passed-only",
+    // Vitest empties CSS modules by default; src/docs/drafts.ts bundles the site template's CSS as bytes.
+    css: { include: [/packages\/site-template\//] },
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],

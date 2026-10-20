@@ -30,8 +30,13 @@ devRoute.use(async (c, next) => {
 });
 
 devRoute.post("/builder/:name/reset", async (c) => {
-  const files = await c.req.json<SourceFile[]>();
-  return c.json(await builder(c.req.param("name")).reset(files));
+  // JSON carries no bytes, so each file comes base64-encoded.
+  const files = await c.req.json<{ path: string; base64: string }[]>();
+  const decoded: SourceFile[] = files.map(({ path, base64 }) => ({
+    path,
+    content: Uint8Array.from(atob(base64), (char) => char.charCodeAt(0)),
+  }));
+  return c.json(await builder(c.req.param("name")).reset(decoded));
 });
 
 devRoute.post("/builder/:name/build", async (c) => {

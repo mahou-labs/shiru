@@ -58,7 +58,9 @@ async function publishLive(client: ReturnType<typeof createClient>, docId: strin
   await artifacts.create(docId);
   const commit = await buildCommit({
     tree: [],
-    changes: [{ path: "docs/content/index.mdx", op: "put", content: new Uint8Array([35]) }],
+    changes: [
+      { path: "docs/src/content/docs/index.mdx", op: "put", content: new Uint8Array([35]) },
+    ],
     parent: null,
     author: { name: "Dev", email: "dev@example.com" },
     message: "import",

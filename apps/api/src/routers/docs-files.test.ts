@@ -1,9 +1,11 @@
+import { execFileSync } from "node:child_process";
+
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import type { Doc } from "../docs/doc";
 import { retirePreviews } from "../index";
-import { buildCommit } from "../docs/git";
+import { blobSha, buildCommit } from "../docs/git";
 import { DRAFT, LIVE } from "../docs/names";
 import { previews } from "../schema/docs";
 import { artifacts, db, docObjects, publishWorkflow } from "../test/bindings";
@@ -63,7 +65,7 @@ describe("doc files", () => {
     await stranger.signUpVerified("stranger@mailinator.com");
     await stranger.createOrganization("Stranger");
 
-    const path = "content/index.mdx";
+    const path = "src/content/docs/index.mdx";
     const calls = await Promise.all([
       stranger.rpc("docs/files/tree", { docId }),
       stranger.rpc("docs/files/get", { docId, path }),
@@ -77,20 +79,38 @@ describe("doc files", () => {
     expect(calls).toEqual(Array.from({ length: 8 }, () => docNotFound));
   });
 
-  it("starts a new doc with a config and a home page to publish", async () => {
+  it("starts a new doc with every file of the site template, named after the doc", async () => {
     const { client, docId } = await docOwner("starter@mailinator.com", "starter");
+    // What git tracks in packages/site-template, as path → blob sha.
+    const tracked = new Map(
+      execFileSync("git", ["ls-files", "-s", "-z", "."], {
+        cwd: `${import.meta.dirname}/../../../../packages/site-template`,
+        encoding: "utf8",
+      })
+        .split("\0")
+        .filter(Boolean)
+        .map((line) => {
+          const [meta, path] = line.split("\t") as [string, string];
+          return [path, meta.split(" ")[1]!];
+        }),
+    );
+    const named = ["docs.config.json", "src/content/docs/index.mdx"];
 
-    expect(await client.rpc("docs/files/tree", { docId })).toEqual({
-      status: 200,
-      body: {
-        json: {
-          files: [
-            { path: "content/index.mdx", status: "added", conflict: false },
-            { path: "docs.config.json", status: "added", conflict: false },
-          ],
-        },
-      },
-    });
+    const tree = await client.rpc("docs/files/tree", { docId });
+    const files = (tree.body.json as { files: { path: string; status: string }[] }).files;
+    expect(tree.status).toBe(200);
+    expect(files.map((file) => file.path)).toEqual([...tracked.keys()].sort());
+    expect(new Set(files.map((file) => file.status))).toEqual(new Set(["added"]));
+
+    const doc = docObjects.getByName(docId) as unknown as DurableObjectStub<Doc>;
+    const seeded = new Map<string, string>();
+    for (const { path } of files) {
+      if (named.includes(path)) continue;
+      const file = await doc.getFile(path);
+      seeded.set(path, file.kind === "file" ? await blobSha(file.content) : "missing");
+    }
+    expect(seeded).toEqual(new Map([...tracked].filter(([path]) => !named.includes(path))));
+
     expect(await client.rpc("docs/files/get", { docId, path: "docs.config.json" })).toEqual({
       status: 200,
       body: {
@@ -100,37 +120,31 @@ describe("doc files", () => {
         },
       },
     });
-    expect(await client.rpc("docs/status", { docId })).toEqual({
+    expect(
+      await client.rpc("docs/files/get", { docId, path: "src/content/docs/index.mdx" }),
+    ).toEqual({
       status: 200,
       body: {
         json: {
-          headSha: null,
-          targets: {},
-          runs: {},
-          drafts: [
-            {
-              path: "content/index.mdx",
-              op: "put",
-              conflict: false,
-              updatedAt: NOW,
-              updatedBy: "shiru",
-            },
-            {
-              path: "docs.config.json",
-              op: "put",
-              conflict: false,
-              updatedAt: NOW,
-              updatedBy: "shiru",
-            },
-          ],
+          path: "src/content/docs/index.mdx",
+          content: '---\ntitle: "Acme Docs"\n---\n\nStart writing here.\n',
         },
       },
+    });
+    const status = await client.rpc("docs/status", { docId });
+    const drafts = (status.body.json as { drafts: { path: string; updatedBy: string }[] }).drafts;
+    expect(drafts.find((draft) => draft.path === "public/favicon.ico")).toEqual({
+      path: "public/favicon.ico",
+      op: "put",
+      conflict: false,
+      updatedAt: NOW,
+      updatedBy: "shiru",
     });
   });
 
   it("saves, reads back, deletes and discards drafts", async () => {
     const { client, docId } = await docOwner("drafts@mailinator.com", "drafts");
-    const path = "content/guides/setup.mdx";
+    const path = "src/content/docs/guides/setup.mdx";
 
     expect(await client.rpc("docs/files/save", { docId, path, content: "# Setup\n" })).toEqual({
       status: 200,
@@ -162,46 +176,50 @@ describe("doc files", () => {
     const { client, docId } = await docOwner("existing@mailinator.com", "existing");
     const head = await pushFirstCommit(docId, {
       "README.md": text("# Repo\n"),
-      "docs/content/index.mdx": text("# Home\n"),
-      "docs/content/old.mdx": text("# Old\n"),
-      "docs/assets/logo.png": new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0xff]),
+      "docs/src/content/docs/index.mdx": text("# Home\n"),
+      "docs/src/content/docs/old.mdx": text("# Old\n"),
+      "docs/public/logo.png": new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0xff]),
     });
 
     await client.rpc("docs/files/save", {
       docId,
-      path: "content/index.mdx",
+      path: "src/content/docs/index.mdx",
       content: "# Home, edited\n",
     });
-    await client.rpc("docs/files/delete", { docId, path: "content/old.mdx" });
+    await client.rpc("docs/files/delete", { docId, path: "src/content/docs/old.mdx" });
 
     expect(await client.rpc("docs/files/tree", { docId })).toEqual({
       status: 200,
       body: {
         json: {
           files: [
-            { path: "assets/logo.png", status: "unchanged", conflict: false },
-            { path: "content/index.mdx", status: "modified", conflict: false },
-            { path: "content/old.mdx", status: "deleted", conflict: false },
+            { path: "public/logo.png", status: "unchanged", conflict: false },
+            { path: "src/content/docs/index.mdx", status: "modified", conflict: false },
+            { path: "src/content/docs/old.mdx", status: "deleted", conflict: false },
           ],
         },
       },
     });
-    expect(await client.rpc("docs/files/get", { docId, path: "content/old.mdx" })).toEqual(
+    expect(await client.rpc("docs/files/get", { docId, path: "src/content/docs/old.mdx" })).toEqual(
       fileNotFound,
     );
-    expect(await client.rpc("docs/files/get", { docId, path: "assets/logo.png" })).toEqual({
+    expect(await client.rpc("docs/files/get", { docId, path: "public/logo.png" })).toEqual({
       status: 415,
       body: {
         json: { defined: true, code: "NOT_TEXT", status: 415, message: "This file is not text" },
       },
     });
-    expect(await client.rpc("docs/files/discard", { docId, path: "content/index.mdx" })).toEqual({
+    expect(
+      await client.rpc("docs/files/discard", { docId, path: "src/content/docs/index.mdx" }),
+    ).toEqual({
       status: 200,
-      body: { json: { path: "content/index.mdx", discarded: true } },
+      body: { json: { path: "src/content/docs/index.mdx", discarded: true } },
     });
-    expect(await client.rpc("docs/files/get", { docId, path: "content/index.mdx" })).toEqual({
+    expect(
+      await client.rpc("docs/files/get", { docId, path: "src/content/docs/index.mdx" }),
+    ).toEqual({
       status: 200,
-      body: { json: { path: "content/index.mdx", content: "# Home\n" } },
+      body: { json: { path: "src/content/docs/index.mdx", content: "# Home\n" } },
     });
     expect(
       ((await client.rpc("docs/status", { docId })).body.json as { headSha: string }).headSha,
@@ -210,7 +228,9 @@ describe("doc files", () => {
 
   it("starts a build under a new id after the doc loses its stored state", async () => {
     const { client, docId } = await docOwner("rebuilt@mailinator.com", "rebuilt");
-    const head = await pushFirstCommit(docId, { "docs/content/index.mdx": text("# Home\n") });
+    const head = await pushFirstCommit(docId, {
+      "docs/src/content/docs/index.mdx": text("# Home\n"),
+    });
     const buildId = async () => {
       await client.rpc("docs/publish", { docId });
       const { body } = await client.rpc("docs/status", { docId });
@@ -245,7 +265,9 @@ describe("doc files", () => {
 
   it("gives a build started in the background the slug of a doc stored without one", async () => {
     const { client, docId } = await docOwner("legacy@mailinator.com", "legacy");
-    const head = await pushFirstCommit(docId, { "docs/content/index.mdx": text("# Home\n") });
+    const head = await pushFirstCommit(docId, {
+      "docs/src/content/docs/index.mdx": text("# Home\n"),
+    });
     await client.rpc("docs/publish", { docId });
     const first = [...publishWorkflow.created.keys()].find((id) => id.startsWith(docId))!;
     const doc = docObjects.getByName(docId) as unknown as Pick<Doc, "build" | "buildFinished">;
@@ -303,7 +325,9 @@ describe("docs.preview", () => {
 
   it("builds head on the draft target when there are no drafts, once per change", async () => {
     const { client, docId } = await docOwner("preview-head@mailinator.com", "preview-head");
-    const head = await pushFirstCommit(docId, { "docs/content/index.mdx": text("# Home\n") });
+    const head = await pushFirstCommit(docId, {
+      "docs/src/content/docs/index.mdx": text("# Home\n"),
+    });
 
     const previewing = {
       status: 200,
@@ -351,8 +375,10 @@ describe("docs.preview", () => {
 
   it("has nothing to build without a commit or a draft", async () => {
     const { client, docId } = await docOwner("preview-empty@mailinator.com", "preview-empty");
-    await client.rpc("docs/files/discard", { docId, path: "content/index.mdx" });
-    await client.rpc("docs/files/discard", { docId, path: "docs.config.json" });
+    const { body } = await client.rpc("docs/files/tree", { docId });
+    for (const { path } of (body.json as { files: { path: string }[] }).files) {
+      await client.rpc("docs/files/discard", { docId, path });
+    }
 
     expect(await client.rpc("docs/preview", { docId })).toEqual({
       status: 200,
@@ -368,7 +394,7 @@ describe("retiring stale previews", () => {
 
   async function previewed(email: string, slug: string) {
     const { client, docId } = await docOwner(email, slug);
-    await pushFirstCommit(docId, { "docs/content/index.mdx": text("# Home\n") });
+    await pushFirstCommit(docId, { "docs/src/content/docs/index.mdx": text("# Home\n") });
     await client.rpc("docs/preview", { docId });
     return { client, docId };
   }
