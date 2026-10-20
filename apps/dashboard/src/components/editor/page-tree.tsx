@@ -16,7 +16,7 @@ export type TreeNode =
   | { kind: "folder"; name: string; children: TreeNode[] }
   | { kind: "page"; name: string; file: FileStatus };
 
-/** Pages nested by folder, with `content/` left out because every page lives there. */
+/** Pages nested by folder, with `src/content/docs/` left out because every page lives there. */
 export function buildTree(files: FileStatus[]): TreeNode[] {
   const root: TreeNode[] = [];
   for (const file of files) {

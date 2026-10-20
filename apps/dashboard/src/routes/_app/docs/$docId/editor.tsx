@@ -45,7 +45,11 @@ function Editor() {
   const { data: tree } = useQuery(orpc.docs.files.tree.queryOptions({ input: { docId } }));
   const doc = docs?.find((entry) => entry.id === docId);
   const files: FileStatus[] | undefined = tree?.files;
-  const pages = files?.filter((file) => file.status !== "deleted" && flavorOf(file.path) !== null);
+  // A doc's repo holds the whole site project, so only Markdown under PAGES_ROOT is a page.
+  const pages = files?.filter(
+    (file) =>
+      file.status !== "deleted" && file.path.startsWith(PAGES_ROOT) && flavorOf(file.path) !== null,
+  );
   const current = path ?? (pages?.find((file) => file.path === HOME) ?? pages?.[0])?.path;
   const flavor = current ? flavorOf(current) : null;
   // PostHog is off in development, where the flag reads undefined and the env var decides.
@@ -174,7 +178,7 @@ function Editor() {
                   <EmptyDescription>
                     {current
                       ? "Only .md and .mdx files open in the editor."
-                      : "Push a content/index.mdx file to this site to start editing."}
+                      : "Push a src/content/docs/index.mdx file to this site to start editing."}
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>

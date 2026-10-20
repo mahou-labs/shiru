@@ -2,8 +2,8 @@ import { slugify } from "@/lib/slug";
 
 import { DocPath, type FileStatus } from "../../../../api/src/docs/drafts";
 
-export const PAGES_ROOT = "content/";
-export const HOME = "content/index.mdx";
+export const PAGES_ROOT = "src/content/docs/";
+export const HOME = "src/content/docs/index.mdx";
 
 /** `.mdx` pages get Nimbus components, admonitions and MDX escaping. `.md` pages are plain GFM. */
 export type Flavor = "md" | "mdx";
@@ -15,10 +15,10 @@ export function flavorOf(path: string): Flavor | null {
   return null;
 }
 
-/** The URL a page serves, as build-site derives it: `content/a/index.mdx` serves `/a`. */
+/** The URL a page serves, as build-site derives it: `src/content/docs/a/index.mdx` serves `/a`. */
 export function routeOf(path: string) {
   const slug = path
-    .replace(/^content\//, "")
+    .replace(/^src\/content\/docs\//, "")
     .replace(/\.mdx?$/, "")
     .replace(/(^|\/)index$/, "");
   return `/${slug}`;
@@ -27,7 +27,7 @@ export function routeOf(path: string) {
 /** The home page cannot go: the build fails without a page at `/`. */
 export const isHome = (path: string) => path.startsWith(PAGES_ROOT) && routeOf(path) === "/";
 
-/** Where a page titled `title` goes in `folder` (a path ending in `/`, under `content/`). */
+/** Where a page titled `title` goes in `folder` (a path ending in `/`, under `src/content/docs/`). */
 export function suggestPath(folder: string, title: string) {
   const slug = slugify(title);
   return slug ? `${folder}${slug}.mdx` : "";
@@ -37,7 +37,7 @@ export function suggestPath(folder: string, title: string) {
 export function newPagePathError(path: string, files: FileStatus[]): string | undefined {
   const parsed = DocPath.safeParse(path);
   if (!parsed.success) return parsed.error.issues[0]?.message ?? "This path is not valid";
-  if (!path.startsWith(PAGES_ROOT)) return "Pages live in content/";
+  if (!path.startsWith(PAGES_ROOT)) return "Pages live in src/content/docs/";
   if (!/[^/]\.mdx?$/.test(path)) return "A page ends in .mdx or .md";
   const route = routeOf(path);
   const taken = files.find(
