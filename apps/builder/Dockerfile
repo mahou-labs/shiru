@@ -9,7 +9,7 @@ WORKDIR /builder/template
 COPY packages/site-template/package.json packages/site-template/pnpm-lock.yaml packages/site-template/pnpm-workspace.yaml ./
 RUN npm install -g pnpm@12.9.1 \
   && pnpm install --frozen-lockfile --prod \
-  && rm -rf "$(pnpm store path)" \
+  && rm -rf "$(pnpm store path)" /root/.cache/pnpm \
   && npm uninstall -g pnpm && npm cache clean --force
 
 COPY apps/builder/src/ /builder/src/
