@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "astro dev",
     "build": "astro build",
     "lint:docs": "nimbus-docs lint",
     "components": "scripts/add-components.sh"
@@ -31,5 +32,9 @@
     "tailwind-merge": "3.7.0",
     "tailwindcss": "4.3.3",
     "zod": "4.6.6"
-  }
+  },
+  "devDependencies": {
+    "vite-plus": "catalog:"
+  },
+  "packageManager": "pnpm@12.9.1"
 }

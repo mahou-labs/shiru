@@ -116,7 +116,7 @@ A site repo holds a complete Nimbus project under `docsRoot`, started from the t
 
 ```
 docs/
-  package.json, package-lock.json, astro.config.ts, nimbus.json
+  package.json, pnpm-lock.yaml, pnpm-workspace.yaml, astro.config.ts, nimbus.json
   docs.config.json      # site name, logo, navigation
   src/content/docs/**   # pages
   public/**             # images and files served from the site root
@@ -360,8 +360,8 @@ Workflow only calls its RPC methods (`reset`, `build`, and reads of `dist/`).
 ```Dockerfile
 FROM node:24-trixie-slim
 COPY --from=docker.io/cloudflare/sandbox:1.0.0 /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
-COPY packages/site-template/package*.json /template/
-RUN cd /template && npm ci         # deps baked in, so no install per build
+COPY packages/site-template/package.json packages/site-template/pnpm-*.yaml /template/
+RUN cd /template && pnpm install --frozen-lockfile         # deps baked in, so no install per build
 COPY build-site /usr/local/bin/
 ```
 

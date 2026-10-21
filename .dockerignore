@@ -3,4 +3,5 @@
 *
 !apps/builder/src/
 !packages/site-template/package.json
-!packages/site-template/package-lock.json
+!packages/site-template/pnpm-lock.yaml
+!packages/site-template/pnpm-workspace.yaml

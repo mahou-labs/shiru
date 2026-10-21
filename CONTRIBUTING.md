@@ -19,7 +19,7 @@ apps/
   dispatch/           Dispatch Worker that routes docs hostnames to site Workers
   site/               Astro marketing site
 packages/
-  site-template/      Nimbus project that every new doc starts as (npm, not a workspace member)
+  site-template/      Nimbus project that every new doc starts as (its own Vite+ project, not a workspace member)
   ui/                 shadcn/ui components and styles
 ```
 
@@ -87,11 +87,11 @@ Each doc's files live in a Git repository in Cloudflare Artifacts, which `cf dev
 
 ## Docs sites
 
-Each doc's repo holds a complete [Nimbus](https://nimbus-docs.com/) project under `docs/`, so a developer can clone it and run `npm install && npx astro dev`. A new doc starts as a copy of `packages/site-template`, with its name written into `docs.config.json`:
+Each doc's repo holds a complete [Nimbus](https://nimbus-docs.com/) project under `docs/`, so a developer can clone it and run `vp install && vp run dev`. A new doc starts as a copy of `packages/site-template`, with its name written into `docs.config.json`:
 
 ```
 docs/
-  package.json  package-lock.json  astro.config.ts  nimbus.json  tsconfig.json
+  package.json  pnpm-lock.yaml  pnpm-workspace.yaml  vite.config.ts  astro.config.ts  nimbus.json  tsconfig.json
   docs.config.json          # shiru's site config: name, description, logo, github and navigation
   public/                   # served from the site root; the logo goes here
   src/content/docs/         # pages, as .mdx or .md
@@ -100,9 +100,9 @@ docs/
 
 `packages/site-template` is the one source for three things:
 
-- It is a plain npm project that builds on its own: `npm ci && SITE_URL=https://example.com npx astro build`. `astro.config.ts` reads `docs.config.json` and maps it to the Nimbus config.
+- It is a standalone Vite+ project on pnpm that builds on its own: `vp install && SITE_URL=https://example.com vp run build`. Use `vp run dev` and `vp run build`, not `vp dev` and `vp build`, which start plain Vite instead of Astro. Its own `pnpm-workspace.yaml` keeps it out of the monorepo's workspace and sets `nodeLinker: hoisted`, because the builder resolves dependencies through a linked `node_modules`. Its `vite.config.ts` keeps `vp check` off the files Nimbus owns and the pages, so formatting never changes what `nimbus-docs outdated` compares. `astro.config.ts` reads `docs.config.json` and maps it to the Nimbus config.
 - The API embeds every file git tracks there (`apps/api/src/docs/starter.ts`) and seeds a new doc with them as drafts. A test checks that the seeded files match `git ls-files -s` byte for byte.
-- The builder image installs only its `package.json` and `package-lock.json`, because builds run with no network. `build-site` links those `node_modules` into the doc's project and runs `astro build` and `nimbus-docs lint` there. It refuses a project that commits its own `node_modules`. The image builds from the repository root, and `.dockerignore` keeps everything else out of the context.
+- The builder image installs only the production dependencies from its `package.json`, `pnpm-lock.yaml` and `pnpm-workspace.yaml`, because builds run with no network. `build-site` links those `node_modules` into the doc's project and runs `astro build` and `nimbus-docs lint` there. It refuses a project that commits its own `node_modules`. The image builds from the repository root, and `.dockerignore` keeps everything else out of the context.
 
 `apps/builder/fixtures` hold only what differs from the template. `apps/builder/scripts/verify.sh` builds each one as the template's tracked files with the fixture on top.
 
@@ -110,14 +110,14 @@ docs/
 
 Run these in `packages/site-template`:
 
-1. Run `npx nimbus-docs outdated` to see which components and starter files fell behind.
-2. Run `npm run components -- --overwrite` to bring every registry component up to date. Without `--overwrite`, it adds the components the template lacks. It skips Nimbus features, which are agent hand-offs, not components.
-3. Run `npx nimbus-docs migrate` to apply API migrations between Nimbus versions.
-4. Bump the dependencies in `package.json` and run `npm install`.
+1. Run `vp exec nimbus-docs outdated` to see which components and starter files fell behind.
+2. Run `vp run components --overwrite` to bring every registry component up to date. Without `--overwrite`, it adds the components the template lacks. It skips Nimbus features, which are agent hand-offs, not components.
+3. Run `vp exec nimbus-docs migrate` to apply API migrations between Nimbus versions.
+4. Bump the dependencies in `package.json` and run `vp install`. Run `vp migrate` to move to a new Vite+ release, then `vp check`.
 5. Add any new component meant for page content to `src/components.ts`.
 6. Run `apps/builder/scripts/verify.sh` and `vp run test`.
 
-Existing docs keep the template they started from. The image's `node_modules` come from the new `package-lock.json`, so a doc whose `package.json` asks for other versions still builds against the image's.
+Existing docs keep the template they started from. The image's `node_modules` come from the new `pnpm-lock.yaml`, so a doc whose `package.json` asks for other versions still builds against the image's.
 
 ## UI
 
