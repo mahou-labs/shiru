@@ -1,0 +1,501 @@
+{
+  "$schema": "https://nimbus-docs.com/schema/nimbus.json",
+  "version": "0.7.12",
+  "lastReviewedNimbusVersion": "0.18.1",
+  "templatesTag": "templates-v0.7.12",
+  "variant": "empty",
+  "registry": "https://nimbus-docs.com/registry",
+  "install": {
+    "root": "src",
+    "aliases": {
+      "@/*": "src/*"
+    }
+  },
+  "components": [
+    {
+      "slug": "cn",
+      "type": "registry:lib",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:7c54894573a1398333b41a63838db5de40ba05ad3fdb71048414baf912bb0070",
+      "files": [
+        "src/lib/cn.ts"
+      ]
+    },
+    {
+      "slug": "collapsible",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:ba266b75f45260ed5e0f40bcbcd642acdc5aafee9ba177d41b696a06a897505a",
+      "files": [
+        "src/components/ui/collapsible/Collapsible.astro",
+        "src/components/ui/collapsible/CollapsibleContent.astro",
+        "src/components/ui/collapsible/CollapsibleTrigger.astro",
+        "src/components/ui/collapsible/collapsible.client.ts",
+        "src/components/ui/collapsible/index.ts"
+      ]
+    },
+    {
+      "slug": "accordion",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:d867eb2d71e2e935b2614fae2509cfa8c57722888460263bbd2950f3176f84b9",
+      "files": [
+        "src/components/ui/accordion/Accordion.astro",
+        "src/components/ui/accordion/AccordionContent.astro",
+        "src/components/ui/accordion/AccordionGroup.astro",
+        "src/components/ui/accordion/AccordionTrigger.astro",
+        "src/components/ui/accordion/index.ts"
+      ]
+    },
+    {
+      "slug": "layer-card",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:5045f9e12a0f917aeb980d96a325dd19df2875b0c9d72625f629b4735423b267",
+      "files": [
+        "src/components/ui/layer-card/LayerCard.astro",
+        "src/components/ui/layer-card/LayerCardContent.astro",
+        "src/components/ui/layer-card/LayerCardHeader.astro",
+        "src/components/ui/layer-card/index.ts"
+      ]
+    },
+    {
+      "slug": "code-group",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:b1b709858534d8d582d23aacb654e09ab7efa7680c364036829d35b04cb9739d",
+      "files": [
+        "src/components/ui/code-group/CodeGroup.astro",
+        "src/components/ui/code-group/code-group.client.ts",
+        "src/components/ui/code-group/index.ts"
+      ]
+    },
+    {
+      "slug": "button",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:a2fd2697645003aabd17ecbb4e8d25af37ce8d738adfdeac6ecdc5405bca63be",
+      "files": [
+        "src/components/ui/button/Button.astro",
+        "src/components/ui/button/index.ts",
+        "src/components/ui/button/variants.ts"
+      ]
+    },
+    {
+      "slug": "copy-prompt",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:b0f93002b074e15682b329f12749c1df33867c1664d6bb04357ac2abc939b4c2",
+      "files": [
+        "src/components/ui/copy-prompt/CopyPrompt.astro",
+        "src/components/ui/copy-prompt/copy-prompt.client.ts",
+        "src/components/ui/copy-prompt/index.ts"
+      ]
+    },
+    {
+      "slug": "embed",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:ccf9df24232e0542ee482ab2a86ae1de4b41f2110a6d30a327b9b3d5439443ad",
+      "files": [
+        "src/components/ui/embed/Embed.astro",
+        "src/components/ui/embed/index.ts"
+      ]
+    },
+    {
+      "slug": "file-tree",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:1c92a06b3495d45ad8edf3cb1cfe92fcd38ec2c8432ad346fd179d74214b8837",
+      "files": [
+        "src/components/ui/file-tree/FileTree.astro",
+        "src/components/ui/file-tree/file-tree.client.ts",
+        "src/components/ui/file-tree/index.ts"
+      ]
+    },
+    {
+      "slug": "frame",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:26927e8807fe74b6eabd342f0d4f6572e1366fe6e65e4d00c9a6fce4c1962367",
+      "files": [
+        "src/components/ui/frame/Frame.astro",
+        "src/components/ui/frame/index.ts"
+      ]
+    },
+    {
+      "slug": "link-card",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:3fa7c21e4fe97c9fe0d5edcbf984abab4a5c745224622d435b433f1482888f12",
+      "files": [
+        "src/components/ui/link-card/LinkCard.astro",
+        "src/components/ui/link-card/index.ts"
+      ]
+    },
+    {
+      "slug": "aside",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:04652c91b49331458aeee3c2aafee4e688080bd4cafb5fb255c442c2bc7d73e9",
+      "files": [
+        "src/components/ui/aside/Aside.astro",
+        "src/components/ui/aside/index.ts"
+      ]
+    },
+    {
+      "slug": "badge",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:fad1e370042cbb87597a907a94263d4a320708ef54d401d3665c29f8cbc472dc",
+      "files": [
+        "src/components/ui/badge/Badge.astro",
+        "src/components/ui/badge/index.ts"
+      ]
+    },
+    {
+      "slug": "banner",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:950c6ef232a8b7ca36534c51cac03b932c2859e4da7c1f29f9bf96dbcc70a6da",
+      "files": [
+        "src/components/ui/banner/Banner.astro",
+        "src/components/ui/banner/banner.client.ts",
+        "src/components/ui/banner/index.ts"
+      ]
+    },
+    {
+      "slug": "breadcrumbs",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:291029522a80f958904ec44f63e308d804a4f6820f89d15ed05237ded7a77568",
+      "files": [
+        "src/components/ui/breadcrumbs/Breadcrumbs.astro",
+        "src/components/ui/breadcrumbs/index.ts"
+      ]
+    },
+    {
+      "slug": "card",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:8ba0ae82e4e13883b7df0169ddc204e69f1fd0b8e06489476e65656ecc146eab",
+      "files": [
+        "src/components/ui/card/Card.astro",
+        "src/components/ui/card/index.ts"
+      ]
+    },
+    {
+      "slug": "card-grid",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:428117e01734727c4467da3d63471ca82e60cf0675dfb5756165a77301a7152d",
+      "files": [
+        "src/components/ui/card-grid/CardGrid.astro",
+        "src/components/ui/card-grid/index.ts"
+      ]
+    },
+    {
+      "slug": "code",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:9f5e14756ee7e0ccea8c7638aa42bde56111f32d4ee465907e078067f632f73c",
+      "files": [
+        "src/components/ui/code/Code.astro",
+        "src/components/ui/code/index.ts"
+      ]
+    },
+    {
+      "slug": "dialog",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:a2d7f98689cf948efbb3b1f669c9e77b9101b9bb7ae7b2aec216091b54105412",
+      "files": [
+        "src/components/ui/dialog/Dialog.astro",
+        "src/components/ui/dialog/DialogClose.astro",
+        "src/components/ui/dialog/DialogContent.astro",
+        "src/components/ui/dialog/dialog-close.client.ts",
+        "src/components/ui/dialog/dialog.client.ts",
+        "src/components/ui/dialog/index.ts"
+      ]
+    },
+    {
+      "slug": "link-button",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:f1ba8a0cbf9738d90346199a04ec86062f2bbad3c5de4a3bb01db801581232b7",
+      "files": [
+        "src/components/ui/link-button/LinkButton.astro",
+        "src/components/ui/link-button/index.ts"
+      ]
+    },
+    {
+      "slug": "package-managers",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:7eb41aff339aebfdf61b57d23d678c9fb4227af4769037d41189084a4108d55f",
+      "files": [
+        "src/components/ui/package-managers/PackageManagers.astro",
+        "src/components/ui/package-managers/index.ts",
+        "src/components/ui/package-managers/package-managers.client.ts"
+      ]
+    },
+    {
+      "slug": "page-actions",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:b7acb80c61ff06f6f1a4ed214e6b33fa384813e8c8085d5c7e2d3572b867df60",
+      "files": [
+        "src/components/ui/page-actions/PageActions.astro",
+        "src/components/ui/page-actions/index.ts",
+        "src/components/ui/page-actions/page-actions.client.ts"
+      ]
+    },
+    {
+      "slug": "pagination",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:6ff484bfc271d4a39abb63dfcbf85345783be3a760579d6dd7293f1d05ee9b2a",
+      "files": [
+        "src/components/ui/pagination/Pagination.astro",
+        "src/components/ui/pagination/index.ts"
+      ]
+    },
+    {
+      "slug": "popover",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:590229158b4eb215269f2ece1f2142b427da2ebed11c5cd636e68c5bf5b4a375",
+      "files": [
+        "src/components/ui/popover/Popover.astro",
+        "src/components/ui/popover/PopoverContent.astro",
+        "src/components/ui/popover/PopoverTrigger.astro",
+        "src/components/ui/popover/index.ts",
+        "src/components/ui/popover/popover.client.ts"
+      ]
+    },
+    {
+      "slug": "search",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:ed56b90a5027692099a618ee218ebea0b2d35db0981a0efdbe5a4869ec11fabe",
+      "files": [
+        "src/components/ui/search/SearchDialog.astro",
+        "src/components/ui/search/SearchTrigger.astro",
+        "src/components/ui/search/index.ts",
+        "src/components/ui/search/providers/pagefind.ts",
+        "src/components/ui/search/search-trigger.client.ts",
+        "src/components/ui/search/search.client.ts"
+      ]
+    },
+    {
+      "slug": "sidebar",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:04abe617f8614d4266e1e161032b6c70c713ec622aa8953eb01abc2c270323d6",
+      "files": [
+        "src/components/ui/sidebar/Sidebar.astro",
+        "src/components/ui/sidebar/SidebarFilter.astro",
+        "src/components/ui/sidebar/SidebarGroup.astro",
+        "src/components/ui/sidebar/SidebarGroupHeader.astro",
+        "src/components/ui/sidebar/SidebarLink.astro",
+        "src/components/ui/sidebar/index.ts",
+        "src/components/ui/sidebar/sidebar.client.ts"
+      ]
+    },
+    {
+      "slug": "steps",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:80f99f91316886f985ef94061509e212496c88fc561734ad882054e4d6c3a040",
+      "files": [
+        "src/components/ui/steps/Step.astro",
+        "src/components/ui/steps/Steps.astro",
+        "src/components/ui/steps/index.ts",
+        "src/components/ui/steps/steps.client.ts"
+      ]
+    },
+    {
+      "slug": "tabs",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:baf32af78444eb0b2825a75b2e20fcff33652ad5edfc989a0fba3546110a2f43",
+      "files": [
+        "src/components/ui/tabs/TabItem.astro",
+        "src/components/ui/tabs/Tabs.astro",
+        "src/components/ui/tabs/TabsContent.astro",
+        "src/components/ui/tabs/TabsList.astro",
+        "src/components/ui/tabs/TabsTrigger.astro",
+        "src/components/ui/tabs/index.ts",
+        "src/components/ui/tabs/tabs.client.ts"
+      ]
+    },
+    {
+      "slug": "theme-toggle",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:051c85c314e2d2cbe6ab4307a60750cdb11e91af128b74bba33690a0991ec940",
+      "files": [
+        "src/components/ui/theme-toggle/ThemeToggle.astro",
+        "src/components/ui/theme-toggle/index.ts",
+        "src/components/ui/theme-toggle/theme-toggle.client.ts"
+      ]
+    },
+    {
+      "slug": "image-zoom",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:6624f242dc4c0dcd6337867aadbad0721def90fd6d39da2cb3b78a8735670b48",
+      "files": [
+        "src/components/ui/image-zoom/ImageZoom.astro",
+        "src/components/ui/image-zoom/image-zoom.client.ts",
+        "src/components/ui/image-zoom/index.ts"
+      ]
+    },
+    {
+      "slug": "toc",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:59f1d9169d4fe69f8e299bf0c68aa475fef4dfa91f8bd9df153221280d87d183",
+      "files": [
+        "src/components/ui/toc/MobileTOC.astro",
+        "src/components/ui/toc/TOC.astro",
+        "src/components/ui/toc/index.ts",
+        "src/components/ui/toc/mobile-toc.client.ts",
+        "src/components/ui/toc/toc.client.ts"
+      ]
+    },
+    {
+      "slug": "version-switcher",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:4911e594fe3326ea5a4fa3043f54589f5d0e4a3f9d447347713c98bc94035143",
+      "files": [
+        "src/components/ui/version-switcher/README.md",
+        "src/components/ui/version-switcher/VersionSwitcher.astro",
+        "src/components/ui/version-switcher/index.ts"
+      ]
+    },
+    {
+      "slug": "api-field-row",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:9aa81f094eba39404cf1f3293d76ef583db47eb46b30a4a0d1538c3add59d059",
+      "files": [
+        "src/components/ui/api-field-row/ApiFieldList.astro",
+        "src/components/ui/api-field-row/ApiFieldRow.astro",
+        "src/components/ui/api-field-row/ApiUnionExplorer.astro",
+        "src/components/ui/api-field-row/api-field-row.client.ts",
+        "src/components/ui/api-field-row/field-list.css",
+        "src/components/ui/api-field-row/index.ts",
+        "src/components/ui/api-field-row/type-display.ts"
+      ]
+    },
+    {
+      "slug": "api-sidebar",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:a287d4741dd3ecd0757b5ea19c61b836ea5f270bd9c3ef1274f11eb335f5c370",
+      "files": [
+        "src/components/ui/api-sidebar/ApiMethodChip.astro",
+        "src/components/ui/api-sidebar/ApiSidebar.astro",
+        "src/components/ui/api-sidebar/ApiSidebarItem.astro",
+        "src/components/ui/api-sidebar/api-nav-filter.client.ts",
+        "src/components/ui/api-sidebar/index.ts",
+        "src/components/ui/api-sidebar/method.ts"
+      ]
+    },
+    {
+      "slug": "api-code-rail",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:594b0c3b7323f49ec5ec54fbe56791eb75393feb0132823356b8b37c5b9736d6",
+      "files": [
+        "src/components/ui/api-code-rail/ApiCodeRail.astro",
+        "src/components/ui/api-code-rail/code-rail.client.ts",
+        "src/components/ui/api-code-rail/code-rail.css",
+        "src/components/ui/api-code-rail/index.ts"
+      ]
+    },
+    {
+      "slug": "api-layout",
+      "type": "registry:ui",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:d1a8f12781d9260eeb142f463541cf4638df4afae6391ea524248b5dd67bf0e9",
+      "files": [
+        "src/components/ui/api-layout/ApiBody.astro",
+        "src/components/ui/api-layout/ApiEndpointCard.astro",
+        "src/components/ui/api-layout/ApiLayout.astro",
+        "src/components/ui/api-layout/auth.ts",
+        "src/components/ui/api-layout/index.ts",
+        "src/components/ui/api-layout/request-examples.client.ts",
+        "src/components/ui/api-layout/responses.client.ts"
+      ]
+    },
+    {
+      "slug": "diagram",
+      "type": "registry:lib",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:d0fac1cd502f12ff8c02ba19efd9f7b6dacf3ed71171c257fcbeb8f2d2b5f6c2",
+      "files": [
+        "src/components/react/diagram/ActionBar.tsx",
+        "src/components/react/diagram/ActionButton.tsx",
+        "src/components/react/diagram/CardBadge.tsx",
+        "src/components/react/diagram/ChipGroup.tsx",
+        "src/components/react/diagram/DiagramControls.tsx",
+        "src/components/react/diagram/DiagramDebug.tsx",
+        "src/components/react/diagram/DiagramDefs.tsx",
+        "src/components/react/diagram/DiagramPauseAll.tsx",
+        "src/components/react/diagram/DiagramStage.tsx",
+        "src/components/react/diagram/Tabs.tsx",
+        "src/components/react/diagram/index.ts"
+      ]
+    },
+    {
+      "slug": "diagram-scene",
+      "type": "registry:lib",
+      "version": "0.18.1",
+      "source": "https://nimbus-docs.com/registry",
+      "hash": "sha256:14ab0ef6ec648418f1c2782fc2303ba2fbfbca4cb75a2ba22ddda01e0846cfca",
+      "files": [
+        "src/components/react/diagram/scene.tsx"
+      ]
+    }
+  ]
+}

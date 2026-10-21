@@ -12,7 +12,9 @@ describe("builder dev route", () => {
     env.ENVIRONMENT = "production";
     const client = createClient();
     const responses = await Promise.all([
-      client.post("/dev/builder/acme/reset", [{ path: "content/index.mdx", content: "x" }]),
+      client.post("/dev/builder/acme/reset", [
+        { path: "src/content/docs/index.mdx", base64: "eA==" },
+      ]),
       client.post("/dev/builder/acme/build", { docUrl: "https://acme.shiru.sh", docsRoot: "" }),
       client.request("/dev/builder/acme/asset?path=/index.html"),
       client.request("/dev/docs/acme/guides/setup/"),

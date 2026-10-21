@@ -1,0 +1,112 @@
+---
+title: Customizing the site
+description: Change the name, logo and sidebar, add images, and write your own components.
+sidebar:
+  order: 2
+---
+
+Your pages live in `src/content/docs/`. The files on this page sit around them, in the rest of the site's project. The shiru editor edits pages only, so change these files in the site's repository.
+
+<FileTree>
+  - docs.config.json
+  - public/
+    - example.svg
+    - favicon.ico
+  - src/
+    - components/
+      - PublishDiagram.tsx
+      - ...
+    - content/
+      - docs/
+        - index.mdx
+        - ...
+  - ...
+</FileTree>
+
+## docs.config.json
+
+`docs.config.json` holds the settings for the whole site. A new site starts with two:
+
+```json
+{
+  "version": 1,
+  "name": "Docs"
+}
+```
+
+These are all the fields it accepts:
+
+| Field | Required | What it does |
+| --- | --- | --- |
+| `version` | Yes | Always `1`. |
+| `name` | Yes | The site's name, shown in the header and after each page title in the browser tab. |
+| `description` | No | One sentence about the site, used by search engines and in `llms.txt`. |
+| `logo` | No | An image under `public/` to show in the header, such as `public/logo.svg`. |
+| `github` | No | A `https://github.com/` address. The header links to it with a GitHub icon. |
+| `navigation` | No | The sidebar, in the order you choose. |
+
+A site with every field looks like this:
+
+```json
+{
+  "version": 1,
+  "name": "Acme",
+  "description": "Guides and reference for the Acme API.",
+  "logo": "public/logo.svg",
+  "github": "https://github.com/acme/acme",
+  "navigation": [
+    { "label": "Welcome", "href": "/" },
+    {
+      "label": "Guides",
+      "items": [
+        { "label": "Writing pages", "href": "/guides/writing-pages" },
+        { "label": "Customizing the site", "href": "/guides/customizing" }
+      ]
+    }
+  ]
+}
+```
+
+### navigation
+
+Leave `navigation` out and the sidebar lists every page, grouped by folder, with new pages added on their own. Most sites never need it.
+
+Add it when you want to pick the order and the labels yourself. Each entry is a link, with a `label` and the page's `href`, or a group, with a `label` and its own `items`. Once `navigation` is set, the sidebar shows only the pages it lists, so add each new page to it. The build fails if an `href` points to a page that does not exist.
+
+## Images
+
+Put images in `public/`. Everything in `public/` is served from the root of your site, so `public/screenshot.png` is at `/screenshot.png`:
+
+```md
+![The settings screen](/screenshot.png)
+```
+
+The text in the brackets describes the image for readers who cannot see it.
+
+The logo works the same way. Add `public/logo.svg`, then set `"logo": "public/logo.svg"` in `docs.config.json`.
+
+## Your own components
+
+When the [built-in components](/components/) do not cover what you need, write your own. Put it in `src/components/`, for example `src/components/Note.astro`:
+
+```astro
+---
+const { label } = Astro.props;
+---
+
+<p class="note"><strong>{label}</strong> <slot /></p>
+```
+
+Then import it at the top of a `.mdx` page, under the front matter, and use it like any other component:
+
+```mdx
+---
+title: My page
+---
+
+import Note from "@/components/Note.astro";
+
+<Note label="Heads up">This page is a draft.</Note>
+```
+
+`@/` stands for the `src/` folder, so the same import works from a page in any folder.

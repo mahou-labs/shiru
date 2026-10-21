@@ -1,0 +1,7 @@
+# The builder image (apps/builder/Dockerfile) builds from the repository root. cf passes the
+# Dockerfile on stdin, so Docker only reads an ignore file at the root of the context.
+*
+!apps/builder/src/
+!packages/site-template/package.json
+!packages/site-template/pnpm-lock.yaml
+!packages/site-template/pnpm-workspace.yaml

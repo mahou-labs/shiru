@@ -128,7 +128,9 @@ function NewPageForm({
             <FieldError match>{pathError}.</FieldError>
           ) : (
             <FieldDescription>
-              {path ? `Served at ${routeOf(path)}` : "Pages live in content/ as .mdx or .md files."}
+              {path
+                ? `Served at ${routeOf(path)}`
+                : "Pages live in src/content/docs/ as .mdx or .md files."}
             </FieldDescription>
           )}
         </Field>
@@ -202,7 +204,7 @@ export function DeletePageDialog({
 }) {
   const [shown, setShown] = useState(file);
   if (file && file !== shown) setShown(file);
-  const name = shown?.path.replace(/^content\//, "").replace(/\.mdx?$/, "");
+  const name = shown?.path.replace(/^src\/content\/docs\//, "").replace(/\.mdx?$/, "");
 
   return (
     <AlertDialog open={file !== null} onOpenChange={(open) => !open && onClose()}>

@@ -1,0 +1,101 @@
+---
+title: Writing pages
+description: How a file becomes a page, and what you can write in it.
+sidebar:
+  order: 1
+---
+
+## Files and URLs
+
+Every page is a file in `src/content/docs/`. The file's path sets the page's URL:
+
+| File | URL |
+| --- | --- |
+| `src/content/docs/index.mdx` | `/` |
+| `src/content/docs/install.mdx` | `/install/` |
+| `src/content/docs/guides/writing-pages.mdx` | `/guides/writing-pages/` |
+| `src/content/docs/guides/index.mdx` | `/guides/` |
+
+A file named `index.mdx` serves its folder's URL. The page at `/` is your home page, and the site needs one to build.
+
+The sidebar lists every page, grouped by folder. A new page shows up in it as soon as you publish.
+
+## Front matter
+
+Each page starts with a block between two `---` lines, called front matter:
+
+```mdx
+---
+title: Writing pages
+description: How a file becomes a page, and what you can write in it.
+---
+```
+
+- `title` is required. It is the page's heading, its name in the sidebar, and its browser tab title.
+- `description` is optional. It shows under the title and in search results and link previews.
+- `sidebar` is optional. Its `order` sets where the page sits in the sidebar, lowest first.
+
+## Markdown
+
+Write the rest of the page in Markdown:
+
+```md
+## A heading
+
+A paragraph with **bold**, *italic* and `code`.
+
+- A bullet
+- Another bullet
+
+1. A numbered step
+2. Another step
+
+> A quote.
+```
+
+Start your headings at `##`, because the title is already the page's top heading. Each `##` and `###` heading appears in the "On this page" list.
+
+For code, put three backticks and the language on the line above it, and three backticks on the line after:
+
+````md
+```js
+console.log("Hello");
+```
+````
+
+## Links
+
+Link to another page by its URL:
+
+```md
+Read [Customizing the site](/guides/customizing/) next.
+```
+
+Add `#` and a heading's text in lowercase, with dashes for spaces, to link to a section, as in `/guides/writing-pages/#front-matter`. The build checks every link between your pages and fails if one points to a page that does not exist.
+
+Link to another website with its full address, as in `[Nimbus](https://nimbus-docs.com/)`.
+
+## .md and .mdx
+
+A page can end in `.md` or `.mdx`.
+
+- `.md` is plain Markdown.
+- `.mdx` is Markdown that can also hold components. New pages are `.mdx`.
+
+In `.mdx`, the characters `{` and `<` start code. To show them as text, put a backslash before them: `\{` and `\<`.
+
+## Components
+
+Components add things Markdown cannot, such as tabs, callouts and cards. Write one like an HTML tag, with its text between the opening and closing tags:
+
+```mdx
+<Aside type="tip">
+  The editor saves as you type. Readers see your changes when you publish.
+</Aside>
+```
+
+<Aside type="tip">
+  The editor saves as you type. Readers see your changes when you publish.
+</Aside>
+
+[Components](/components/) shows every component with the MDX that produces it.

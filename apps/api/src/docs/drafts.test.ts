@@ -10,7 +10,6 @@ import {
   putDraft,
   reconcileDrafts,
   DocPath,
-  starterDrafts,
   toTree,
 } from "./drafts";
 
@@ -21,8 +20,8 @@ const X = "587be6b4c3f93f93c489c0111bba5596147a26cb";
 
 const tree = toTree([
   { path: "README.md", sha: X, mode: "100644" },
-  { path: "docs/content/index.mdx", sha: HELLO, mode: "100644" },
-  { path: "docs/content/old.mdx", sha: X, mode: "100644" },
+  { path: "docs/src/content/docs/index.mdx", sha: HELLO, mode: "100644" },
+  { path: "docs/src/content/docs/old.mdx", sha: X, mode: "100644" },
 ]);
 
 function put(path: string, content: string, base: string | null, updatedAt = 1): Draft {
@@ -39,7 +38,7 @@ function put(path: string, content: string, base: string | null, updatedAt = 1):
 
 describe("DocPath", () => {
   it("accepts a relative path and refuses one that escapes the docs root", () => {
-    expect(DocPath.safeParse("content/index.mdx").success).toBe(true);
+    expect(DocPath.safeParse("src/content/docs/index.mdx").success).toBe(true);
     expect(DocPath.safeParse("../secrets").error?.issues[0]?.message).toBe(
       "../secrets has an empty, . or .. segment",
     );
@@ -52,34 +51,34 @@ describe("DocPath", () => {
 describe("overlay", () => {
   it("lists files under the docs root with each draft's effect", () => {
     const drafts: Draft[] = [
-      put("docs/content/index.mdx", "changed\n", HELLO),
-      put("docs/content/new.mdx", "new\n", null),
-      { ...put("docs/content/old.mdx", "", X), op: "delete", conflict: true },
+      put("docs/src/content/docs/index.mdx", "changed\n", HELLO),
+      put("docs/src/content/docs/new.mdx", "new\n", null),
+      { ...put("docs/src/content/docs/old.mdx", "", X), op: "delete", conflict: true },
     ];
     expect(overlay(tree, drafts)).toEqual([
-      { path: "content/index.mdx", status: "modified", conflict: false },
-      { path: "content/new.mdx", status: "added", conflict: false },
-      { path: "content/old.mdx", status: "deleted", conflict: true },
+      { path: "src/content/docs/index.mdx", status: "modified", conflict: false },
+      { path: "src/content/docs/new.mdx", status: "added", conflict: false },
+      { path: "src/content/docs/old.mdx", status: "deleted", conflict: true },
     ]);
   });
 });
 
 describe("putDraft", () => {
   it("pins the blob the first edit started from and keeps it on later edits", () => {
-    const first = putDraft(undefined, tree, "docs/content/index.mdx", text("a"), "ada", 5);
+    const first = putDraft(undefined, tree, "docs/src/content/docs/index.mdx", text("a"), "ada", 5);
     expect(first.baseBlobSha).toBe(HELLO);
-    const moved = toTree([{ path: "docs/content/index.mdx", sha: X, mode: "100644" }]);
-    const second = putDraft(first, moved, "docs/content/index.mdx", text("b"), "bob", 6);
+    const moved = toTree([{ path: "docs/src/content/docs/index.mdx", sha: X, mode: "100644" }]);
+    const second = putDraft(first, moved, "docs/src/content/docs/index.mdx", text("b"), "bob", 6);
     expect([second.baseBlobSha, second.updatedBy, second.updatedAt]).toEqual([HELLO, "bob", 6]);
   });
 });
 
 describe("deleteDraft", () => {
   it("records a delete for a file at head", () => {
-    expect(deleteDraft(undefined, tree, "docs/content/old.mdx", "ada", 7)).toEqual({
+    expect(deleteDraft(undefined, tree, "docs/src/content/docs/old.mdx", "ada", 7)).toEqual({
       kind: "draft",
       draft: {
-        path: "docs/content/old.mdx",
+        path: "docs/src/content/docs/old.mdx",
         op: "delete",
         baseBlobSha: X,
         conflict: false,
@@ -90,14 +89,14 @@ describe("deleteDraft", () => {
   });
 
   it("drops the draft of a file that was never published, and refuses a missing file", () => {
-    const added = put("docs/content/new.mdx", "new\n", null);
+    const added = put("docs/src/content/docs/new.mdx", "new\n", null);
     expect(deleteDraft(added, tree, added.path, "ada", 7)).toEqual({ kind: "discard" });
     expect(deleteDraft(undefined, tree, "docs/nothing.mdx", "ada", 7)).toEqual({
       kind: "not_found",
     });
-    const deleted = deleteDraft(undefined, tree, "docs/content/old.mdx", "ada", 7);
+    const deleted = deleteDraft(undefined, tree, "docs/src/content/docs/old.mdx", "ada", 7);
     if (deleted.kind !== "draft") throw new Error("expected a draft");
-    expect(deleteDraft(deleted.draft, tree, "docs/content/old.mdx", "ada", 8)).toEqual({
+    expect(deleteDraft(deleted.draft, tree, "docs/src/content/docs/old.mdx", "ada", 8)).toEqual({
       kind: "not_found",
     });
   });
@@ -120,24 +119,24 @@ describe("committable", () => {
 describe("reconcileDrafts", () => {
   it("flags drafts whose file moved, clears drafts head already matches", async () => {
     const drafts: Draft[] = [
-      put("docs/content/index.mdx", "mine\n", X),
-      put("docs/content/old.mdx", "mine\n", X),
-      put("docs/content/same.mdx", "hello\n", null),
+      put("docs/src/content/docs/index.mdx", "mine\n", X),
+      put("docs/src/content/docs/old.mdx", "mine\n", X),
+      put("docs/src/content/docs/same.mdx", "hello\n", null),
       { ...put("docs/gone.mdx", "", X), op: "delete" },
     ];
     const head = toTree([
-      { path: "docs/content/index.mdx", sha: HELLO, mode: "100644" },
-      { path: "docs/content/old.mdx", sha: X, mode: "100644" },
-      { path: "docs/content/same.mdx", sha: HELLO, mode: "100644" },
+      { path: "docs/src/content/docs/index.mdx", sha: HELLO, mode: "100644" },
+      { path: "docs/src/content/docs/old.mdx", sha: X, mode: "100644" },
+      { path: "docs/src/content/docs/same.mdx", sha: HELLO, mode: "100644" },
     ]);
     expect(await reconcileDrafts(drafts, head)).toEqual({
-      clear: ["docs/content/same.mdx", "docs/gone.mdx"],
+      clear: ["docs/src/content/docs/same.mdx", "docs/gone.mdx"],
       save: [{ ...drafts[0], conflict: true }],
     });
   });
 
   it("lifts a conflict once head is back at the draft's base", async () => {
-    const draft = { ...put("docs/content/index.mdx", "mine\n", HELLO), conflict: true };
+    const draft = { ...put("docs/src/content/docs/index.mdx", "mine\n", HELLO), conflict: true };
     expect(await reconcileDrafts([draft], tree)).toEqual({
       clear: [],
       save: [{ ...draft, conflict: false }],
@@ -164,26 +163,10 @@ describe("afterCommit", () => {
   });
 });
 
-describe("starterDrafts", () => {
-  it("writes a config and a home page named after the doc", () => {
-    const decoded = starterDrafts('Acme {docs} <"beta">', "ada", 3).map((draft) => [
-      draft.path,
-      draft.op === "put" ? new TextDecoder().decode(draft.content) : null,
-    ]);
-    expect(decoded).toEqual([
-      ["docs/docs.config.json", '{\n  "version": 1,\n  "name": "Acme {docs} <\\"beta\\">"\n}\n'],
-      [
-        "docs/content/index.mdx",
-        '---\ntitle: "Acme {docs} <\\"beta\\">"\n---\n\nStart writing here.\n',
-      ],
-    ]);
-  });
-});
-
 describe("previewCommit", () => {
   const HEAD = "1111111111111111111111111111111111111111";
   const edit = (updatedBy: string, content = "Only in the preview.\n") => ({
-    ...put("docs/content/index.mdx", content, HELLO, 1_792_000_000_123),
+    ...put("docs/src/content/docs/index.mdx", content, HELLO, 1_792_000_000_123),
     updatedBy,
   });
 

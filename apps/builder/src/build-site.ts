@@ -1,41 +1,48 @@
 #!/usr/bin/env node
-// build-site <srcDocsRoot> <outDir>, with SITE_URL in the environment.
+// build-site <projectDir> <outDir>, with SITE_URL in the environment.
 // Diagnostics go to stderr. The last stdout line is one JSON object:
 // {"ok":true,"templateVersion":"…"} or {"ok":false,"errors":["…"]}.
 import { spawn } from "node:child_process";
-import { cp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, lstat, readdir, readFile, readlink, rm, symlink } from "node:fs/promises";
 import path from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import { type DocsConfig, formatPath, type NavItem, parseDocsConfig } from "./config.ts";
 
+// The image installs the site template's dependencies here; builds run with no network.
 const templateDir = path.resolve(import.meta.dirname, "../template");
-// Astro reports pages at their copy inside the template; authors know them as content/.
-const contentCopyPath = new RegExp(`(?:${RegExp.escape(templateDir)}/)?src/content/docs/`, "g");
+const imageModules = path.join(templateDir, "node_modules");
+const pagesDir = "src/content/docs";
 
-const [srcRoot, outDir] = process.argv.slice(2);
+const [project, outDir] = process.argv.slice(2);
 const siteUrl = process.env.SITE_URL;
-if (!srcRoot || !outDir || !siteUrl || !URL.canParse(siteUrl)) {
-  console.error("usage: SITE_URL=https://… build-site <srcDocsRoot> <outDir>");
+if (!project || !outDir || !siteUrl || !URL.canParse(siteUrl)) {
+  console.error("usage: SITE_URL=https://… build-site <projectDir> <outDir>");
   finish(2, {
     ok: false,
-    errors: ["build-site needs <srcDocsRoot>, <outDir> and a valid SITE_URL"],
+    errors: ["build-site needs <projectDir>, <outDir> and a valid SITE_URL"],
   });
 }
 
 const errors: string[] = [];
-const files = await listFiles(srcRoot, "content", errors);
-const assets = await listFiles(srcRoot, "assets", errors);
-const pages = files.filter((file) => /\.mdx?$/.test(file));
+const pages = (await listFiles(project, pagesDir, errors)).filter((file) => /\.mdx?$/.test(file));
+const publicFiles = await listFiles(project, "public", errors);
 const routes = new Set(pages.map(routeOf));
 
-if (!routes.has("/")) errors.push("content/index.mdx is required, it is the home page");
+if (!routes.has("/")) errors.push(`${pagesDir}/index.mdx is required, it is the home page`);
 
 const config = await readConfig();
 if (config) {
-  if (config.logo && !assets.includes(config.logo)) {
+  if (config.logo && !publicFiles.includes(config.logo)) {
     errors.push(`docs.config.json: logo ${config.logo} does not exist`);
   }
   errors.push(...checkNavigation(config.navigation ?? [], ["navigation"], routes));
+}
+
+const projectPrefix = `${path.resolve(project)}/`;
+const modules = path.join(project, "node_modules");
+const linked = await readlink(modules).catch(() => undefined);
+if (linked !== imageModules && (await lstat(modules).catch(() => undefined))) {
+  errors.push("node_modules is committed; remove it, the builder provides the dependencies");
 }
 
 if (errors.length > 0 || !config) {
@@ -43,53 +50,26 @@ if (errors.length > 0 || !config) {
   finish(1, { ok: false, errors });
 }
 
-const siteJson = {
-  nimbus: {
-    site: siteUrl.replace(/\/$/, ""),
-    title: config.name,
-    description: config.description,
-    github: config.github ?? null,
-    socialImageAlt: `${config.name} documentation`,
-    sidebar: config.navigation && { items: config.navigation.map(toSidebarItem) },
-  },
-  logo: config.logo ? `/${config.logo}` : null,
-};
-
-// The container is reused between builds, so remove everything a previous
-// build wrote, caches included, before copying this source in.
-for (const dir of [
-  "src/content/docs",
-  "public/assets",
-  "dist",
-  ".astro",
-  ".nimbus",
-  "node_modules/.astro",
-]) {
-  await rm(path.join(templateDir, dir), { recursive: true, force: true });
+if (!linked) await symlink(imageModules, modules);
+// The container is reused between builds, so remove everything a previous build wrote, the
+// caches it shares through node_modules included.
+for (const dir of ["dist", ".astro", ".nimbus", "node_modules/.astro", "node_modules/.vite"]) {
+  await rm(path.join(project, dir), { recursive: true, force: true });
 }
-await cp(path.join(srcRoot, "content"), path.join(templateDir, "src/content/docs"), {
-  recursive: true,
-});
-if (assets.length > 0) {
-  await cp(path.join(srcRoot, "assets"), path.join(templateDir, "public/assets"), {
-    recursive: true,
-  });
-}
-await writeFile(path.join(templateDir, "site.json"), JSON.stringify(siteJson, null, 2));
 
-const astro = await runTemplateBin("astro", ["build"]);
+const astro = await runBin("astro", ["build"]);
 if (astro.code !== 0) {
   finish(1, { ok: false, errors: [`astro build failed:\n${astro.tail}`] });
 }
 // The template's own lint, where its rules (internal links, frontmatter) fail a build. It reads the
 // route list astro build just wrote.
-const lint = await runTemplateBin("nimbus-docs", ["lint"]);
+const lint = await runBin("nimbus-docs", ["lint"]);
 if (lint.code !== 0) {
   finish(1, { ok: false, errors: [`nimbus-docs lint failed:\n${lint.tail}`] });
 }
 
 await rm(outDir, { recursive: true, force: true });
-await cp(path.join(templateDir, "dist"), outDir, { recursive: true });
+await cp(path.join(project, "dist"), outDir, { recursive: true });
 
 const { version } = JSON.parse(await readFile(path.join(templateDir, "package.json"), "utf8"));
 finish(0, { ok: true, templateVersion: version });
@@ -102,7 +82,7 @@ function finish(code: number, result: object): never {
 async function readConfig(): Promise<DocsConfig | undefined> {
   let text: string;
   try {
-    text = await readFile(path.join(srcRoot!, "docs.config.json"), "utf8");
+    text = await readFile(path.join(project!, "docs.config.json"), "utf8");
   } catch {
     errors.push("docs.config.json: file not found");
     return undefined;
@@ -113,14 +93,14 @@ async function readConfig(): Promise<DocsConfig | undefined> {
   return undefined;
 }
 
-/** Files under root/dir as root-relative paths. Links are refused: content must not point outside the source. */
+/** Files under root/dir as root-relative paths. Links are refused: content must not point outside the project. */
 async function listFiles(root: string, dir: string, errors: string[]): Promise<string[]> {
   const entries = await readdir(path.join(root, dir), {
     recursive: true,
     withFileTypes: true,
   }).catch(() => undefined);
   if (!entries) {
-    if (dir === "content") errors.push("content/ directory is missing");
+    if (dir === pagesDir) errors.push(`${pagesDir}/ directory is missing`);
     return [];
   }
   const files: string[] = [];
@@ -135,7 +115,7 @@ async function listFiles(root: string, dir: string, errors: string[]): Promise<s
 
 function routeOf(page: string): string {
   const slug = page
-    .replace(/^content\//, "")
+    .slice(pagesDir.length + 1)
     .replace(/\.mdx?$/, "")
     .replace(/(^|\/)index$/, "");
   return `/${slug}`;
@@ -147,28 +127,18 @@ function checkNavigation(items: NavItem[], at: (string | number)[], routes: Set<
     const route = item.href.length > 1 ? item.href.replace(/\/$/, "") : item.href;
     return routes.has(route)
       ? []
-      : [`docs.config.json: ${formatPath([...at, i, "href"])} points to no page in content/`];
+      : [`docs.config.json: ${formatPath([...at, i, "href"])} points to no page in ${pagesDir}/`];
   });
 }
 
-type SidebarItem = { label: string; link: string } | { label: string; items: SidebarItem[] };
-
-function toSidebarItem(item: NavItem): SidebarItem {
-  return "items" in item
-    ? { label: item.label, items: item.items.map(toSidebarItem) }
-    : { label: item.label, link: item.href };
-}
-
-/** Runs a template binary with only the environment it needs; the sandbox passes PATH and SITE_URL and nothing else. */
-function runTemplateBin(
-  bin: string,
-  args: string[],
-): Promise<{ code: number | null; tail: string }> {
+/** Runs a binary of the image's dependencies in the project, with only the environment it needs. */
+function runBin(bin: string, args: string[]): Promise<{ code: number | null; tail: string }> {
   return new Promise((resolve) => {
-    const child = spawn(path.join(templateDir, "node_modules/.bin", bin), args, {
-      cwd: templateDir,
+    const child = spawn(path.join(imageModules, ".bin", bin), args, {
+      cwd: project,
       env: {
         PATH: process.env.PATH,
+        SITE_URL: siteUrl,
         HOME: process.env.HOME ?? "/tmp",
         ASTRO_TELEMETRY_DISABLED: "1",
         NO_COLOR: "1",
@@ -178,10 +148,8 @@ function runTemplateBin(
     let tail = "";
     const keep = (chunk: Buffer) => {
       // Rolldown colors its diagnostics even with NO_COLOR set.
-      const text = stripVTControlCharacters(chunk.toString()).replaceAll(
-        contentCopyPath,
-        "content/",
-      );
+      // Rolldown names files by absolute path; authors know them by their path in the project.
+      const text = stripVTControlCharacters(chunk.toString()).replaceAll(projectPrefix, "");
       process.stderr.write(text);
       tail = (tail + text).slice(-4000);
     };

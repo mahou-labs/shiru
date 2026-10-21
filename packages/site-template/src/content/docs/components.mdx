@@ -1,0 +1,541 @@
+---
+title: Components
+description: Every component this site ships, with the MDX that produces it.
+sidebar:
+  order: 3
+---
+
+import { Banner } from "@/components/ui/banner";
+import { Button } from "@/components/ui/button";
+import { Code } from "@/components/ui/code";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+} from "@/components/ui/dialog";
+import {
+  LayerCard,
+  LayerCardContent,
+  LayerCardHeader,
+} from "@/components/ui/layer-card";
+import PublishDiagram from "@/components/PublishDiagram.tsx";
+
+Components work in `.mdx` pages. Copy the MDX under an example into a page to use it.
+
+## Ready in every page
+
+You can use these anywhere without an import.
+
+### Aside
+
+An aside sets a note, tip, caution or danger apart from the text around it.
+
+<Aside type="tip" title="Good to know">
+  Pages publish when you click Publish, not when you save.
+</Aside>
+
+```mdx
+<Aside type="tip" title="Good to know">
+  Pages publish when you click Publish, not when you save.
+</Aside>
+```
+
+`type` is `note`, `tip`, `caution` or `danger`. Leave out `title` to use the type's name.
+
+### Badge
+
+A badge is a short label inside a line of text.
+
+Search is <Badge text="Beta" variant="caution" /> for now.
+
+```mdx
+Search is <Badge text="Beta" variant="caution" /> for now.
+```
+
+### Card
+
+A card is a titled box for a short block of content.
+
+<Card title="Fast builds" icon="ph:lightning">
+  Each publish builds the whole site and puts it live in one step.
+</Card>
+
+```mdx
+<Card title="Fast builds" icon="ph:lightning">
+  Each publish builds the whole site and puts it live in one step.
+</Card>
+```
+
+`icon` takes any [Phosphor icon](https://phosphoricons.com/) name with `ph:` in front.
+
+### Card grid
+
+A card grid sets cards side by side, and stacks them on narrow screens.
+
+<CardGrid>
+  <Card title="Write" icon="ph:pencil-simple">
+    Pages are Markdown files.
+  </Card>
+  <Card title="Publish" icon="ph:rocket-launch">
+    One click puts them live.
+  </Card>
+</CardGrid>
+
+```mdx
+<CardGrid>
+  <Card title="Write" icon="ph:pencil-simple">
+    Pages are Markdown files.
+  </Card>
+  <Card title="Publish" icon="ph:rocket-launch">
+    One click puts them live.
+  </Card>
+</CardGrid>
+```
+
+### Link card
+
+A link card is a card that opens another page. Add `description` for a line under the title.
+
+<LinkCard title="Writing pages" href="/guides/writing-pages/" />
+
+```mdx
+<LinkCard title="Writing pages" href="/guides/writing-pages/" />
+```
+
+### Link button
+
+A link button is a link that looks like a button, for the one action a reader should take next.
+
+<LinkButton href="/guides/customizing/" icon>Customize</LinkButton>
+
+```mdx
+<LinkButton href="/guides/customizing/" icon>Customize</LinkButton>
+```
+
+`variant="secondary"` gives a quieter button.
+
+### Steps
+
+Steps number a list of instructions and join them with a line.
+
+<Steps>
+  1. Create a page.
+
+  2. Write its first paragraph.
+
+  3. Publish.
+</Steps>
+
+```mdx
+<Steps>
+  1. Create a page.
+
+  2. Write its first paragraph.
+
+  3. Publish.
+</Steps>
+```
+
+### Tabs
+
+Tabs show one of several versions of the same content, such as the same command for each operating system.
+
+<Tabs>
+  <TabItem label="macOS">
+    Press Command and K.
+  </TabItem>
+  <TabItem label="Windows">
+    Press Control and K.
+  </TabItem>
+</Tabs>
+
+```mdx
+<Tabs>
+  <TabItem label="macOS">
+    Press Command and K.
+  </TabItem>
+  <TabItem label="Windows">
+    Press Control and K.
+  </TabItem>
+</Tabs>
+```
+
+### Accordion
+
+An accordion hides an answer under its question until the reader opens it. Put several in an accordion group to stack them.
+
+<AccordionGroup>
+  <Accordion>
+    <AccordionTrigger>Where do my pages live?</AccordionTrigger>
+    <AccordionContent>
+      In `src/content/docs/`, one file per page.
+    </AccordionContent>
+  </Accordion>
+  <Accordion>
+    <AccordionTrigger>Can I delete this page?</AccordionTrigger>
+    <AccordionContent>
+      Yes. Every page except the home page can go.
+    </AccordionContent>
+  </Accordion>
+</AccordionGroup>
+
+```mdx
+<AccordionGroup>
+  <Accordion>
+    <AccordionTrigger>Where do my pages live?</AccordionTrigger>
+    <AccordionContent>
+      In `src/content/docs/`, one file per page.
+    </AccordionContent>
+  </Accordion>
+  <Accordion>
+    <AccordionTrigger>Can I delete this page?</AccordionTrigger>
+    <AccordionContent>
+      Yes. Every page except the home page can go.
+    </AccordionContent>
+  </Accordion>
+</AccordionGroup>
+```
+
+### Code group
+
+A code group puts several code blocks behind tabs.
+
+<CodeGroup titles={["JavaScript", "Python"]}>
+  ```js
+  console.log("Hello");
+  ```
+
+  ```py
+  print("Hello")
+  ```
+</CodeGroup>
+
+````mdx
+<CodeGroup titles={["JavaScript", "Python"]}>
+  ```js
+  console.log("Hello");
+  ```
+
+  ```py
+  print("Hello")
+  ```
+</CodeGroup>
+````
+
+### Package managers
+
+Package managers shows the install command for npm, Yarn, pnpm and Bun, one per tab.
+
+<PackageManagers pkg="astro" />
+
+```mdx
+<PackageManagers pkg="astro" />
+```
+
+### File tree
+
+A file tree draws folders and files from a bulleted list. End a folder's name with `/`.
+
+<FileTree>
+  - src/
+    - content/
+      - docs/
+        - **index.mdx**
+  - docs.config.json
+</FileTree>
+
+```mdx
+<FileTree>
+  - src/
+    - content/
+      - docs/
+        - **index.mdx**
+  - docs.config.json
+</FileTree>
+```
+
+### Frame
+
+A frame puts a border and a caption around an image.
+
+<Frame src="/example.svg" alt="Sketch of a page" caption="public/example.svg" />
+
+```mdx
+<Frame src="/example.svg" alt="Sketch of a page" caption="public/example.svg" />
+```
+
+### Embed
+
+An embed shows another web page, such as a video or a design file, at a fixed shape. This one shows your home page.
+
+<Embed src="/" title="This site's home page" ratio="4/3" />
+
+```mdx
+<Embed src="/" title="This site's home page" ratio="4/3" />
+```
+
+### Copy prompt
+
+A copy prompt shows a prompt with a button that copies it, for readers to paste into an AI assistant.
+
+<CopyPrompt text="Read /llms.txt and help me write a new page." />
+
+```mdx
+<CopyPrompt text="Read /llms.txt and help me write a new page." />
+```
+
+### Popover
+
+A popover opens a small panel next to the button that triggers it.
+
+<Popover>
+  <PopoverTrigger class="underline">What is a popover?</PopoverTrigger>
+  <PopoverContent>A short note that opens in place.</PopoverContent>
+</Popover>
+
+```mdx
+<Popover>
+  <PopoverTrigger class="underline">What is a popover?</PopoverTrigger>
+  <PopoverContent>A short note that opens in place.</PopoverContent>
+</Popover>
+```
+
+## Imported in the page
+
+These need an `import` line at the top of the page, under the front matter. The MDX for each one starts with it.
+
+### Button
+
+A button runs a script when clicked. The [dialog](#dialog) below uses one to open.
+
+<Button variant="primary">Click me</Button>
+
+```mdx
+import { Button } from "@/components/ui/button";
+
+<Button variant="primary">Click me</Button>
+```
+
+### Banner
+
+A banner is a strip for an announcement.
+
+<Banner
+  variant="tip"
+  content="Version 2 is out. <a href='/'>Read what changed</a>."
+/>
+
+```mdx
+import { Banner } from "@/components/ui/banner";
+
+<Banner
+  variant="tip"
+  content="Version 2 is out. <a href='/'>Read what changed</a>."
+/>
+```
+
+To show a banner at the top of a page instead, add it to the page's front matter:
+
+```yaml
+banner:
+  content: Version 2 is out.
+  type: tip
+```
+
+### Code
+
+Code shows code from a value instead of a code block, for code you build with an expression.
+
+<Code
+  code={'console.log("Hello");'}
+  lang="js"
+  meta='title="hello.js"'
+/>
+
+```mdx
+import { Code } from "@/components/ui/code";
+
+<Code
+  code={'console.log("Hello");'}
+  lang="js"
+  meta='title="hello.js"'
+/>
+```
+
+### Collapsible
+
+A collapsible hides content under a line the reader clicks, with no border or arrow of its own.
+
+<Collapsible>
+  <CollapsibleTrigger>Show the details</CollapsibleTrigger>
+  <CollapsibleContent>
+    These were hidden until you clicked.
+  </CollapsibleContent>
+</Collapsible>
+
+```mdx
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
+<Collapsible>
+  <CollapsibleTrigger>Show the details</CollapsibleTrigger>
+  <CollapsibleContent>
+    These were hidden until you clicked.
+  </CollapsibleContent>
+</Collapsible>
+```
+
+### Dialog
+
+A dialog opens over the page. Escape or a click outside closes it. Its `class` sets the size and spacing, since it has none of its own.
+
+<Button onclick="document.getElementById('demo').showModal()">
+  Open the dialog
+</Button>
+
+<Dialog id="demo">
+  <DialogContent class="max-w-md gap-4 p-6">
+    This dialog opened over the page.
+
+    <DialogClose class="self-end underline">Close</DialogClose>
+  </DialogContent>
+</Dialog>
+
+```mdx
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+} from "@/components/ui/dialog";
+
+<Button onclick="document.getElementById('demo').showModal()">
+  Open the dialog
+</Button>
+
+<Dialog id="demo">
+  <DialogContent class="max-w-md gap-4 p-6">
+    This dialog opened over the page.
+
+    <DialogClose class="self-end underline">Close</DialogClose>
+  </DialogContent>
+</Dialog>
+```
+
+### Layer card
+
+A layer card has a header set back from its content.
+
+<LayerCard>
+  <LayerCardHeader>docs.config.json</LayerCardHeader>
+  <LayerCardContent>
+    The settings for the whole site.
+  </LayerCardContent>
+</LayerCard>
+
+```mdx
+import {
+  LayerCard,
+  LayerCardContent,
+  LayerCardHeader,
+} from "@/components/ui/layer-card";
+
+<LayerCard>
+  <LayerCardHeader>docs.config.json</LayerCardHeader>
+  <LayerCardContent>
+    The settings for the whole site.
+  </LayerCardContent>
+</LayerCard>
+```
+
+### Diagram
+
+Diagrams are animated drawings written in React. This one lives in `src/components/PublishDiagram.tsx`.
+
+<PublishDiagram client:visible />
+
+```mdx
+import PublishDiagram from "@/components/PublishDiagram.tsx";
+
+<PublishDiagram client:visible />
+```
+
+`client:visible` loads the diagram's script when it scrolls into view. Without it, the diagram does not move. The pieces it is built from, such as `DiagramStage`, are in `src/components/react/diagram/`.
+
+### Diagram scene
+
+A scene draws labeled boxes joined by arrows and lights them up in turn. The diagram above is one scene, made with `createScene` from `src/components/react/diagram/scene.tsx`. Copy `PublishDiagram.tsx` and change its steps and labels to draw your own.
+
+## Already in the layout
+
+Every page has these already, so you do not add them to pages.
+
+### Sidebar
+
+The sidebar on the left lists your pages. [Customizing the site](/guides/customizing/#navigation) explains how to set its order.
+
+### TOC
+
+The "On this page" list on the right links to each `##` and `###` heading of the page. On narrow screens it folds into a menu above the text.
+
+### Search
+
+The search box in the header finds text in every page. Its index is built with the site, so it finds what you last published.
+
+### Breadcrumbs
+
+The breadcrumbs above each page's title link back through its folders to the home page. See them on [Writing pages](/guides/writing-pages/).
+
+### Page actions
+
+The row under each page's title shows when the page last changed, and lets readers copy the page or open it as Markdown.
+
+### Pagination
+
+The links at the bottom of each page go to the previous and next page in the sidebar.
+
+### Theme toggle
+
+The button in the header switches between light and dark.
+
+### Image zoom
+
+Click an image in a page, like the one in [Frame](#frame), to see it full size.
+
+### Version switcher
+
+A version switcher lets readers pick which version of the docs to read. It needs a copy of your pages for each version, so this site does not show one. `src/components/ui/version-switcher/README.md` explains how to set it up.
+
+## For API reference
+
+These build reference pages from an OpenAPI description of an HTTP API. They need that description and a page that loads it, so they have no example here.
+
+### API layout
+
+The layout of an API reference page, with each endpoint's request, responses and examples.
+
+### API sidebar
+
+The sidebar of an API reference, listing endpoints by group with their HTTP method.
+
+### API field row
+
+One field of a request or response, with its type, description and nested fields.
+
+### API code rail
+
+The column beside each endpoint with request examples in several languages and sample responses.
+
+## For your own components
+
+### cn
+
+`cn` joins CSS class names and resolves Tailwind classes that conflict. Use it in components you write, with `import { cn } from "@/lib/cn";`.

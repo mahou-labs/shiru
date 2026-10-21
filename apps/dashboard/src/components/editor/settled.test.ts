@@ -38,23 +38,23 @@ describe("settled", () => {
     const client = new QueryClient();
     const log: string[] = [];
     const saves = autosaver(client, log);
-    saves.enqueue({ path: "content/a.mdx", content: "typed" });
+    saves.enqueue({ path: "src/content/docs/a.mdx", content: "typed" });
     // The editor unmounts with one more edit, flushed behind the save in flight.
-    saves.enqueue({ path: "content/a.mdx", content: "flushed" });
-    const deleted = settled(client.getMutationCache(), savesOf("content/a.mdx")).then(() =>
-      log.push("delete content/a.mdx"),
+    saves.enqueue({ path: "src/content/docs/a.mdx", content: "flushed" });
+    const deleted = settled(client.getMutationCache(), savesOf("src/content/docs/a.mdx")).then(() =>
+      log.push("delete src/content/docs/a.mdx"),
     );
 
     await tick();
     saves.release();
     await tick();
-    expect(log).toEqual(["save content/a.mdx typed"]);
+    expect(log).toEqual(["save src/content/docs/a.mdx typed"]);
     saves.release();
     await deleted;
     expect(log).toEqual([
-      "save content/a.mdx typed",
-      "save content/a.mdx flushed",
-      "delete content/a.mdx",
+      "save src/content/docs/a.mdx typed",
+      "save src/content/docs/a.mdx flushed",
+      "delete src/content/docs/a.mdx",
     ]);
   });
 
@@ -62,9 +62,9 @@ describe("settled", () => {
     const client = new QueryClient();
     const log: string[] = [];
     const saves = autosaver(client, log);
-    saves.enqueue({ path: "content/a.mdx", content: "typed" });
+    saves.enqueue({ path: "src/content/docs/a.mdx", content: "typed" });
     // Page A unmounts with one more edit as page B opens, and B publishes right away.
-    saves.enqueue({ path: "content/a.mdx", content: "flushed" });
+    saves.enqueue({ path: "src/content/docs/a.mdx", content: "flushed" });
     const published = settled(client.getMutationCache(), { mutationKey: ["save"] }).then(() =>
       log.push("publish"),
     );
@@ -72,30 +72,34 @@ describe("settled", () => {
     await tick();
     saves.release();
     await tick();
-    expect(log).toEqual(["save content/a.mdx typed"]);
+    expect(log).toEqual(["save src/content/docs/a.mdx typed"]);
     saves.release();
     await published;
-    expect(log).toEqual(["save content/a.mdx typed", "save content/a.mdx flushed", "publish"]);
+    expect(log).toEqual([
+      "save src/content/docs/a.mdx typed",
+      "save src/content/docs/a.mdx flushed",
+      "publish",
+    ]);
   });
 
   test("ignores saves of other pages", async () => {
     const client = new QueryClient();
     const log: string[] = [];
     const saves = autosaver(client, log);
-    saves.enqueue({ path: "content/b.mdx", content: "typed" });
+    saves.enqueue({ path: "src/content/docs/b.mdx", content: "typed" });
     await tick();
 
-    await settled(client.getMutationCache(), savesOf("content/a.mdx"));
-    log.push("delete content/a.mdx");
+    await settled(client.getMutationCache(), savesOf("src/content/docs/a.mdx"));
+    log.push("delete src/content/docs/a.mdx");
     saves.release();
     await tick();
-    expect(log).toEqual(["delete content/a.mdx", "save content/b.mdx typed"]);
+    expect(log).toEqual(["delete src/content/docs/a.mdx", "save src/content/docs/b.mdx typed"]);
   });
 
   test("resolves when nothing is saving", async () => {
     const client = new QueryClient();
     await expect(
-      settled(client.getMutationCache(), savesOf("content/a.mdx")),
+      settled(client.getMutationCache(), savesOf("src/content/docs/a.mdx")),
     ).resolves.toBeUndefined();
   });
 });

@@ -42,11 +42,14 @@ export const docsConfigSchema = z
         .meta({ description: "One line about the docs, used for SEO and llms.txt." }),
       logo: z
         .string({ error: "must be a string" })
-        .regex(/^assets\/(?!.*\.\.)[^\\]+\.(svg|png|jpe?g|webp)$/, {
-          error: "must be an .svg, .png, .jpg or .webp file under assets/",
+        .regex(/^public\/(?!.*\.\.)[^\\]+\.(svg|png|jpe?g|webp)$/, {
+          error: "must be an .svg, .png, .jpg or .webp file under public/",
         })
         .optional()
-        .meta({ description: "Logo file shown in the header, such as `assets/logo.svg`." }),
+        .meta({
+          description:
+            "Logo file shown in the header, such as `public/logo.svg`. public/ is served from the site root.",
+        }),
       github: z
         .url({
           protocol: /^https$/,
@@ -61,7 +64,7 @@ export const docsConfigSchema = z
         .optional()
         .meta({
           description:
-            "Sidebar order. Leave it out to build the sidebar from the content/ folder tree.",
+            "Sidebar order. Leave it out to build the sidebar from the src/content/docs/ folder tree.",
         }),
     },
     { error: "must be a JSON object" },

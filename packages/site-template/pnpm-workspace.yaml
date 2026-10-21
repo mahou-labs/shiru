@@ -1,0 +1,15 @@
+# The builder links node_modules into a doc's project and resolves through the link
+# (vite.resolve.preserveSymlinks), so dependencies must sit flat in node_modules, as npm lays them.
+nodeLinker: hoisted
+allowBuilds:
+  esbuild: true
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@1.3.0
+  vite-plus: 1.3.0
+overrides:
+  vite@*: "catalog:"
+peerDependencyRules:
+  allowAny:
+    - vite
+  allowedVersions:
+    vite: "*"

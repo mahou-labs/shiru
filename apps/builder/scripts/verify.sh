@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # Builds the builder image and runs every fixture through build-site the way
 # the sandbox does: no network, an environment of only PATH and SITE_URL, and
-# one warm container reused across builds.
+# one warm container reused across builds. A fixture holds only what differs
+# from packages/site-template; each one is built as the template with it on top,
+# the way a doc's repo holds the whole template.
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
 image=shiru-builder:dev
 container=shiru-builder-verify
 site_url=https://acme.shiru.sh
+template=../../packages/site-template
 tmp=$(mktemp -d)
 passed=0
 failed=0
@@ -48,20 +51,45 @@ file_exists() { docker exec "$container" test -f "$1"; }
 file_missing() { ! docker exec "$container" test -e "$1"; }
 file_contains() { docker exec "$container" grep -qF -- "$2" "$1"; }
 file_lacks() { ! docker exec "$container" grep -qF -- "$2" "$1"; }
+compose() {
+  local dest=$tmp/work/$1
+  mkdir -p "$dest"
+  git -C "$template" ls-files -z | (cd "$template" && xargs -0 cp --parents -t "$dest")
+  if [[ -n ${2:-} ]]; then cp -r "$2/." "$dest/"; fi
+}
 seconds_since() { awk -v s="$1" -v e="$(date +%s%N)" 'BEGIN { printf "%.1f", (e - s) / 1e9 }'; }
 
 node scripts/generate-schema.ts
 check "docs.config.schema.json matches src/config.ts" git diff --quiet -- docs.config.schema.json
 
-docker build --platform linux/amd64 -t "$image" . >"$tmp/docker-build.log" 2>&1 ||
+# The way cf builds it: the Dockerfile on stdin and the repository root as the context.
+docker build --platform linux/amd64 --progress=plain -t "$image" -f - ../.. <Dockerfile >"$tmp/docker-build.log" 2>&1 ||
   {
     cat "$tmp/docker-build.log"
     exit 1
   }
 docker run -d --rm --network none --name "$container" "$image" sleep infinity >/dev/null
 docker exec "$container" mkdir -p /work
-for fixture in fixtures/*/; do docker cp "$fixture" "$container:/work/" >/dev/null; done
-template_version=$(node -p 'require("./template/package.json").version')
+compose template
+for fixture in fixtures/*/; do compose "$(basename "$fixture")" "$fixture"; done
+compose node-modules
+mkdir -p "$tmp/work/node-modules/node_modules/left-pad"
+echo '{"name":"left-pad"}' >"$tmp/work/node-modules/node_modules/left-pad/package.json"
+docker cp "$tmp/work/." "$container:/work/" >/dev/null
+template_version=$(node -p "require('$template/package.json').version")
+
+build /work/template /out/template
+check "template: the bare site template builds" equals "$stdout" "{\"ok\":true,\"templateVersion\":\"$template_version\"}"
+check "template: starter home page" file_contains /out/template/index.html '<title>Welcome | Docs</title>'
+for page in guides/writing-pages guides/customizing components; do
+  check "template: starter page /$page/" file_exists "/out/template/$page/index.html"
+done
+showcase_missing=$(node -e '
+  const slugs = require(process.argv[1]).components.map((c) => c.slug);
+  const html = require("fs").readFileSync(0, "utf8");
+  console.log(slugs.filter((s) => !new RegExp(`<h[23][^>]* id="${s}"`).test(html)).join(" "));
+' "$(realpath "$template/nimbus.json")" < <(docker exec "$container" cat /out/template/components/index.html))
+check "template: the components page has a heading for each component in nimbus.json" equals "$showcase_missing" ""
 
 start=$(date +%s%N)
 build /work/good /out/good
@@ -95,7 +123,7 @@ check "good: _headers marks hashed /_astro/ files immutable" \
 check "good: _headers keeps the Nimbus agent discovery rules" \
   file_contains /out/good/_headers '# Nimbus agent discovery (generated)'
 
-docker exec "$container" rm -f /work/good/content/guides/faq.mdx
+docker exec "$container" rm -f /work/good/src/content/docs/guides/faq.mdx
 start=$(date +%s%N)
 build /work/good /out/good
 warm=$(seconds_since "$start")
@@ -131,6 +159,8 @@ check "mdx-features: client:load .jsx component is server-rendered with its prop
   file_contains /out/mdx-features/index.html 'Clicked <!-- -->3<!-- --> times'
 check "mdx-features: client:load .jsx component is an island" \
   file_contains /out/mdx-features/index.html 'client="load" opts="{&quot;name&quot;:&quot;Counter&quot;'
+check "mdx-features: Popover from the MDX globals renders" \
+  file_contains /out/mdx-features/index.html 'Popover body from the MDX globals.'
 island_urls=$(docker exec "$container" grep -oE '(component|renderer)-url="[^"]+"' /out/mdx-features/index.html | cut -d'"' -f2)
 check "mdx-features: island names its component and renderer scripts" equals "$(wc -l <<<"$island_urls")" 2
 for url in $island_urls; do
@@ -139,21 +169,27 @@ done
 
 build /work/bad-import /out/bad-import
 check "bad-import: exits 1" equals "$code" 1
-check "bad-import: error names the missing package and the page under content/" \
-  grep -qF 'Rolldown failed to resolve import \"canvas-confetti\" from \"content/index.mdx\"' <<<"$(tail -n1 <<<"$stdout")"
-check "bad-import: error has no template paths or color codes" \
-  equals "$(tail -n1 <<<"$stdout" | grep -cE 'src/content/docs|\\u001b')" 0
+check "bad-import: error names the missing package and the page by its project path" \
+  grep -qF 'Rolldown failed to resolve import \"canvas-confetti\" from \"src/content/docs/index.mdx\"' <<<"$(tail -n1 <<<"$stdout")"
+check "bad-import: error has no container paths or color codes" \
+  equals "$(tail -n1 <<<"$stdout" | grep -cE '/work/|\\u001b')" 0
 check "bad-import: writes no output" file_missing /out/bad-import
 
 build /work/bad-links /out/bad-links
 check "bad-links: exits 1" equals "$code" 1
-check "bad-links: stderr lists missing pages and logo" equals "$stderr" "docs.config.json: logo assets/missing.svg does not exist
-docs.config.json: navigation[1].items[0].href points to no page in content/"
+check "bad-links: stderr lists missing pages and logo" equals "$stderr" "docs.config.json: logo public/missing.svg does not exist
+docs.config.json: navigation[1].items[0].href points to no page in src/content/docs/"
 
 build /work/broken-link /out/broken-link
 check "broken-link: Nimbus lint fails the build" equals "$code" 1
-check "broken-link: the error names the page, the rule and the link" grep -qF 'content/index.mdx:5:10  error  nimbus/internal-link' <<<"$stdout"
+check "broken-link: the error names the page, the rule and the link" grep -qF 'src/content/docs/index.mdx:5:10  error  nimbus/internal-link' <<<"$stdout"
 check "broken-link: writes no output" file_missing /out/broken-link
+
+build /work/node-modules /out/node-modules
+check "node-modules: a committed node_modules fails the build" equals "$code" 1
+check "node-modules: the result line says why" equals "$(tail -n1 <<<"$stdout")" \
+  '{"ok":false,"errors":["node_modules is committed; remove it, the builder provides the dependencies"]}'
+check "node-modules: writes no output" file_missing /out/node-modules
 
 docker exec "$container" sh -c 'mkdir -p /tmp/m/sub && printf hello >/tmp/m/a.txt && printf hello >/tmp/m/b.css && : >/tmp/m/sub/c.html'
 check "dist-manifest: path, size and a hash that differs by extension" equals \

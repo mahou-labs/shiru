@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - "!packages/site-template"
 allowBuilds:
   esbuild: true
   sharp: true

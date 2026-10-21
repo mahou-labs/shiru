@@ -111,14 +111,16 @@ before.
 
 ### What a site repo contains
 
-The template, layouts, and components are yours and ship in the sandbox image. A site repo contains
-only what is specific to that site, under `docsRoot`:
+A site repo holds a complete Nimbus project under `docsRoot`, started from the template in
+`packages/site-template`. Only the template's dependencies ship in the sandbox image:
 
 ```
 docs/
-  docs.config.json      # site name, logo, navigation, theme tokens
-  content/**.mdx        # pages
-  assets/**             # images referenced by pages
+  package.json, pnpm-lock.yaml, pnpm-workspace.yaml, astro.config.ts, nimbus.json
+  docs.config.json      # site name, logo, navigation
+  src/content/docs/**   # pages
+  public/**             # images and files served from the site root
+  src/components/**, src/layouts/**, src/pages/**, src/styles/**
 ```
 
 `docs.config.json` has a published JSON Schema with a `version` field. It is the platform's public
@@ -211,7 +213,7 @@ Blob SHAs are content hashes, so `blobs` rows never go stale. When `head_sha` mo
   - Artifacts and GitHub usage do not depend on how much people type.
   - Git history is a clean list of published versions.
   - Autosave stays fast, with no Git round trip.
-- Uploaded images stay in R2 staging until a publish commits them into `assets/`. After that, they
+- Uploaded images stay in R2 staging until a publish commits them into `public/`. After that, they
   live in the repo like every other file, and the build reads them from there. A cron trigger deletes
   staging objects that no draft references.
 
@@ -348,8 +350,8 @@ Workflow only calls its RPC methods (`reset`, `build`, and reads of `dist/`).
 - **Sources are read file by file.** Artifacts has no tarball endpoint, so the Workflow walks the
   commit's tree with `readTree` and `readBlob`, limited to `docsRoot`. GitHub has a tarball endpoint,
   and the Workflow unpacks it before calling `reset`.
-- **`build-site` is a script in the image.** It validates `docs.config.json`, links the content into
-  the template, runs `astro build`, and prints the template version.
+- **`build-site` is a script in the image.** It validates `docs.config.json`, links the image's
+  `node_modules` into the project, runs `astro build`, and prints the template version.
 - **The sandbox holds no credentials.** The Workflow fetches the source and deploys the assets. The
   sandbox only turns files into other files. See section 9.
 
@@ -358,19 +360,20 @@ Workflow only calls its RPC methods (`reset`, `build`, and reads of `dist/`).
 ```Dockerfile
 FROM node:24-trixie-slim
 COPY --from=docker.io/cloudflare/sandbox:1.0.0 /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
-COPY template/ /template/          # the Nimbus template you own
-RUN cd /template && npm ci         # deps baked in, so no install per build
+COPY packages/site-template/package.json packages/site-template/pnpm-*.yaml /template/
+RUN cd /template && pnpm install --frozen-lockfile         # deps baked in, so no install per build
 COPY build-site /usr/local/bin/
 ```
 
 The container starts with `enableInternet: false`, so the build has to work offline. The
 `cloudflare/sandbox` tag must match the `@cloudflare/sandbox` npm version.
 
-- Every client uses your template, so dependencies are installed once, in the image.
+- Every site starts from your template, so dependencies are installed once, in the image.
 - Each image has a template version. Each target records the `template_version` it was built with,
   so you can tell which sites still need a rebuild after an upgrade.
 - **Upgrading the template.** Ship a new image, then call `build("live", deployed_sha)` for each site,
-  in batches.
+  in batches. The rebuild picks up new dependencies. Template files a site already holds change only
+  when the site commits them.
 
 ### Site Worker configuration
 
